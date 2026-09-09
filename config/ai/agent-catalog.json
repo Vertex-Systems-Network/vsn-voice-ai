@@ -1,6 +1,6 @@
 {
   "schema_version": 3,
-  "selection_status": "not_selected",
+  "selection_status": "discovery_required",
   "selection_flow": {
     "preferred_prompt": "Choose Development AI",
     "only_selectable_when_current_host_can_use_agent": true,
@@ -11,22 +11,11 @@
     "require_privacy_and_data_boundary_record": true
   },
   "discovery_rule": "Only expose an AI/agent as selectable when the current host can actually invoke, attach, hand off to, or otherwise use it for this repository. Selection is not authorization until runtime identity evidence and permissions are recorded.",
-  "candidate_examples": [
-    "Codex / ChatGPT",
-    "Claude Code",
-    "GitHub Copilot",
-    "Gemini",
-    "Cursor",
-    "Windsurf",
-    "Other verified compatible agent"
-  ],
+  "candidate_examples": ["Codex / ChatGPT","Claude Code","GitHub Copilot","Gemini","Cursor","Windsurf","Other verified compatible agent"],
   "available_agents": [],
   "selected_agents": [],
   "suggested_but_unavailable": [],
-  "role_assignments": {
-    "supervisor_agent_id": null,
-    "worker_agent_ids": []
-  },
+  "role_assignments": {"supervisor_agent_id": null,"worker_agent_ids": []},
   "permission_profile_schema": {
     "allowed_paths": ["**"],
     "denied_paths": [],
@@ -39,39 +28,8 @@
     "repository_admin": false,
     "destructive_actions": false
   },
-  "runtime_identity_schema": {
-    "principal_type": "host_authenticated_agent_or_service",
-    "principal_id": null,
-    "provider": null,
-    "evidence_ref": null,
-    "verified_at": null,
-    "expires_at": null
-  },
-  "privacy_profile_schema": {
-    "repository_data_scope": null,
-    "external_network_enabled": null,
-    "data_retention": "unknown",
-    "training_use": "unknown",
-    "geography_or_enterprise_constraints": [],
-    "sensitive_data_allowed": false,
-    "notes": "Unknowns remain explicit; do not invent provider assurances."
-  },
-  "agent_schema": {
-    "id": "agent-id",
-    "name": "Agent Name",
-    "provider": "",
-    "capabilities": [],
-    "available": false,
-    "attachable": false,
-    "invokable": false,
-    "identity_verified": false,
-    "runtime_identity": null,
-    "permissions": null,
-    "privacy_profile": null,
-    "roles": ["worker"],
-    "selection_action": "Use Agent Name",
-    "connection_or_handoff_method": null,
-    "notes": ""
-  },
+  "runtime_identity_schema": {"principal_type":"host_authenticated_agent_or_service","principal_id":null,"provider":null,"evidence_ref":null,"verified_at":null,"expires_at":null},
+  "privacy_profile_schema": {"repository_data_scope":null,"external_network_enabled":null,"data_retention":"unknown","training_use":"unknown","geography_or_enterprise_constraints":[],"sensitive_data_allowed":false,"notes":"Unknowns remain explicit; do not invent provider assurances."},
+  "agent_schema": {"id":"agent-id","name":"Agent Name","provider":"","capabilities":[],"available":false,"attachable":false,"invokable":false,"identity_verified":false,"runtime_identity":null,"permissions":null,"privacy_profile":null,"roles":["worker"],"selection_action":"Use Agent Name","connection_or_handoff_method":null,"notes":""},
   "rule": "Agent names and model/vendor labels are not identity proof. Privileged runtime work requires selected catalog membership, verified runtime identity evidence, role authorization, and least-privilege permissions."
 }
