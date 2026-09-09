@@ -1,15 +1,15 @@
 {
   "schema_version": 1,
-  "lifecycle_stage": "architecture",
-  "current_phase": "PHASE-000",
-  "current_module": "MOD-017",
-  "current_work_unit": "WU-017",
-  "last_verified_completion": "WU-001",
-  "next_valid_work_unit": "WU-010",
+  "lifecycle_stage": "development",
+  "current_phase": "PHASE-001",
+  "current_module": "MOD-002",
+  "current_work_unit": "WU-002",
+  "last_verified_completion": "WU-017",
+  "next_valid_work_unit": "WU-002",
   "progress": {
     "total_work_units": 25,
-    "complete": 1,
-    "in_progress": 2,
+    "complete": 3,
+    "in_progress": 1,
     "blocked": 0,
     "deferred": 0,
     "needs_update": 0,
@@ -26,9 +26,9 @@
     "Finalize deployment-jurisdiction retention/legal policy before production release."
   ],
   "critical_defects": [],
-  "qa_readiness": "baseline_verified",
+  "qa_readiness": "phase_1_audio_core_ci_verified",
   "security_readiness": "voice_ai_threat_and_data_baselines_defined_pending_implementation_verification",
-  "last_reconciled_repository_ref": "47ba4c09ab4218bc7690a52489b1f1b91bb8f733",
-  "last_reconciled_at": "2026-09-09T22:07:58+00:00",
-  "notes": "CONSENT-000001 development start and CONSENT-000002 technology stack are approved. PHASE-000 remains in progress with WU-010 hybrid provider architecture and WU-017 privacy/security/data governance in progress. GitHub Actions run 34410608105 succeeded after the technology-approval transition, including unit tests, ANPOS validation, YAML validation and whitespace checks. Product feature implementation is technology-authorized after PHASE-000 handoff; paid provider usage, proprietary model training, production credentials/cloud spend and deployment remain subject to applicable provider/data/compute/release gates."
+  "last_reconciled_repository_ref": "673ff7e478d9a75d725f435a9b34e5fc3c3fe658",
+  "last_reconciled_at": "2026-09-09T23:08:24+00:00",
+  "notes": "PHASE-000 foundation is complete and PHASE-001 development is active. WU-002 started with the Rust native audio workspace at commit 047d974c2dd5b5f65b51a63311fcd2ff84c46883 (2026-09-10 03:43 PKT). The initial audio-frame, bounded-queue and safe-bypass slice passed Rust formatting, Clippy, unit tests, Go gateway tests, product schema validation and ANPOS checks in GitHub Actions run 34415564226. Device lifecycle selection/fallback work is now being implemented. WU-002 is not complete until Windows capture/virtual routing/device-lifecycle acceptance evidence exists. Paid provider usage, proprietary model training, production credentials/cloud spend and deployment remain subject to applicable provider/data/compute/release gates."
 }
