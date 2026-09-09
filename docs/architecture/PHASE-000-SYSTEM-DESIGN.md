@@ -1,15 +1,15 @@
-# PHASE-000 — System Design & Technology Recommendation
+# PHASE-000 — System Design & Approved Technology Stack
 
 **Project:** VSN Voice AI  
 **Repository:** `Vertex-Systems-Network/vsn-voice-ai`  
 **Owner development consent:** `CONSENT-000001` — approved 2026-09-10 02:25 PKT  
-**Technology approval:** **PENDING — product feature implementation must not begin until the owner explicitly approves the technology stack.**
+**Technology stack approval:** `CONSENT-000002` — **APPROVED 2026-09-10 03:01 PKT**
 
 ## 1. System objective
 
-Build a hybrid realtime Voice AI + meeting intelligence platform that can use verified third-party AI APIs/SDKs and VSN-owned models through the same capability contracts.
+Build a hybrid realtime Voice AI + meeting-intelligence platform that can use verified third-party AI APIs/SDKs and VSN-owned models through the same capability contracts.
 
-Initial product outcomes remain:
+Primary product outcomes:
 
 - realtime noise cancellation and background-voice suppression;
 - echo/de-reverberation, VAD and audio quality handling;
@@ -23,21 +23,22 @@ Initial product outcomes remain:
 - unified knowledge/search across connected work systems;
 - authorized AI actions/skills/voice agents;
 - telephony/contact-center support;
-- SaaS accounts, teams, billing, enterprise administration and later developer APIs;
-- VSN-owned AI models progressively complementing/replacing third-party providers.
+- SaaS accounts, teams, billing and enterprise administration;
+- public developer APIs/SDKs later;
+- VSN-owned AI models progressively complementing or replacing third-party providers.
 
 ## 2. Architectural rules
 
-1. **Hybrid by design.** No product-domain feature may hard-code itself to one AI vendor.
-2. **Capability contracts first.** Providers implement normalized contracts such as `audio.noise_cancel`, `voice.accent_convert`, `speech.translate_realtime`, `speech.transcribe_stream`, `meeting.capture`, `meeting.intelligence` and `agent.action`.
-3. **Realtime audio must fail safely.** If an AI path fails, the user's base call audio must bypass safely instead of dropping the conversation.
-4. **Local-first for latency-sensitive audio where feasible.** Noise/VAD/background-voice suppression and eligible future VSN accent models should prefer on-device execution when quality, hardware support and licensing permit it.
-5. **Cloud where capability breadth requires it.** Translation, broad transcription, meeting bots and provider-only services may use cloud realtime sessions.
-6. **Provider policy is explicit.** Routing considers capability, quality, latency, privacy, residency, cost, quota, health and tenant policy.
-7. **No provider activation without verified access.** Marketing pages or benchmarks do not count as integration evidence.
-8. **Voice identity is sensitive data.** Speaker embeddings, personalization and voice-security artifacts require consent, encryption, retention and deletion controls.
-9. **Meeting artifacts are versioned.** Live notes/transcripts are provisional; finalization may correct words, speakers, summaries and actions.
-10. **Actions are authorization-bound.** Agentic writes to CRM/email/calendar/tasks require scopes, approval policy, idempotency and audit evidence.
+1. **Hybrid by design.** Product-domain features do not hard-code themselves to one AI vendor.
+2. **Capability contracts first.** Providers implement normalized capabilities such as `audio.noise_cancel`, `voice.accent_convert`, `speech.translate_realtime`, `speech.transcribe_stream`, `meeting.capture`, `meeting.intelligence` and `agent.action`.
+3. **Realtime audio fails safely.** Provider failure must degrade to bypass/fallback rather than dropping the live call.
+4. **Local-first where latency/privacy benefit.** Noise/VAD/background-voice suppression and eligible future VSN models should prefer on-device execution when feasible.
+5. **Cloud where capability breadth requires it.** Translation, broad STT, meeting bots and provider-only services may run through cloud realtime sessions.
+6. **Routing is policy-driven.** Capability, quality, latency, privacy, residency, cost, quota, health and tenant policy all participate.
+7. **No invented integration.** A provider is not active until API/SDK access, commercial terms, privacy/retention, region, quotas/cost and contract tests are verified.
+8. **Voice identity is sensitive.** Speaker embeddings, profiles and verification/deepfake signals are restricted data.
+9. **Meeting artifacts are versioned.** Live transcript/notes may be provisional and finalized later.
+10. **Agentic writes are authorization-bound.** CRM/email/calendar/task writes require scopes, approval rules, idempotency and audit evidence.
 
 ## 3. Logical architecture
 
@@ -51,7 +52,7 @@ Desktop / Browser / Mobile / Meeting Bot / Telephony
      |                      |
      v                      v
 Local Audio Plane      Cloud Media Plane
-Rust/native runtime    Go/WebRTC media gateway
+Rust/native runtime    Go/WebRTC gateway
      |                      |
      +----------+-----------+
                 v
@@ -92,14 +93,15 @@ Virtual Microphone
 Zoom / Teams / Meet / Browser / Dialer / Other Apps
 ```
 
-Requirements:
+Realtime requirements:
 
-- audio frames use a stable internal format with explicit sample rate/channel/frame duration;
-- realtime processing runs off the UI thread;
-- every stage declares latency contribution;
-- provider/cloud stages have timeout and bypass policies;
-- device unplug/sleep/wake/crash must recover predictably;
-- call audio continues even when analytics/notes services are unavailable.
+- stable internal audio-frame contract;
+- explicit sample rate, channels and frame duration;
+- processing off the UI thread;
+- stage-by-stage latency accounting;
+- timeouts, circuit breakers and bypass;
+- predictable hotplug/sleep/wake/crash recovery;
+- analytics/meeting AI failures must not interrupt call audio.
 
 ## 5. Meeting intelligence path
 
@@ -116,147 +118,129 @@ Persistent Conversation Record
             ↓
 Final Transcript Reconciliation
             ↓
-Final Notes / Summary / Decisions / Actions / Topics / Highlights
+Notes / Summary / Decisions / Actions / Topics / Highlights
             ↓
 Search / Knowledge / CRM / Workflow Automation
 ```
 
-Live and finalized artifacts must carry source references and version metadata.
+All live/finalized artifacts carry version/provenance metadata and tenant authorization context.
 
 ## 6. Hybrid provider gateway
 
-Every provider adapter must implement a common provider manifest:
+Provider manifests must track:
 
-- provider ID and model/SDK version;
-- verified capability IDs;
-- access type: API / SDK / on-device / on-prem / unavailable;
-- input/output audio constraints;
-- languages/accents/platforms;
-- expected latency class;
-- supported regions and residency;
-- data retention/privacy notes;
+- provider/model/SDK version;
+- verified capabilities;
+- API/SDK/on-device/on-prem access type;
+- audio input/output constraints;
+- supported languages/accents/platforms;
+- latency class;
+- region/residency;
+- retention/privacy;
 - pricing/metering unit;
 - quotas/rate limits;
 - credential type;
-- health state;
-- commercial/licensing verification state;
-- adapter contract-test state.
+- health;
+- commercial/licensing verification;
+- adapter contract-test status.
 
-Routing modes planned:
+Routing modes:
 
-- `auto`;
-- `lowest_latency`;
-- `best_quality`;
-- `best_privacy`;
-- `lowest_cost`;
-- tenant-enforced policy.
+- `auto`
+- `lowest_latency`
+- `best_quality`
+- `best_privacy`
+- `lowest_cost`
+- tenant-enforced policy
 
-Realtime routing must support circuit breakers and safe bypass. Asynchronous meeting intelligence may retry/fail over without affecting the live call.
-
-## 7. Recommended technology stack — pending owner approval
+## 7. Approved technology stack
 
 ### Web / SaaS
-
-- **TypeScript**
-- **React + Next.js App Router**
-- Tailwind CSS + shadcn/ui for application UI primitives
-
-Rationale: strong ecosystem, shared TypeScript contracts, high development velocity and mature application routing/rendering.
+- TypeScript
+- React
+- Next.js App Router
+- Tailwind CSS
+- shadcn/ui
 
 ### Control API / business backend
+- Node.js
+- TypeScript
+- NestJS
+- Fastify adapter where appropriate
+- REST as primary control/public API; WebSocket/SSE only where useful
 
-- **Node.js + TypeScript + NestJS**
-- **Fastify adapter** for HTTP performance where appropriate
-- REST for public/control surfaces; WebSocket/SSE only where the workflow benefits
+### Desktop
+- Tauri 2
+- React/TypeScript UI
+- Rust for desktop runtime, audio buffers, concurrency, device state and local-inference orchestration
+- C++ for Windows virtual-audio/platform components where required
+- macOS native components later using Swift / Objective-C++ / C++ as required by the selected audio approach
 
-Responsibilities: auth, organizations, provider policy, meeting metadata, billing, integrations, admin, audit and developer API control plane.
+### Realtime cloud media
+- Go
+- WebRTC
+- Pion WebRTC as the initial Go implementation candidate, subject to benchmark verification
+- WebSocket/gRPC for providers that require them
 
-### Desktop application
+### AI research/training
+- Python
+- PyTorch
+- torchaudio
 
-- **Tauri 2 + React/TypeScript UI**
-- **Rust** for desktop runtime, audio buffers, concurrency, device state and local inference orchestration
-- Windows native audio/virtual-device pieces in **C++** where driver/platform APIs require it
-- macOS native pieces later through **Swift / Objective-C++ / C++** as required by the selected audio-driver approach
-
-### Realtime cloud media plane
-
-- **Go** for high-concurrency session/media services
-- **WebRTC** for realtime browser/media paths
-- Pion WebRTC is the recommended Go implementation candidate after technology approval and benchmark validation
-- WebSocket/gRPC may be used for providers that do not expose WebRTC
-
-### AI research and training
-
-- **Python**
-- **PyTorch + torchaudio**
-- evaluation notebooks/tools kept out of production desktop runtime
-
-### Production model inference
-
-- **ONNX Runtime** as the primary portable inference layer where model compatibility permits
-- hardware execution providers selected per platform: CPU plus CUDA/TensorRT/OpenVINO/DirectML/CoreML/QNN where appropriate and verified
-- native runtime called from Rust/C++ rather than shipping a large Python runtime in the desktop client
+### Production inference
+- ONNX Runtime where model compatibility permits
+- platform execution providers selected by measured support/performance (CPU, CUDA/TensorRT, OpenVINO, DirectML, CoreML, QNN where applicable)
+- production desktop runtime remains native rather than bundling a large Python runtime
 
 ### Data
+- PostgreSQL
+- pgvector initially for semantic retrieval
+- Redis for rate limits, short-lived state, routing health, queues/cache where appropriate
+- S3-compatible encrypted object storage for recordings/clips/model artifacts/exports where policy permits
 
-- **PostgreSQL** as canonical transactional database
-- **pgvector** initially for semantic retrieval where sufficient
-- **Redis** for rate limiting, sessions, short-lived state, routing health and queue/cache use cases
-- **S3-compatible object storage** for recordings, clips, model artifacts and exports where retention policy permits
-- dedicated search infrastructure may be added only when PostgreSQL/pgvector no longer meets measured scale/latency needs
-
-### Background workflows
-
-- Start with Redis-backed jobs for bounded asynchronous tasks
-- introduce a durable workflow engine only if measured reliability/long-running orchestration needs justify the added operational complexity
-
-### Billing
-
-- Stripe-style external payment provider architecture; raw card data must not be stored by VSN services
-- provider abstraction may be added later if business requirements demand multiple billing processors
+### Background work
+- Redis-backed jobs initially for bounded async tasks
+- introduce a durable workflow engine only when measured long-running/reliability requirements justify the complexity
 
 ### Infrastructure
-
-- Docker containers for cloud services
-- Terraform for infrastructure-as-code
-- AWS is the initial recommended cloud candidate, but provider-specific infrastructure remains behind an approval gate
-- GPU workloads are isolated from general SaaS services and must be cost-metered
+- Docker
+- Terraform
+- AWS as initial cloud candidate
+- GPU services isolated and cost-metered separately from general SaaS services
 
 ### Observability
-
-- OpenTelemetry for traces/metrics correlation
-- Sentry for application/runtime exception visibility
-- Prometheus/Grafana-compatible metrics stack for realtime latency, jitter, provider health and cost telemetry
-- sensitive audio/transcript content excluded or redacted from logs by default
+- OpenTelemetry
+- Sentry
+- Prometheus/Grafana-compatible metrics
+- no raw audio/transcript/secrets in logs by default
 
 ### CI/CD
+- GitHub Actions
+- stack-specific lint/type/test/build/security checks added with implementation
+- signing, installer/update and rollback verification required before desktop distribution
 
-- GitHub Actions remains the repository CI control plane
-- stack-specific lint/type/test/build/security jobs are added only after stack approval
-- desktop signing, installer/update and model-artifact signing become required release gates before distribution
-
-## 8. Recommended repository product layout after stack approval
+## 8. Approved repository product layout
 
 ```text
 apps/
-  web/                 # Next.js SaaS/app
-  desktop/             # Tauri UI shell
+  web/
+  desktop/
 services/
-  api/                 # NestJS control/business API
-  realtime-gateway/    # Go WebRTC/media gateway
-  workers/             # asynchronous meeting/provider jobs
+  api/
+  realtime-gateway/
+  workers/
 packages/
-  contracts/           # shared schemas, IDs, generated clients
-  provider-sdk/        # normalized provider adapter interfaces
-  ui/                  # shared web UI package where useful
+  contracts/
+  provider-sdk/
+  ui/
 native/
-  audio-core/          # Rust audio/inference runtime
-  windows-audio/       # C++/Windows virtual device integration
-  macos-audio/         # later native macOS integration
+  audio-core/
+  windows-audio/
+  macos-audio/
 ai/
-  research/            # Python research/evaluation
-  models/              # manifests only; large model artifacts external
-  evaluation/          # benchmark definitions/corpora metadata
+  research/
+  models/
+  evaluation/
 infra/
   terraform/
   containers/
@@ -268,9 +252,7 @@ docs/
 
 Large datasets, provider secrets and production model binaries must not be committed to Git.
 
-## 9. Initial service contracts
-
-The first architecture contracts to stabilize after stack approval:
+## 9. Initial versioned contracts
 
 1. `AudioFrame`
 2. `RealtimeSession`
@@ -287,90 +269,40 @@ The first architecture contracts to stabilize after stack approval:
 13. `AgentActionRequest`
 14. `AuditEvent`
 
-Schema compatibility must be versioned from the beginning.
+## 10. Security and data baseline
 
-## 10. Data/trust boundaries to model in PHASE-000
+Canonical structured baselines:
 
-Sensitive categories:
+- `config/security/threat-model.json`
+- `config/data/data-governance.json`
 
-- raw microphone/call audio;
-- recordings and clips;
-- transcript content;
-- participant identity and meeting metadata;
-- speaker embeddings/voice profiles;
-- provider credentials and OAuth tokens;
-- organization/member/account data;
-- billing and usage records;
-- CRM/email/calendar/document data;
-- proprietary VSN datasets/model artifacts.
+They cover raw audio, recordings, transcripts, voice biometrics, provider credentials, tenant identity, connected-app data, billing/usage, audit/security events and VSN model datasets/artifacts.
 
-Trust boundaries:
-
-1. user device ↔ VSN cloud;
-2. VSN cloud ↔ external AI provider;
-3. VSN cloud ↔ meeting/CRM/work provider;
-4. browser/web app ↔ VSN API;
-5. tenant A ↔ tenant B;
-6. general cloud services ↔ GPU/model services;
-7. development/test ↔ production;
-8. local model package ↔ signed VSN update channel.
-
-Default policy direction:
+Default direction:
 
 - minimize raw audio retention;
-- make recording retention explicit/configurable;
+- recording retention is explicit/configurable;
 - encrypt sensitive stored data;
-- keep provider secrets in a managed secret store;
-- use ephemeral tokens where providers support them;
-- maintain deletion propagation across derived artifacts;
-- no training on customer content without explicit approved policy/rights;
-- tenant permissions must propagate into search/knowledge results.
+- secrets live in managed secret/OS-secure storage;
+- use ephemeral credentials where available;
+- propagate deletion into derived artifacts/indexes where technically supported;
+- no customer-content model training by default;
+- tenant permissions propagate into knowledge/search/agentic access;
+- legal/regulatory applicability is evaluated by deployment jurisdiction/use case before production release.
 
-## 11. Technology alternatives considered
+## 11. Technology decision record
 
-### Desktop: Electron vs Tauri 2
+Alternatives considered included Electron vs Tauri, all-TypeScript backend vs split TypeScript+Go, Python production inference vs ONNX/native, dedicated vector/search cluster vs PostgreSQL+pgvector first, and direct vendor integrations vs a mandatory provider gateway.
 
-**Recommendation: Tauri 2.** Electron has a larger Node/browser ecosystem, but Tauri better fits a Rust-native audio core and smaller desktop shell. Native audio/driver work remains separate either way.
+The owner approved the recommended split architecture via **CONSENT-000002** on **2026-09-10 03:01 PKT**.
 
-### Backend: all-TypeScript vs split TypeScript + Go
+This approval authorizes implementation using the stack above. It does **not** automatically authorize paid provider consumption, proprietary model training on datasets, production credentials/cloud spend or deployment; those remain subject to their applicable provider/data/compute/release gates.
 
-**Recommendation: split plane.** Keep business/control logic in NestJS/TypeScript and realtime media/session services in Go. This isolates latency-sensitive infrastructure from the SaaS control plane.
+## 12. Reference documentation
 
-### AI deployment: Python runtime vs ONNX/native
-
-**Recommendation: Python for research; ONNX/native for production inference.** This supports device portability, hardware execution providers and lower runtime overhead.
-
-### Search: dedicated vector/search cluster vs PostgreSQL first
-
-**Recommendation: PostgreSQL + pgvector first.** Add a dedicated search system only after measured product scale requires it.
-
-### Provider integration: direct vendor calls in features vs gateway
-
-**Recommendation: gateway mandatory.** Direct vendor coupling conflicts with the owner-selected hybrid strategy.
-
-## 12. Technology approval request
-
-Before Voice AI product feature code begins, the owner must explicitly approve or modify this recommended stack:
-
-- Next.js + TypeScript for web;
-- NestJS + Fastify for control API;
-- Tauri 2 + Rust for desktop;
-- C++ for Windows virtual-audio/platform components where required;
-- Go + WebRTC for realtime cloud media;
-- Python + PyTorch for AI R&D;
-- ONNX Runtime for portable production inference where compatible;
-- PostgreSQL + pgvector + Redis + S3-compatible storage;
-- Docker + Terraform + AWS as initial cloud candidate;
-- OpenTelemetry/Sentry/Grafana-compatible observability;
-- GitHub Actions for CI/CD.
-
-Until that approval is recorded, this document is architecture/design work only and does not authorize product feature implementation, paid provider usage, proprietary model training or production deployment.
-
-## 13. Current official technology references checked during PHASE-000
-
-- Next.js official documentation: https://nextjs.org/docs
-- NestJS official documentation: https://docs.nestjs.com/
-- Tauri 2 official documentation: https://tauri.app/
-- ONNX Runtime official documentation: https://onnxruntime.ai/docs/
-- WebRTC official documentation: https://webrtc.org/getting-started/
-- Rust official installation/toolchain documentation: https://rust-lang.org/tools/install/
+- Next.js: https://nextjs.org/docs
+- NestJS: https://docs.nestjs.com/
+- Tauri 2: https://tauri.app/
+- ONNX Runtime: https://onnxruntime.ai/docs/
+- WebRTC: https://webrtc.org/getting-started/
+- Rust: https://rust-lang.org/tools/install/
