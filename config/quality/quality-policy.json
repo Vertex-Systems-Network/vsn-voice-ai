@@ -1,6 +1,6 @@
 {
   "schema_version": 3,
-  "status": "installed_pending_verification",
+  "status": "active_baseline_verified",
   "activation_scope": "child_project",
   "apply_to_template_source": false,
   "setup_flow": {
@@ -16,63 +16,21 @@
   },
   "setup_state": {
     "baseline_files_installed_by_bootstrap": true,
-    "installed_blueprints": [
-      "repository-quality.yml",
-      "technology-update-watch.yml",
-      "innovation-scout.yml",
-      "protocol-update-watch.yml",
-      "dependabot.yml"
-    ],
-    "baseline_verification": "pending_first_child_run",
+    "installed_blueprints": ["repository-quality.yml","technology-update-watch.yml","innovation-scout.yml","protocol-update-watch.yml","dependabot.yml"],
+    "baseline_verification": "verified_success",
+    "baseline_verification_evidence": "GitHub Actions run 34405876582 / repository-integrity success",
     "github_security_capability": "unknown",
-    "capability_dependent_workflows": [
-      "codeql-actions.yml",
-      "dependency-review.yml",
-      "scorecard.yml"
-    ],
+    "capability_dependent_workflows": ["codeql-actions.yml","dependency-review.yml","scorecard.yml"],
     "capability_resolution": "pending_runtime_detection",
     "stack_specific_tooling": "awaiting_technology_approval"
   },
-  "universal_required_checks": [
-    "repository-integrity"
-  ],
-  "capability_dependent_checks": [
-    "dependency-review",
-    "codeql-actions",
-    "ossf-scorecard"
-  ],
-  "formal_state_validation": {
-    "json_schema_draft": "2020-12",
-    "dependency": "jsonschema==4.26.0",
-    "base_schema_for_all_machine_config": true,
-    "specialized_schemas_for_security_critical_state": true
-  },
+  "universal_required_checks": ["repository-integrity"],
+  "capability_dependent_checks": ["dependency-review","codeql-actions","ossf-scorecard"],
+  "formal_state_validation": {"json_schema_draft":"2020-12","dependency":"jsonschema==4.26.0","base_schema_for_all_machine_config":true,"specialized_schemas_for_security_critical_state":true},
   "stack_specific_policy": {
     "generate_after_stack_approval": true,
-    "required_categories": [
-      "formatter",
-      "linter",
-      "type_or_static_analysis",
-      "unit_tests",
-      "integration_tests",
-      "build",
-      "dependency_audit",
-      "security_scanning"
-    ],
-    "additional_when_relevant": [
-      "contract_tests",
-      "e2e_tests",
-      "accessibility_tests",
-      "visual_regression_tests",
-      "performance_tests",
-      "migration_tests",
-      "container_scan",
-      "iac_scan",
-      "license_policy",
-      "coverage_gate",
-      "sbom_generation",
-      "artifact_attestation"
-    ]
+    "required_categories": ["formatter","linter","type_or_static_analysis","unit_tests","integration_tests","build","dependency_audit","security_scanning"],
+    "additional_when_relevant": ["contract_tests","e2e_tests","accessibility_tests","visual_regression_tests","performance_tests","migration_tests","container_scan","iac_scan","license_policy","coverage_gate","sbom_generation","artifact_attestation"]
   },
   "quality_gate_rules": {
     "no_merge_on_failed_required_check": true,
