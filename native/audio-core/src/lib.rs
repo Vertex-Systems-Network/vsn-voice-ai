@@ -1,5 +1,6 @@
 pub mod device;
 pub mod device_control;
+pub mod stream_control;
 
 use std::collections::VecDeque;
 use std::error::Error;
