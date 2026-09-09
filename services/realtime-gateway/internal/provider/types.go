@@ -5,26 +5,26 @@ import "errors"
 type Capability string
 
 const (
-	CapabilityNoiseCancel         Capability = "audio.noise_cancel"
-	CapabilityBackgroundVoice     Capability = "audio.background_voice_cancel"
-	CapabilityEchoReduce          Capability = "audio.echo_reduce"
-	CapabilityVAD                 Capability = "audio.vad"
-	CapabilityAccentConvert       Capability = "voice.accent_convert"
-	CapabilityIdentityPreserve    Capability = "voice.identity_preserve"
-	CapabilityDeepfakeDetect      Capability = "voice.deepfake_detect"
-	CapabilitySpeakerVerify       Capability = "voice.speaker_verify"
-	CapabilityTranslateRealtime   Capability = "speech.translate_realtime"
-	CapabilityTranscribeStream    Capability = "speech.transcribe_stream"
-	CapabilityTranscribeFinalize  Capability = "speech.transcribe_finalize"
-	CapabilitySynthesize          Capability = "speech.synthesize"
-	CapabilityMeetingCapture      Capability = "meeting.capture"
-	CapabilityMeetingTranscript   Capability = "meeting.transcript"
+	CapabilityNoiseCancel          Capability = "audio.noise_cancel"
+	CapabilityBackgroundVoice      Capability = "audio.background_voice_cancel"
+	CapabilityEchoReduce           Capability = "audio.echo_reduce"
+	CapabilityVAD                  Capability = "audio.vad"
+	CapabilityAccentConvert        Capability = "voice.accent_convert"
+	CapabilityIdentityPreserve     Capability = "voice.identity_preserve"
+	CapabilityDeepfakeDetect       Capability = "voice.deepfake_detect"
+	CapabilitySpeakerVerify        Capability = "voice.speaker_verify"
+	CapabilityTranslateRealtime    Capability = "speech.translate_realtime"
+	CapabilityTranscribeStream     Capability = "speech.transcribe_stream"
+	CapabilityTranscribeFinalize   Capability = "speech.transcribe_finalize"
+	CapabilitySynthesize           Capability = "speech.synthesize"
+	CapabilityMeetingCapture       Capability = "meeting.capture"
+	CapabilityMeetingTranscript    Capability = "meeting.transcript"
 	CapabilityMeetingIntelligence Capability = "meeting.intelligence"
-	CapabilityConversationScore   Capability = "conversation.score"
-	CapabilityKnowledgeSearch     Capability = "knowledge.search"
-	CapabilityAssistantRealtime   Capability = "assistant.realtime"
-	CapabilityAgentAction         Capability = "agent.action"
-	CapabilityTelephonyMedia      Capability = "telephony.media"
+	CapabilityConversationScore    Capability = "conversation.score"
+	CapabilityKnowledgeSearch      Capability = "knowledge.search"
+	CapabilityAssistantRealtime    Capability = "assistant.realtime"
+	CapabilityAgentAction          Capability = "agent.action"
+	CapabilityTelephonyMedia       Capability = "telephony.media"
 )
 
 type AccessMode string
@@ -46,20 +46,31 @@ const (
 	HealthOpen      HealthState = "circuit_open"
 )
 
+type RateLimitState string
+
+const (
+	RateLimitUnknown     RateLimitState = "unknown"
+	RateLimitAvailable   RateLimitState = "available"
+	RateLimitConstrained RateLimitState = "constrained"
+	RateLimitExhausted   RateLimitState = "exhausted"
+)
+
 type ProviderManifest struct {
-	ID                      string       `json:"id"`
-	Version                 string       `json:"version"`
-	AccessMode              AccessMode   `json:"access_mode"`
-	Capabilities            []Capability `json:"capabilities"`
-	Regions                 []string     `json:"regions,omitempty"`
-	Enabled                 bool         `json:"enabled"`
-	VerifiedAccess          bool         `json:"verified_access"`
-	Health                  HealthState  `json:"health"`
-	LatencyP95Milliseconds  int          `json:"latency_p95_ms,omitempty"`
-	QualityScore            int          `json:"quality_score,omitempty"`
-	PrivacyScore            int          `json:"privacy_score,omitempty"`
-	CostMicrounitsPerMinute int64        `json:"cost_microunits_per_minute,omitempty"`
-	RetentionPolicy         string       `json:"retention_policy,omitempty"`
+	ID                       string         `json:"id"`
+	Version                  string         `json:"version"`
+	AccessMode               AccessMode     `json:"access_mode"`
+	Capabilities             []Capability   `json:"capabilities"`
+	Regions                  []string       `json:"regions,omitempty"`
+	Enabled                  bool           `json:"enabled"`
+	VerifiedAccess           bool           `json:"verified_access"`
+	Health                   HealthState    `json:"health"`
+	RateLimit                RateLimitState `json:"rate_limit"`
+	LatencyP95Milliseconds   int            `json:"latency_p95_ms,omitempty"`
+	QualityScore             int            `json:"quality_score,omitempty"`
+	PrivacyScore             int            `json:"privacy_score,omitempty"`
+	CostMicrounitsPerMinute  int64          `json:"cost_microunits_per_minute,omitempty"`
+	RemainingQuotaMicrounits int64          `json:"remaining_quota_microunits,omitempty"`
+	RetentionPolicy          string         `json:"retention_policy,omitempty"`
 }
 
 func (m ProviderManifest) Supports(capability Capability) bool {
