@@ -5,7 +5,7 @@ import "errors"
 type Capability string
 
 const (
-	CapabilityNoiseCancel          Capability = "audio.noise_cancel"
+	CapabilityNoiseCancel         Capability = "audio.noise_cancel"
 	CapabilityBackgroundVoice     Capability = "audio.background_voice_cancel"
 	CapabilityEchoReduce          Capability = "audio.echo_reduce"
 	CapabilityVAD                 Capability = "audio.vad"
@@ -47,19 +47,19 @@ const (
 )
 
 type ProviderManifest struct {
-	ID                     string       `json:"id"`
-	Version                string       `json:"version"`
-	AccessMode             AccessMode   `json:"access_mode"`
-	Capabilities           []Capability `json:"capabilities"`
-	Regions                []string     `json:"regions,omitempty"`
-	Enabled                bool         `json:"enabled"`
-	VerifiedAccess         bool         `json:"verified_access"`
-	Health                 HealthState  `json:"health"`
-	LatencyP95Milliseconds int          `json:"latency_p95_ms,omitempty"`
-	QualityScore           int          `json:"quality_score,omitempty"`
-	PrivacyScore           int          `json:"privacy_score,omitempty"`
-	CostMicrounitsPerMinute int64       `json:"cost_microunits_per_minute,omitempty"`
-	RetentionPolicy        string       `json:"retention_policy,omitempty"`
+	ID                      string       `json:"id"`
+	Version                 string       `json:"version"`
+	AccessMode              AccessMode   `json:"access_mode"`
+	Capabilities            []Capability `json:"capabilities"`
+	Regions                 []string     `json:"regions,omitempty"`
+	Enabled                 bool         `json:"enabled"`
+	VerifiedAccess          bool         `json:"verified_access"`
+	Health                  HealthState  `json:"health"`
+	LatencyP95Milliseconds  int          `json:"latency_p95_ms,omitempty"`
+	QualityScore            int          `json:"quality_score,omitempty"`
+	PrivacyScore            int          `json:"privacy_score,omitempty"`
+	CostMicrounitsPerMinute int64        `json:"cost_microunits_per_minute,omitempty"`
+	RetentionPolicy         string       `json:"retention_policy,omitempty"`
 }
 
 func (m ProviderManifest) Supports(capability Capability) bool {
@@ -82,22 +82,22 @@ const (
 )
 
 type RoutingRequest struct {
-	Capability            Capability `json:"capability"`
-	Mode                  RoutingMode `json:"mode"`
-	RequiredRegion        string      `json:"required_region,omitempty"`
-	AllowedProviders      []string    `json:"allowed_providers,omitempty"`
-	DeniedProviders       []string    `json:"denied_providers,omitempty"`
-	MaxLatencyMilliseconds int        `json:"max_latency_ms,omitempty"`
-	MinQualityScore       int         `json:"min_quality_score,omitempty"`
-	RequireVerifiedAccess bool        `json:"require_verified_access"`
+	Capability             Capability  `json:"capability"`
+	Mode                   RoutingMode `json:"mode"`
+	RequiredRegion         string      `json:"required_region,omitempty"`
+	AllowedProviders       []string    `json:"allowed_providers,omitempty"`
+	DeniedProviders        []string    `json:"denied_providers,omitempty"`
+	MaxLatencyMilliseconds int         `json:"max_latency_ms,omitempty"`
+	MinQualityScore        int         `json:"min_quality_score,omitempty"`
+	RequireVerifiedAccess  bool        `json:"require_verified_access"`
 }
 
 type RoutingDecision struct {
-	Capability        Capability `json:"capability"`
+	Capability        Capability  `json:"capability"`
 	Mode              RoutingMode `json:"mode"`
-	SelectedProvider  string     `json:"selected_provider"`
-	FallbackProviders []string   `json:"fallback_providers"`
-	Reason            string     `json:"reason"`
+	SelectedProvider  string      `json:"selected_provider"`
+	FallbackProviders []string    `json:"fallback_providers"`
+	Reason            string      `json:"reason"`
 }
 
 var (
