@@ -33,6 +33,10 @@ jobs:
           go-version-file: services/realtime-gateway/go.mod
           cache: false
 
+      - name: Set up pinned Rust toolchain
+        shell: bash
+        run: rustup toolchain install 1.98.1 --profile minimal --component rustfmt --component clippy
+
       - name: Install pinned ANPOS validation dependencies
         run: python -m pip install --disable-pip-version-check -r requirements-anpos.txt
 
@@ -59,6 +63,15 @@ jobs:
       - name: Test realtime gateway
         working-directory: services/realtime-gateway
         run: go test ./...
+
+      - name: Check Rust formatting
+        run: cargo fmt --all -- --check
+
+      - name: Lint native audio core
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Test native audio core
+        run: cargo test --workspace
 
       - name: Validate product JSON Schemas
         shell: bash
@@ -107,10 +120,10 @@ jobs:
       - name: Reject trailing whitespace in machine/code files
         shell: bash
         run: |
-          if git grep -nE '[[:blank:]]+$' -- '*.py' '*.go' '*.json' '*.yml' '*.yaml'; then
+          if git grep -nE '[[:blank:]]+$' -- '*.py' '*.go' '*.rs' '*.toml' '*.json' '*.yml' '*.yaml'; then
             echo 'Trailing whitespace found in machine/code files.' >&2
             exit 1
           fi
 
       - name: Show repository integrity success
-        run: echo 'Repository integrity, conformance tests, Go tests, product JSON Schemas, workflow pinning, JSON, and YAML checks passed.'
+        run: echo 'Repository integrity, conformance tests, Go/Rust tests, product JSON Schemas, workflow pinning, JSON, and YAML checks passed.'
