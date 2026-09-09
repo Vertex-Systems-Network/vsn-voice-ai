@@ -35,19 +35,21 @@ class ReleaseAssuranceTests(unittest.TestCase):
         self.assertTrue(security["untrusted_prs_must_not_access_production_credentials"])
         self.assertTrue(security["environment_secret_separation_required"])
 
-    def test_product_implementation_remains_technology_gated_after_development_consent(self) -> None:
+    def test_development_and_technology_consents_are_recorded_before_product_implementation(self) -> None:
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
         records = {row["id"]: row for row in self.consents["requests"]}
 
         self.assertEqual(records["CONSENT-000001"]["status"], "approved")
         self.assertEqual(records["CONSENT-000001"]["type"], "development_start")
-        self.assertEqual(records["CONSENT-000002"]["status"], "pending")
+        self.assertEqual(records["CONSENT-000002"]["status"], "approved")
         self.assertEqual(records["CONSENT-000002"]["type"], "technology_stack_approval")
+        self.assertIsNotNone(records["CONSENT-000002"]["nonce_consumed_at"])
+        self.assertEqual(records["CONSENT-000002"]["decision_request_hash"], records["CONSENT-000002"]["request_hash"])
 
         self.assertIn("Development authorization:** `APPROVED — CONSENT-000001", readme)
-        self.assertIn("CONSENT-000002", readme)
-        self.assertIn("TECHNOLOGY STACK APPROVAL PENDING", readme)
-        self.assertIn("0 / 25 product modules implemented", readme)
+        self.assertIn("Technology stack:** `APPROVED — CONSENT-000002", readme)
+        self.assertIn("0 / 25 modules implemented", readme)
+        self.assertNotIn("TECHNOLOGY STACK APPROVAL PENDING", readme)
         self.assertNotIn("Development authorization:** `LOCKED — OWNER CONSENT REQUIRED", readme)
 
 
