@@ -11,6 +11,7 @@ class ReleaseAssuranceTests(unittest.TestCase):
     def setUp(self) -> None:
         self.release = json.loads((ROOT / "config/release/release-policy.json").read_text(encoding="utf-8"))
         self.instance = json.loads((ROOT / "config/protocol/instance.json").read_text(encoding="utf-8"))
+        self.consents = json.loads((ROOT / "config/consent/consent-requests.json").read_text(encoding="utf-8"))
 
     def test_child_repository_identity_is_not_template_source(self) -> None:
         self.assertEqual(self.instance["instance_status"], "active_project")
@@ -34,10 +35,20 @@ class ReleaseAssuranceTests(unittest.TestCase):
         self.assertTrue(security["untrusted_prs_must_not_access_production_credentials"])
         self.assertTrue(security["environment_secret_separation_required"])
 
-    def test_product_implementation_remains_consent_gated(self) -> None:
+    def test_product_implementation_remains_technology_gated_after_development_consent(self) -> None:
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
-        self.assertIn("OWNER CONSENT REQUIRED", readme)
-        self.assertIn("Approve Technology Stack", readme)
+        records = {row["id"]: row for row in self.consents["requests"]}
+
+        self.assertEqual(records["CONSENT-000001"]["status"], "approved")
+        self.assertEqual(records["CONSENT-000001"]["type"], "development_start")
+        self.assertEqual(records["CONSENT-000002"]["status"], "pending")
+        self.assertEqual(records["CONSENT-000002"]["type"], "technology_stack_approval")
+
+        self.assertIn("Development authorization:** `APPROVED — CONSENT-000001", readme)
+        self.assertIn("CONSENT-000002", readme)
+        self.assertIn("TECHNOLOGY STACK APPROVAL PENDING", readme)
+        self.assertIn("0 / 25 product modules implemented", readme)
+        self.assertNotIn("Development authorization:** `LOCKED — OWNER CONSENT REQUIRED", readme)
 
 
 if __name__ == "__main__":
