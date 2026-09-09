@@ -25,8 +25,6 @@
 /CONTROL-PLANE-SECURITY.md @wpessential
 /PRODUCTION-ASSURANCE.md @wpessential
 /DESIGN-DATA-OPERATIONS.md @wpessential
-/COMMERCIAL-LICENSING.md @wpessential
-/commercial-service/ @wpessential
 /config/ai/agent-catalog.json @wpessential
 /config/ai/memory-provenance.json @wpessential
 /config/coordination/ @wpessential
@@ -44,7 +42,6 @@
 /config/design/ @wpessential
 /config/testing/ @wpessential
 /config/traceability/ @wpessential
-/config/licensing/ @wpessential
 /schemas/ @wpessential
 /scripts/ @wpessential
 /tests/ @wpessential
