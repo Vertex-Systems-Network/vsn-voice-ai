@@ -1,0 +1,231 @@
+{
+  "schema_version": 2,
+  "status": "template_blueprint",
+  "activation_scope": "commercial_distribution_only",
+  "purpose": "Machine-readable commercial feature truth for ANPOS. This catalog separates implemented protocol/runtime capabilities from partial, planned, capability-dependent, externally unlaunched, and contract-only promises so packages cannot be marketed as operational without evidence.",
+  "availability_states": [
+    "implemented_protocol",
+    "implemented_commercial_runtime",
+    "implemented_source_pending_external_activation",
+    "partial_implementation",
+    "capability_dependent",
+    "operator_configuration_required",
+    "planned_not_implemented",
+    "external_contract_required"
+  ],
+  "commercial_readiness_rule": "An entitlement or product capability may exist in source before it is operationally launched, but it must not be represented as launch-ready customer value until its availability state and evidence support that claim. External activation/E2E, planned, partial, capability-dependent, or contract-only features require explicit qualification at sale time.",
+  "entitlements": [
+    {
+      "id": "private_template_access",
+      "availability": "implemented_commercial_runtime",
+      "commercial_differentiator_status": "implemented_with_immutable_verified_release_binding",
+      "evidence": [
+        "commercial-service/app/api/v1/template/archive/route.ts",
+        "commercial-service/lib/releases.ts",
+        "commercial-service/lib/github.ts",
+        "scripts/export_vendor_repositories.py",
+        "config/licensing/vendor-source-boundary.json"
+      ],
+      "notes": "Archive-first private-template delivery is implemented and is bound to an operator-configured exact vendor-repository commit. The service verifies the deterministic template EXPORT-MANIFEST before redirecting a licensed customer to that immutable release. External private-repository setup and production E2E are still required before sale activation."
+    },
+    {
+      "id": "protocol_update_channel",
+      "availability": "implemented_commercial_runtime",
+      "commercial_differentiator_status": "implemented_requires_external_private_vendor_and_production_e2e",
+      "evidence": [
+        "commercial-service/app/api/v1/releases/current/route.ts",
+        "commercial-service/lib/releases.ts",
+        "commercial-service/lib/github.ts",
+        "commercial-service/tests/release-channel.test.ts",
+        "blueprints/github/workflows/protocol-update-watch.yml",
+        "CONTINUOUS-IMPROVEMENT.md"
+      ],
+      "notes": "Paid accounts with protocol_update_channel can request the current certified release metadata after server-side entitlement reconciliation. Release metadata is derived from the deterministic private-template EXPORT-MANIFEST at an exact 40-character vendor commit SHA; mutable branch refs are rejected. Actual sale activation still depends on verified private vendor repositories, production deployment, Marketplace configuration and E2E evidence."
+    },
+    {
+      "id": "premium_blueprints",
+      "availability": "planned_not_implemented",
+      "commercial_differentiator_status": "contract_and_distribution_runtime_source_implemented_payload_not_implemented",
+      "evidence": [
+        "config/licensing/product-catalog.json",
+        "config/licensing/premium-pack-contract.json",
+        "schemas/premium-pack-manifest.schema.json",
+        "scripts/verify_premium_pack.py",
+        "docs/commercial/premium-pack-boundary.md",
+        "commercial-service/lib/premium-releases.ts",
+        "commercial-service/lib/github.ts",
+        "commercial-service/app/api/v1/premium/releases/current/route.ts",
+        "commercial-service/app/api/v1/premium/archive/route.ts",
+        "commercial-service/tests/premium-release-channel.test.ts",
+        "commercial-service/tests/premium-config.test.ts"
+      ],
+      "notes": "Canonical source defines the private Premium Pack manifest/verifier and entitlement-gated immutable release/archive plumbing. Higher paid plan activation fails closed without a distinct private premium repository, exact commit SHA, and offline-verifier manifest/content-set digests. No real private premium repository or premium blueprint payload is evidenced and no production premium E2E has passed, so this entitlement remains planned_not_implemented and must not be marketed as active customer value."
+    },
+    {
+      "id": "premium_provider_adapters",
+      "availability": "planned_not_implemented",
+      "commercial_differentiator_status": "contract_and_distribution_runtime_source_implemented_payload_not_implemented",
+      "evidence": [
+        "config/licensing/product-catalog.json",
+        "config/licensing/premium-pack-contract.json",
+        "schemas/premium-pack-manifest.schema.json",
+        "scripts/verify_premium_pack.py",
+        "docs/commercial/premium-pack-boundary.md",
+        "commercial-service/lib/premium-releases.ts",
+        "commercial-service/lib/github.ts",
+        "commercial-service/app/api/v1/premium/releases/current/route.ts",
+        "commercial-service/app/api/v1/premium/archive/route.ts",
+        "commercial-service/tests/premium-release-channel.test.ts",
+        "commercial-service/tests/premium-config.test.ts"
+      ],
+      "notes": "Canonical source defines provider-specific premium adapter verification plus entitlement-gated immutable premium distribution, including provider/API evidence, capability mapping, no-secret provenance and no partnership/certification claim by default. No real private premium provider adapter payload or live provider/production E2E is evidenced, so this entitlement remains planned_not_implemented."
+    },
+    {
+      "id": "hosted_orchestrator_when_offered",
+      "availability": "planned_not_implemented",
+      "commercial_differentiator_status": "blocked_until_hosted_service_exists",
+      "evidence": ["ORCHESTRATOR.md", "MULTI-AGENT-ORCHESTRATION.md", "config/licensing/product-catalog.json"],
+      "notes": "Repository-side orchestration protocol exists. No ANPOS-operated hosted orchestrator service is currently implemented or launch-certified."
+    },
+    {
+      "id": "organization_team_features",
+      "availability": "partial_implementation",
+      "commercial_differentiator_status": "source_admin_experience_implemented_production_and_commercial_dependencies_incomplete",
+      "evidence": [
+        "commercial-service/app/api/v1/seats/route.ts",
+        "commercial-service/app/api/v1/team/summary/route.ts",
+        "commercial-service/app/team/TeamClient.tsx",
+        "commercial-service/lib/plans.ts",
+        "commercial-service/lib/seats.ts",
+        "commercial-service/lib/team-dashboard.ts",
+        "commercial-service/lib/team-installation.ts",
+        "commercial-service/tests/team-dashboard.test.ts",
+        "docs/commercial/team-administration.md"
+      ],
+      "notes": "Organization seat assignment/revocation, active-member verification, capacity enforcement, principal-bound entitlements, authenticated organization-admin summary, seat usage/capacity display, and customer-facing assign/revoke UI are implemented in source. Availability remains partial: no real Team Marketplace plan/pricing is activated, production organization E2E is not verified, Marketplace purchase/plan-change/cancellation UX evidence is incomplete, Pro premium dependencies remain unimplemented because real premium payload/provider assets and production E2E are still absent, and commercial support/SLA is still an external operator contract."
+    },
+    {
+      "id": "commercial_support",
+      "availability": "external_contract_required",
+      "commercial_differentiator_status": "operator_service_commitment",
+      "evidence": [
+        "COMMERCIAL-LICENSING.md",
+        "blueprints/commercial/legal-pack.template.md",
+        "config/licensing/customer-onboarding-support.json",
+        "docs/commercial/customer-onboarding-support.md"
+      ],
+      "notes": "Developer self-service onboarding documentation does not create a staffed support entitlement. Team/Enterprise commercial support scope, channels, hours, response targets, exclusions, privacy handling and any SLA remain operator-controlled contractual/operational commitments and are not activated by repository code."
+    },
+    {
+      "id": "hosted_or_self_hosted_orchestrator_when_offered",
+      "availability": "planned_not_implemented",
+      "commercial_differentiator_status": "blocked_until_productized",
+      "evidence": ["ORCHESTRATOR.md", "MULTI-AGENT-ORCHESTRATION.md", "config/licensing/product-catalog.json"],
+      "notes": "The orchestration protocol is present, but neither a vendor-hosted service nor an enterprise self-hosting distribution/support package is currently productized."
+    },
+    {
+      "id": "enterprise_policy_controls",
+      "availability": "partial_implementation",
+      "commercial_differentiator_status": "core_policy_foundation_exists_enterprise_surface_not_productized",
+      "evidence": [
+        "config/security/control-plane-policy.json",
+        "config/github/ruleset-policy.json",
+        "config/data/data-governance.json",
+        "config/release/release-policy.json",
+        "config/operations/operations-policy.json"
+      ],
+      "notes": "ANPOS has strong policy foundations, but an enterprise-only policy pack, administration surface, organization rollout model, and contractual support boundary are not yet separately implemented."
+    },
+    {
+      "id": "priority_support_or_sla_when_contracted",
+      "availability": "external_contract_required",
+      "commercial_differentiator_status": "operator_contract_only",
+      "evidence": [
+        "COMMERCIAL-LICENSING.md",
+        "blueprints/commercial/legal-pack.template.md",
+        "config/licensing/customer-onboarding-support.json"
+      ],
+      "notes": "Priority support or SLA exists only when the operator deliberately offers, operationally supports, approves and contracts it. Canonical source contains no numeric SLA commitment."
+    }
+  ],
+  "core_product_capabilities": [
+    {
+      "id": "project_research_and_planning",
+      "availability": "implemented_protocol",
+      "evidence": ["START-HERE.md", "PROJECT-INITIALIZATION.md", "DEVELOPMENT-LIFECYCLE.md"]
+    },
+    {
+      "id": "selectable_project_management",
+      "availability": "capability_dependent",
+      "evidence": ["config/integrations/project-management.json", "PROJECT-MANAGEMENT.md"]
+    },
+    {
+      "id": "selectable_multi_agent_execution",
+      "availability": "capability_dependent",
+      "evidence": ["config/ai/agent-catalog.json", "MULTI-AGENT-ORCHESTRATION.md", "ORCHESTRATOR.md", "SUPERVISOR.md"]
+    },
+    {
+      "id": "provider_compatibility_contracts",
+      "availability": "capability_dependent",
+      "evidence": [
+        "config/licensing/provider-compatibility-matrix.json",
+        "config/integrations/project-management.json",
+        "config/integrations/linear-sync.json",
+        "config/integrations/sync-authority.json",
+        "config/ai/agent-catalog.json",
+        "tests/test_provider_compatibility_matrix.py"
+      ],
+      "notes": "Standard PM/AI provider compatibility and host-dependent attachment contracts are core ANPOS behavior, not a paid entitlement. The compatibility matrix distinguishes Linear's dedicated synchronization blueprint from generic contract-only providers and keeps every live connection/provider-specific execution claim runtime-evidence-dependent. Dedicated premium adapters may be sold only when separately implemented, versioned, tested, and evidenced."
+    },
+    {
+      "id": "developer_self_service_onboarding",
+      "availability": "implemented_source_pending_external_activation",
+      "evidence": [
+        "config/licensing/customer-onboarding-support.json",
+        "docs/commercial/customer-onboarding-support.md",
+        "tests/test_customer_onboarding_support.py",
+        "blueprints/commercial/service-api-contract.json"
+      ],
+      "notes": "Source now defines a self-service Developer onboarding journey for entitlement refresh, certified release discovery, immutable archive delivery, provenance and runtime-dependent provider troubleshooting. The guide is not live onboarding evidence until the paid Marketplace and production flows exist. It deliberately creates no staffed support/SLA commitment."
+    },
+    {
+      "id": "quality_and_security_governance",
+      "availability": "implemented_protocol",
+      "evidence": ["config/quality/quality-policy.json", "config/security/control-plane-policy.json", "blueprints/github/workflows/repository-quality.yml"]
+    },
+    {
+      "id": "design_assurance",
+      "availability": "implemented_protocol",
+      "evidence": ["config/design/design-assurance.json", "DESIGN-DATA-OPERATIONS.md"]
+    },
+    {
+      "id": "release_and_operations_governance",
+      "availability": "implemented_protocol",
+      "evidence": ["config/release/release-policy.json", "config/operations/operations-policy.json", "PRODUCTION-ASSURANCE.md"]
+    },
+    {
+      "id": "continuous_improvement",
+      "availability": "implemented_protocol",
+      "evidence": ["CONTINUOUS-IMPROVEMENT.md", "config/maintenance/innovation-scout.json", "config/maintenance/technology-watch.json"]
+    },
+    {
+      "id": "community_repository_readiness_audit",
+      "availability": "implemented_source_pending_external_activation",
+      "evidence": [
+        "commercial-service/app/setup/github/route.ts",
+        "commercial-service/app/api/auth/github/callback/route.ts",
+        "commercial-service/app/api/v1/audit/repositories/route.ts",
+        "commercial-service/app/api/v1/audit/repository/route.ts",
+        "commercial-service/lib/repository-audit.ts",
+        "commercial-service/lib/session.ts",
+        "commercial-service/app/community/CommunityClient.tsx"
+      ],
+      "notes": "Community source implements Marketplace Setup -> PKCE GitHub App OAuth -> installation-bound repository discovery -> read-only ten-control-file audit with encrypted short-lived browser sessions. It remains externally unlaunched until a real Marketplace App/configuration passes production E2E and operator activation."
+    },
+    {
+      "id": "commercial_entitlement_and_distribution_runtime",
+      "availability": "implemented_commercial_runtime",
+      "evidence": ["commercial-service/README.md", "COMMERCIAL-LICENSING.md"]
+    }
+  ]
+}

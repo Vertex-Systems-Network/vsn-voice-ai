@@ -1,0 +1,37 @@
+# ANPOS Python tooling
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+.venv/
+venv/
+
+# Commercial service / Node tooling
+commercial-service/node_modules/
+commercial-service/.next/
+commercial-service/.vercel/
+commercial-service/coverage/
+commercial-service/*.tsbuildinfo
+
+# Local environment / secrets
+.env
+.env.*
+!.env.example
+!.env.sample
+
+# OS / editor residue
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Temporary / merge / backup residue
+*.tmp
+*.temp
+*.bak
+*.orig

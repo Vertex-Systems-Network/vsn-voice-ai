@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "status": "operator_configuration_required",
+  "role": "vendor_distribution_app",
+  "purpose": "Blueprint for the private/vendor-only GitHub App used to access the ANPOS private commercial template. This App is not the Marketplace listing App and this file contains no credentials.",
+  "operator_required": {
+    "app_name": null,
+    "publisher_organization": null,
+    "vendor_installation_id": null,
+    "private_template_repository": null
+  },
+  "required_defaults": {
+    "public": false,
+    "request_oauth_on_install": false,
+    "webhook_active": false
+  },
+  "event_subscriptions": [],
+  "minimum_permissions_by_capability": {
+    "archive_first_delivery": {
+      "contents": "read",
+      "metadata": "read"
+    },
+    "optional_collaborator_provisioning": {
+      "contents": "read",
+      "metadata": "read",
+      "administration": "write"
+    }
+  },
+  "security_requirements": [
+    "This App must be distinct from the public/customer-facing Marketplace GitHub App.",
+    "Generate its private key only in GitHub and store it in an approved secret manager; never commit it.",
+    "Install it only on the vendor-controlled private commercial-template repository.",
+    "Use archive-first delivery with Contents: read as the default mode.",
+    "Do not enable Administration: write unless collaborator provisioning is explicitly enabled.",
+    "Do not subscribe this vendor-only App to Marketplace purchase events.",
+    "Store final App/installation/repository identifiers only in deployed vendor runtime configuration."
+  ]
+}

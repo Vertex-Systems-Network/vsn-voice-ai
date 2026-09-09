@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "status": "initial_launch_scope_defined_external_gates_pending",
+  "strategy": "community_free_then_developer_paid",
+  "initial_launch": {
+    "community": {
+      "commercial_state": "free_first_launch_candidate",
+      "price_usd": 0,
+      "requires_live_marketplace_e2e": true
+    },
+    "developer": {
+      "commercial_state": "first_paid_launch_candidate_after_paid_eligibility",
+      "requires_paid_marketplace_eligibility": true,
+      "requires_operator_approved_price_and_plan_id": true,
+      "requires_verified_private_release_delivery": true,
+      "requires_legal_sale_approval": true
+    }
+  },
+  "deferred_tiers": {
+    "pro": {
+      "commercial_state": "deferred_not_initial_sale_scope",
+      "reason": "Real private premium payload repository and production premium E2E are not yet verified."
+    },
+    "team": {
+      "commercial_state": "deferred_not_initial_sale_scope",
+      "reason": "Real Marketplace billing lifecycle, support boundary and organization production E2E are not yet verified."
+    },
+    "enterprise": {
+      "commercial_state": "external_contract_only_until_productized",
+      "reason": "Enterprise-only policy/control payload, procurement evidence and contracted support/deployment model are not yet productized."
+    }
+  },
+  "launch_gate": {
+    "community_launch_authorized": false,
+    "developer_paid_sale_authorized": false,
+    "pro_sale_authorized": false,
+    "team_sale_authorized": false,
+    "enterprise_self_serve_sale_authorized": false,
+    "rule": "Initial commercial launch does not depend on unfinished higher tiers. Launch Community only after its real free Marketplace gates pass; activate Developer only after current paid eligibility, legal, pricing, private-delivery and production E2E gates pass. Keep Pro, Team and Enterprise out of the initial sale scope until their own evidence is complete."
+  }
+}

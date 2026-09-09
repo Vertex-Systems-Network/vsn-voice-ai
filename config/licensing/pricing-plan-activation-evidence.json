@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "status": "pending_operator_pricing_and_marketplace_plan_approval",
+  "scope": "paid_plan_activation",
+  "paid_eligibility_authority": "config/licensing/paid-marketplace-eligibility.json",
+  "plans": {
+    "developer": {"marketplace_plan_id": null, "monthly_price_usd": null, "annual_price_usd": null, "operator_approved": false},
+    "pro": {"marketplace_plan_id": null, "monthly_price_usd": null, "annual_price_usd": null, "operator_approved": false},
+    "team": {"marketplace_plan_id": null, "monthly_price_usd": null, "annual_price_usd": null, "operator_approved": false},
+    "enterprise": {"marketplace_plan_id": null, "monthly_price_usd": null, "annual_price_usd": null, "operator_approved": false}
+  },
+  "activation_gate": {
+    "pricing_and_plan_ids_complete": false,
+    "paid_listing_eligible": false,
+    "paid_activation_authorized": false,
+    "rule": "Do not activate paid plans until current GitHub Marketplace eligibility is independently satisfied and every live price and Marketplace plan ID is explicitly approved and recorded by the operator."
+  }
+}

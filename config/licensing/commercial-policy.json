@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "status": "template_blueprint",
+  "activation_scope": "commercial_distribution_only",
+  "enabled": false,
+  "preferred_distribution_provider": "github_marketplace",
+  "distribution_modes": [
+    {
+      "id": "github_marketplace",
+      "recommended": true,
+      "billing_authority": "github_marketplace",
+      "identity_authority": "github_account_id",
+      "requires_separate_commercial_service": true
+    },
+    {
+      "id": "github_sponsors_private_repo",
+      "recommended": false,
+      "billing_authority": "github_sponsors",
+      "identity_authority": "github_account",
+      "requires_capability_limit_review": true
+    },
+    {
+      "id": "external_checkout_private_repo",
+      "recommended": false,
+      "billing_authority": "operator_configured_payment_provider",
+      "identity_authority": "verified_github_account_binding",
+      "requires_separate_commercial_service": true
+    }
+  ],
+  "authority": {
+    "repository_entitlement_cache_is_authority": false,
+    "server_side_entitlement_ledger_required": true,
+    "billing_provider_reconciliation_required_on_ambiguity": true,
+    "github_numeric_account_id_is_canonical_when_github_is_identity_provider": true,
+    "display_login_is_not_stable_identity": true
+  },
+  "entitlement_security": {
+    "asymmetric_signed_entitlements_required_for_portable_claims": true,
+    "private_signing_key_forbidden_in_repository": true,
+    "webhook_secret_forbidden_in_repository": true,
+    "raw_payment_data_forbidden_in_repository": true,
+    "repository_cache_may_not_self_grant_entitlements": true,
+    "key_rotation_and_revocation_process_required": true
+  },
+  "non_destructive_expiry": {
+    "existing_generated_project_must_continue": true,
+    "remote_repository_deletion_for_license_expiry_forbidden": true,
+    "intentional_build_breakage_for_license_expiry_forbidden": true,
+    "code_or_data_encryption_kill_switch_forbidden": true,
+    "future_premium_updates_may_be_gated": true,
+    "future_premium_provisioning_may_be_gated": true,
+    "hosted_premium_services_may_be_gated": true,
+    "support_or_sla_may_be_gated": true
+  },
+  "privacy": {
+    "data_minimization_required": true,
+    "payment_card_storage_expected": false,
+    "billing_or_private_customer_data_in_ai_memory_forbidden_by_default": true,
+    "cancelled_trial_private_customer_data_max_retention_days": 30,
+    "applicable_legal_accounting_retention_may_require_separate_documented_exception": true
+  },
+  "launch_gates": [
+    "commercial_repository_visibility_and_template_strategy_verified",
+    "github_app_or_distribution_identity_configured",
+    "paid_marketplace_verified_publisher_requirements_satisfied_when_applicable",
+    "webhook_signature_and_replay_protection_verified",
+    "entitlement_ledger_backup_and_recovery_verified",
+    "signing_key_storage_rotation_and_revocation_verified",
+    "plan_and_seat_mapping_verified",
+    "provisioning_and_deprovisioning_behavior_verified",
+    "privacy_retention_deletion_process_verified",
+    "support_refund_cancellation_process_defined",
+    "operator_supplied_commercial_license_terms_reviewed",
+    "billing_entitlement_key_compromise_incident_response_defined"
+  ],
+  "legal_boundary": {
+    "anpos_protocol_is_not_legal_advice": true,
+    "operator_supplies_binding_license_eula_terms": true,
+    "qualified_legal_review_recommended_before_sale": true
+  }
+}

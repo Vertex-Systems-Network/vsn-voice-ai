@@ -1,0 +1,152 @@
+{
+  "schema_version": 1,
+  "status": "template_blueprint",
+  "activation_scope": "core_protocol_truth_only",
+  "purpose": "Machine-readable compatibility truth for ANPOS project-management providers and development-AI hosts. This matrix prevents runtime-discovery contracts from being marketed as bundled, certified, premium, or vendor-operated integrations without evidence.",
+  "commercial_entitlement": false,
+  "bundled_integration_claim": false,
+  "vendor_partnership_or_certification_claim": false,
+  "source_template_connection_state": "unconnected",
+  "authority": {
+    "project_management_provider_catalog": "config/integrations/project-management.json",
+    "development_ai_candidate_catalog": "config/ai/agent-catalog.json",
+    "sync_authority": "config/integrations/sync-authority.json",
+    "feature_truth": "config/licensing/feature-catalog.json"
+  },
+  "support_levels": {
+    "dedicated_sync_blueprint_runtime_required": "A provider-specific ANPOS synchronization blueprint exists, but live connection, authorization, provider behavior, and operation support still require runtime evidence. This is not a bundled hosted adapter.",
+    "generic_contract_runtime_discovery_only": "Only the provider-agnostic adapter contract and declared connection modes exist in canonical source. No provider-specific ANPOS execution adapter is shipped.",
+    "host_capability_discovery_only": "The development-AI host may be selected only when the current runtime can actually invoke, attach, or hand off to it and identity/permissions are verified."
+  },
+  "project_management": {
+    "canonical_code_system": "github",
+    "generic_adapter_contract_source": "config/integrations/project-management.json",
+    "generic_adapter_contract_status": "contract_only_until_runtime_verified",
+    "providers": [
+      {
+        "id": "linear",
+        "name": "Linear",
+        "connection_modes": ["host_connector", "oauth", "mcp", "authenticated_api"],
+        "availability": "discover_at_runtime",
+        "support_level": "dedicated_sync_blueprint_runtime_required",
+        "dedicated_blueprint": "config/integrations/linear-sync.json",
+        "provider_specific_execution_adapter_shipped": false,
+        "live_connection_bundled": false
+      },
+      {
+        "id": "github_projects",
+        "name": "GitHub Projects",
+        "connection_modes": ["host_connector", "git_native", "authenticated_api", "mcp"],
+        "availability": "discover_at_runtime",
+        "support_level": "generic_contract_runtime_discovery_only",
+        "dedicated_blueprint": null,
+        "provider_specific_execution_adapter_shipped": false,
+        "live_connection_bundled": false
+      },
+      {
+        "id": "jira",
+        "name": "Jira / Atlassian",
+        "connection_modes": ["host_connector", "oauth", "mcp", "authenticated_api"],
+        "availability": "discover_at_runtime",
+        "support_level": "generic_contract_runtime_discovery_only",
+        "dedicated_blueprint": null,
+        "provider_specific_execution_adapter_shipped": false,
+        "live_connection_bundled": false
+      },
+      {
+        "id": "clickup",
+        "name": "ClickUp",
+        "connection_modes": ["host_connector", "oauth", "mcp", "authenticated_api"],
+        "availability": "discover_at_runtime",
+        "support_level": "generic_contract_runtime_discovery_only",
+        "dedicated_blueprint": null,
+        "provider_specific_execution_adapter_shipped": false,
+        "live_connection_bundled": false
+      },
+      {
+        "id": "gitlab",
+        "name": "GitLab Issues / Boards",
+        "connection_modes": ["oauth", "mcp", "authenticated_api", "git_native"],
+        "availability": "discover_at_runtime",
+        "support_level": "generic_contract_runtime_discovery_only",
+        "dedicated_blueprint": null,
+        "provider_specific_execution_adapter_shipped": false,
+        "live_connection_bundled": false
+      },
+      {
+        "id": "azure_devops",
+        "name": "Azure DevOps Boards",
+        "connection_modes": ["oauth", "mcp", "authenticated_api"],
+        "availability": "discover_at_runtime",
+        "support_level": "generic_contract_runtime_discovery_only",
+        "dedicated_blueprint": null,
+        "provider_specific_execution_adapter_shipped": false,
+        "live_connection_bundled": false
+      },
+      {
+        "id": "plane",
+        "name": "Plane",
+        "connection_modes": ["mcp", "authenticated_api"],
+        "availability": "discover_at_runtime",
+        "support_level": "generic_contract_runtime_discovery_only",
+        "dedicated_blueprint": null,
+        "provider_specific_execution_adapter_shipped": false,
+        "live_connection_bundled": false
+      },
+      {
+        "id": "asana",
+        "name": "Asana",
+        "connection_modes": ["host_connector", "oauth", "mcp", "authenticated_api"],
+        "availability": "discover_at_runtime",
+        "support_level": "generic_contract_runtime_discovery_only",
+        "dedicated_blueprint": null,
+        "provider_specific_execution_adapter_shipped": false,
+        "live_connection_bundled": false
+      },
+      {
+        "id": "monday",
+        "name": "monday.com",
+        "connection_modes": ["oauth", "mcp", "authenticated_api"],
+        "availability": "discover_at_runtime",
+        "support_level": "generic_contract_runtime_discovery_only",
+        "dedicated_blueprint": null,
+        "provider_specific_execution_adapter_shipped": false,
+        "live_connection_bundled": false
+      },
+      {
+        "id": "notion",
+        "name": "Notion",
+        "connection_modes": ["host_connector", "oauth", "mcp", "authenticated_api"],
+        "availability": "discover_at_runtime",
+        "support_level": "generic_contract_runtime_discovery_only",
+        "dedicated_blueprint": null,
+        "provider_specific_execution_adapter_shipped": false,
+        "live_connection_bundled": false
+      }
+    ]
+  },
+  "development_ai": {
+    "selection_source": "config/ai/agent-catalog.json",
+    "candidates": [
+      "Codex / ChatGPT",
+      "Claude Code",
+      "GitHub Copilot",
+      "Gemini",
+      "Cursor",
+      "Windsurf",
+      "Other verified compatible agent"
+    ],
+    "support_level": "host_capability_discovery_only",
+    "provider_specific_execution_adapter_shipped": false,
+    "selection_is_authorization": false,
+    "runtime_identity_verification_required": true,
+    "least_privilege_permission_profile_required": true
+  },
+  "runtime_rules": [
+    "A provider or AI host is selectable only when a real current-host connection, invocation, attachment, handoff, OAuth, MCP, authenticated API, or git-native path exists as declared by its source catalog.",
+    "Canonical source availability never proves customer runtime connectivity, provider authorization, account ownership, vendor partnership, certification, or SLA.",
+    "Generic adapter contract operations are interface requirements, not evidence that every provider-specific operation is implemented.",
+    "Repository state remains canonical for code, branch, pull/merge request, checks, merge state, release evidence, and work-unit completion unless an explicit authority policy says otherwise.",
+    "Provider-specific premium adapters may become commercial entitlements only after separately implemented, versioned, tested, and evidenced assets exist."
+  ]
+}

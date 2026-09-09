@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "status": "pending_external_enforcement",
+  "scope": "canonical_source_repository",
+  "repository": "Vertex-Systems-Network/ai-native-project-operating-system",
+  "default_branch": "main",
+  "required_source_certification": {
+    "workflow": "ANPOS Source Continuous Certification",
+    "job": "source-certification",
+    "expected_check_context": "ANPOS Source Continuous Certification / source-certification",
+    "must_pass_before_merge": true
+  },
+  "required_server_side_controls": {
+    "pull_request_required": true,
+    "required_status_check": true,
+    "block_force_push": true,
+    "block_branch_deletion": true,
+    "require_conversation_resolution": true
+  },
+  "external_evidence": {
+    "branch_protection_verified": false,
+    "ruleset_verified": false,
+    "required_check_enforced_server_side": false,
+    "verified_at": null,
+    "verified_by": null,
+    "evidence_reference": null
+  },
+  "launch_gate": {
+    "source_governance_enforced": false,
+    "rule": "Do not claim canonical source governance is server-side enforced until authenticated GitHub evidence proves the required controls are active on main. Repository policy documents and passing CI alone are not enforcement evidence."
+  }
+}

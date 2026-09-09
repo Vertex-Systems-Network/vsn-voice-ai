@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "status": "pending_verified_private_vendor_repositories",
+  "scope": "private_vendor_repository_bootstrap_and_handoff",
+  "repositories": {
+    "commercial_service": {
+      "expected_full_name": "Vertex-Systems-Network/anpos-commercial-service",
+      "existence_verified": false,
+      "private_visibility_verified": false,
+      "default_branch": null,
+      "head_revision": null,
+      "head_tree": null,
+      "handoff_receipt_sha256": null
+    },
+    "customer_template": {
+      "expected_full_name": "Vertex-Systems-Network/anpos-commercial-template",
+      "existence_verified": false,
+      "private_visibility_verified": false,
+      "default_branch": null,
+      "head_revision": null,
+      "head_tree": null,
+      "handoff_receipt_sha256": null
+    }
+  },
+  "bootstrap_gate": {
+    "both_repositories_verified_private": false,
+    "exact_handoff_verified": false,
+    "vendor_source_of_record_ready": false,
+    "rule": "Do not use or describe a private vendor repository as source of record until its private existence, exact exported content, immutable head identity and deterministic handoff receipt are independently verified."
+  }
+}

@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "status": "operator_verification_required",
+  "activation_scope": "vendor_marketplace_launch_only",
+  "source_checked_at": "2026-09-04",
+  "source_reverified_at": "2026-09-06",
+  "purpose": "Machine-readable baseline of GitHub Marketplace requirements that must be re-verified against official GitHub documentation before ANPOS Marketplace publication or paid conversion. This file is not launch authority and contains no pricing, credentials, customer data, or Marketplace plan IDs.",
+  "official_sources": [
+    "https://docs.github.com/en/apps/github-marketplace/creating-apps-for-github-marketplace/requirements-for-listing-an-app",
+    "https://docs.github.com/en/apps/creating-github-apps/registering-a-github-app/making-a-github-app-public-or-private",
+    "https://docs.github.com/en/apps/github-marketplace/github-marketplace-overview/applying-for-publisher-verification-for-your-organization",
+    "https://docs.github.com/en/apps/github-marketplace/listing-an-app-on-github-marketplace/setting-pricing-plans-for-your-listing",
+    "https://docs.github.com/en/apps/github-marketplace/selling-your-app-on-github-marketplace/pricing-plans-for-github-marketplace-apps",
+    "https://docs.github.com/en/apps/github-marketplace/selling-your-app-on-github-marketplace/billing-customers",
+    "https://docs.github.com/en/apps/github-marketplace/using-the-github-marketplace-api-in-your-app"
+  ],
+  "marketplace_github_app": {
+    "must_be_public_installable_by_other_accounts": true,
+    "must_be_separate_from_vendor_distribution_app": true,
+    "must_not_require_vendor_template_administration_for_customer_installations": true
+  },
+  "paid_github_app": {
+    "must_be_organization_owned": true,
+    "listing_submitter_must_be_organization_owner": true,
+    "verified_publisher_required": true,
+    "verified_publisher_prerequisites": [
+      "verified_organization_domain",
+      "confirmed_contact_email",
+      "organization_two_factor_authentication_required"
+    ],
+    "minimum_installations_before_paid_listing": 100,
+    "financial_onboarding_required": true
+  },
+  "listing": {
+    "required": [
+      "valid_publisher_contact_information",
+      "relevant_product_description",
+      "pricing_plan",
+      "valid_privacy_policy_url",
+      "support_url_or_support_email",
+      "working_relevant_additional_links",
+      "integration_value_beyond_authentication",
+      "github_app_public_installability",
+      "public_availability_not_preview_or_invite_only",
+      "marketplace_plan_change_and_cancellation_webhook",
+      "logo",
+      "feature_card",
+      "screenshots"
+    ]
+  },
+  "pricing": {
+    "maximum_plans": 10,
+    "paid_plan_currency": "USD",
+    "paid_plan_monthly_price_required": true,
+    "paid_plan_annual_price_required": true,
+    "supported_models": ["flat_rate", "per_unit"],
+    "per_unit_organization_only": true,
+    "repository_must_not_define_live_prices": true
+  },
+  "marketplace_events": {
+    "required_actions_for_all_plans": ["purchased", "cancelled"],
+    "required_actions_for_paid_plans": ["purchased", "changed", "cancelled"],
+    "free_trial_flow_required_if_enabled": true,
+    "periodic_marketplace_reconciliation_required": true
+  },
+  "customer_billing_experience": {
+    "show_current_plan_and_price": true,
+    "show_purchases_and_plan_changes": true,
+    "show_cancellation_and_trial_state": true,
+    "show_monthly_or_annual_billing_cycle": true,
+    "show_usage_and_remaining_resources_when_applicable": true
+  },
+  "free_trial_privacy": {
+    "github_marketplace_trial_days_when_enabled_at_source_check": 14,
+    "cancelled_trial_private_customer_data_delete_within_days": 30,
+    "must_reverify_before_publication": true
+  },
+  "rules": [
+    "Re-check official GitHub documentation before Marketplace submission because platform requirements can change.",
+    "Do not treat repository compliance metadata as proof of publisher verification, installation count, financial onboarding, Marketplace approval, or customer billing readiness.",
+    "Do not invent installation evidence, prices, plan IDs, legal URLs, support contacts, or customer data.",
+    "Keep customer-facing Marketplace App credentials and vendor private-template App credentials separated in production.",
+    "Production sales remain fail-closed until every applicable production-launch gate has real evidence."
+  ]
+}

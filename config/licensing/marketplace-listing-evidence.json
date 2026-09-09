@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "status": "partially_verified_external_evidence",
+  "scope": "github_marketplace_listing_submission",
+  "requirements_authority": "blueprints/commercial/github-marketplace-compliance.json",
+  "evidence_items": {
+    "homepage": {
+      "status": "verified",
+      "url": "https://vertexsystemsnetwork.com/",
+      "verified_at": "2026-09-06T03:24:03+05:00"
+    },
+    "privacy_policy": {
+      "status": "verified",
+      "url": "https://vertexsystemsnetwork.com/privacy-policy/",
+      "verified_at": "2026-09-06T03:24:03+05:00"
+    },
+    "support": {
+      "status": "verified",
+      "url_or_email": "info@vertexsystemsnetwork.com",
+      "verified_at": "2026-09-06T03:24:03+05:00"
+    },
+    "terms": {
+      "status": "verified",
+      "url": "https://vertexsystemsnetwork.com/terms-conditions/",
+      "verified_at": "2026-09-06T03:24:03+05:00"
+    },
+    "publisher_contact": {
+      "status": "verified",
+      "evidence_reference": "github-marketplace-contact-info: technical/marketing/finance/security contacts saved for ANPOS Community VSN",
+      "verified_at": "2026-09-06T03:24:03+05:00"
+    },
+    "logo": {
+      "status": "pending",
+      "artifact_reference": "github-marketplace-listing:ANPOS Community VSN logo is present; immutable artifact hash not yet retained",
+      "sha256": null
+    },
+    "feature_card": {
+      "status": "pending",
+      "artifact_reference": "github-marketplace-listing:feature card is configured; immutable artifact hash not yet retained",
+      "sha256": null
+    },
+    "screenshots": {
+      "status": "pending",
+      "artifact_references": [
+        "github-marketplace-screenshot:29873/29520099-968d-40da-b597-411f5854bd60 (replace with genuine product capture before submission)",
+        "github-marketplace-screenshot:29873/24c8bb1d-ecd7-4513-8150-b6ff85d69e86 (replace with genuine product capture before submission)"
+      ],
+      "sha256": []
+    },
+    "public_app_installability": {
+      "status": "verified",
+      "evidence_reference": "production-e2e: GitHub App installation 159370043 on Vertex-Systems-Network; /setup/github -> PKCE OAuth -> callback -> installation-bound private-repository discovery succeeded; permission boundary smoke run 33994524916 passed",
+      "verified_at": "2026-09-06T03:24:03+05:00"
+    },
+    "marketplace_webhook": {
+      "status": "verified",
+      "evidence_reference": "production-e2e: Marketplace listing webhook endpoint /api/webhooks/github/marketplace; signed ping, invalid signature, unsupported action, invalid JSON and missing-account paths passed in GitHub Actions run 33994524916; no smoke purchase rows persisted",
+      "verified_at": "2026-09-06T03:24:03+05:00"
+    }
+  },
+  "submission_gate": {
+    "listing_evidence_complete": false,
+    "rule": "Do not submit or describe the Marketplace listing as ready until every required external URL/contact/artwork/installability/webhook evidence item is verified. Repository drafts and placeholders are not publication evidence."
+  }
+}

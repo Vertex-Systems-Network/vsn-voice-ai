@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "status": "unbound_template_reference",
+  "activation_scope": "commercial_customer_or_distribution_runtime_only",
+  "authority": false,
+  "state": "unbound",
+  "license_id": null,
+  "github_account_id": null,
+  "github_account_type": null,
+  "github_login": null,
+  "plan_id": null,
+  "seats": null,
+  "entitlements": [],
+  "issued_at": null,
+  "not_before": null,
+  "expires_at": null,
+  "signed_entitlement": null,
+  "verification": {
+    "status": "not_verified",
+    "verified_at": null,
+    "verifier": null,
+    "envelope_hash": null
+  },
+  "rule": "This file is a non-secret cache/reference only. Editing it never creates billing authority or premium entitlement. Authoritative verification occurs in the commercial entitlement service."
+}

@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "status": "inactive_blueprint",
+  "purpose": "Language-agnostic contract for a separately deployed ANPOS GitHub Marketplace entitlement service.",
+  "event": "marketplace_purchase",
+  "supported_actions": ["purchased", "changed", "cancelled"],
+  "required_headers": [
+    "X-GitHub-Event",
+    "X-GitHub-Delivery",
+    "X-Hub-Signature-256"
+  ],
+  "processing_pipeline": [
+    "capture_raw_request_body_without_mutation",
+    "verify_x_hub_signature_256_with_secret_and_constant_time_compare",
+    "require_marketplace_purchase_event",
+    "deduplicate_x_github_delivery",
+    "validate_action_and_payload",
+    "resolve_canonical_github_numeric_account_id",
+    "acquire_transaction_or_serialization_lock_for_account",
+    "reconcile_with_authenticated_marketplace_api_when_event_is_ambiguous_out_of_order_or_recovery_requires_it",
+    "calculate_plan_seats_and_entitlements",
+    "persist_authoritative_entitlement_ledger_state",
+    "mint_or_refresh_asymmetrically_signed_entitlement",
+    "enqueue_idempotent_provisioning_or_deprovisioning_side_effects",
+    "append_minimal_audit_event",
+    "acknowledge_only_after_durable_processing_or_safe_retry_enqueuing"
+  ],
+  "idempotency": {
+    "delivery_id_is_unique_event_key": true,
+    "duplicate_delivery_reuses_prior_result": true,
+    "provisioning_operations_require_idempotency_keys": true,
+    "customer_project_creation_must_not_duplicate_on_retry": true
+  },
+  "security": {
+    "reject_missing_or_invalid_signature": true,
+    "secrets_manager_only": true,
+    "webhook_secret_never_logged": true,
+    "signing_private_key_never_logged": true,
+    "raw_payment_card_data_not_expected": true,
+    "repository_entitlement_reference_is_not_authority": true
+  },
+  "cancellation": {
+    "generated_customer_repository_is_not_deleted": true,
+    "generated_project_code_is_not_modified": true,
+    "future_commercial_entitlements_may_be_reduced_or_stopped": true,
+    "effective_state_must_be_reconciled_before_revocation_side_effects": true
+  },
+  "failure_policy": {
+    "fail_closed_for_new_premium_provisioning_when_entitlement_cannot_be_verified": true,
+    "do_not_break_existing_generated_project_runtime": true,
+    "retry_transient_provider_or_database_errors": true,
+    "dead_letter_or_manual_reconciliation_path_required": true
+  }
+}

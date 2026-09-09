@@ -1,0 +1,26 @@
+{
+  "format_version": 1,
+  "issuer": "https://license.example.invalid/anpos",
+  "subject": {
+    "github_account_id": 123456789,
+    "github_account_type": "Organization",
+    "github_login": "example-customer"
+  },
+  "license_id": "lic_example_01",
+  "plan_id": "team",
+  "seats": 5,
+  "entitlements": [
+    "private_template_access",
+    "protocol_update_channel",
+    "premium_blueprints",
+    "premium_provider_adapters",
+    "organization_team_features"
+  ],
+  "issued_at": "2030-01-01T00:00:00Z",
+  "not_before": "2030-01-01T00:00:00Z",
+  "expires_at": "2030-02-01T00:00:00Z",
+  "jti": "example-jti-do-not-use",
+  "key_id": "example-key-id",
+  "algorithm": "Ed25519",
+  "signature": "EXAMPLE_ONLY_NOT_A_REAL_SIGNATURE"
+}

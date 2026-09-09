@@ -1,0 +1,159 @@
+name: ANPOS Source Continuous Certification
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: source-continuous-certification-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-certification:
+    if: github.repository == 'Vertex-Systems-Network/ai-native-project-operating-system'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Checkout exact proposed source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify checked out source identity
+        shell: bash
+        env:
+          EXPECTED_SOURCE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE_SHA"
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12'
+
+      - name: Install validation dependency
+        run: python -m pip install --disable-pip-version-check 'jsonschema==4.25.1'
+
+      - name: Compile Python sources and tests
+        run: python -m compileall -q scripts tests
+
+      - name: Validate persistent source CI contract
+        run: python scripts/validate_source_continuous_certification.py
+
+      - name: Run all Python unit and conformance tests
+        run: python -m unittest discover -s tests -p 'test_*.py' -v
+
+      - name: Run all source commercial vendor Marketplace operator deployment and CI validators
+        run: |
+          set -euo pipefail
+          python scripts/validate_ai_native_repo.py
+          python scripts/validate_commercial_licensing.py
+          python scripts/validate_commercial_service.py
+          python scripts/validate_vendor_repository_export.py
+          python scripts/validate_commercial_launch_package.py
+          python scripts/validate_marketplace_staged_launch.py
+          python scripts/validate_operator_launch_bootstrap.py
+          python scripts/validate_deployment_identity.py
+          python scripts/validate_source_continuous_certification.py
+
+      - name: Verify protocol and commercial identity consistency
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          version = json.loads(Path('config/protocol/version.json').read_text())
+          instance = json.loads(Path('config/protocol/instance.json').read_text())
+          migrations = json.loads(Path('config/protocol/migrations.json').read_text())
+          package = json.loads(Path('commercial-service/package.json').read_text())
+          lock = json.loads(Path('commercial-service/package-lock.json').read_text())
+          catalog = json.loads(Path('config/licensing/product-catalog.json').read_text())
+          current = version['version']
+          assert instance['source_protocol_version'] == current
+          assert migrations['current_protocol_version'] == current
+          assert package['anpos']['source_protocol_version'] == current
+          assert package['anpos']['runtime_contract'] == 'split-github-app-v1'
+          assert lock['version'] == package['version']
+          assert lock['packages']['']['version'] == package['version']
+          assert [plan['id'] for plan in catalog['plans']] == ['developer', 'pro', 'team', 'enterprise']
+          PY
+
+      - name: Verify deterministic exports and exact vendor handoff receipts
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf "$RUNNER_TEMP/export-a" "$RUNNER_TEMP/export-b"
+          python scripts/export_vendor_repositories.py --output "$RUNNER_TEMP/export-a"
+          python scripts/export_vendor_repositories.py --output "$RUNNER_TEMP/export-b"
+          diff -qr "$RUNNER_TEMP/export-a/anpos-commercial-service" "$RUNNER_TEMP/export-b/anpos-commercial-service"
+          diff -qr "$RUNNER_TEMP/export-a/anpos-commercial-template" "$RUNNER_TEMP/export-b/anpos-commercial-template"
+          revision="$(git rev-parse HEAD)"
+          tree="$(git rev-parse 'HEAD^{tree}')"
+          service_version="$(python -c "import json; print(json.load(open('commercial-service/package.json'))['version'])")"
+          protocol_version="$(python -c "import json; print(json.load(open('config/protocol/version.json'))['version'])")"
+          runtime_contract="$(python -c "import json; print(json.load(open('commercial-service/package.json'))['anpos']['runtime_contract'])")"
+          python scripts/verify_vendor_handoff.py \
+            --repository "$RUNNER_TEMP/export-a/anpos-commercial-service" \
+            --expected-mode service \
+            --expected-source-revision "$revision" \
+            --expected-source-tree "$tree" \
+            --expected-service-version "$service_version" \
+            --expected-protocol-version "$protocol_version" \
+            --expected-runtime-contract "$runtime_contract" \
+            > "$RUNNER_TEMP/service-receipt.json"
+          python scripts/verify_vendor_handoff.py \
+            --repository "$RUNNER_TEMP/export-a/anpos-commercial-template" \
+            --expected-mode template \
+            --expected-source-revision "$revision" \
+            --expected-source-tree "$tree" \
+            > "$RUNNER_TEMP/template-receipt.json"
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ['RUNNER_TEMP'])
+          service = json.loads((root / 'service-receipt.json').read_text())
+          template = json.loads((root / 'template-receipt.json').read_text())
+          assert service['ok'] is True and service['verification'] == 'exact_deterministic_vendor_export'
+          assert template['ok'] is True and template['verification'] == 'exact_deterministic_vendor_export'
+          PY
+
+      - name: Set up Node 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22.x'
+          cache: npm
+          cache-dependency-path: commercial-service/package-lock.json
+
+      - name: Pin npm 11.19.1 and install locked dependencies
+        working-directory: commercial-service
+        run: |
+          set -euo pipefail
+          npm install --global npm@11.19.1 --ignore-scripts
+          test "$(npm --version)" = "11.19.1"
+          node -e "if (!process.version.startsWith('v22.')) process.exit(1)"
+          npm ci
+          npm audit --audit-level=low
+
+      - name: Certify commercial service
+        working-directory: commercial-service
+        run: npm run certify
+
+      - name: Restore expected Next build mutations and verify tracked tree clean
+        shell: bash
+        run: |
+          set -euo pipefail
+          changed="$(git diff --name-only)"
+          unexpected="$(printf '%s\n' "$changed" | sed '/^$/d' | grep -Ev '^(commercial-service/tsconfig.json|commercial-service/next-env.d.ts)$' || true)"
+          test -z "$unexpected"
+          git checkout -- commercial-service/tsconfig.json commercial-service/next-env.d.ts
+          git diff --check
+          test -z "$(git status --porcelain --untracked-files=no)"

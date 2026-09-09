@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "status": "inactive_blueprint",
+  "activation_scope": "vendor_marketplace_launch_only",
+  "source_checked_at": "2026-09-04",
+  "strategy": "free_first_then_paid",
+  "purpose": "Compliant staged publication strategy for building real GitHub Marketplace App installations through a genuine free Marketplace offering before converting the existing listing to paid plans after current paid-listing requirements are met.",
+  "official_sources": [
+    "https://docs.github.com/en/apps/github-marketplace/creating-apps-for-github-marketplace/requirements-for-listing-an-app",
+    "https://docs.github.com/en/apps/creating-github-apps/registering-a-github-app/making-a-github-app-public-or-private",
+    "https://docs.github.com/en/apps/github-marketplace/selling-your-app-on-github-marketplace/pricing-plans-for-github-marketplace-apps",
+    "https://docs.github.com/en/apps/github-marketplace/listing-an-app-on-github-marketplace/setting-pricing-plans-for-your-listing",
+    "https://docs.github.com/en/apps/github-marketplace/github-marketplace-overview/about-github-marketplace-for-apps"
+  ],
+  "github_app_architecture": {
+    "marketplace_app_reference": "blueprints/commercial/github-marketplace-app-manifest.example.json",
+    "vendor_app_reference": "blueprints/commercial/github-vendor-app-manifest.example.json",
+    "marketplace_app_must_be_public": true,
+    "apps_must_remain_distinct": true,
+    "vendor_administration_must_not_be_requested_from_customer_installations": true
+  },
+  "phase_1_free_listing": {
+    "supported_by_source_checked_docs": true,
+    "goal": "Publish a genuinely useful free Marketplace listing that meets all general listing requirements and accumulate real installations/operating evidence without pretending paid eligibility exists.",
+    "requires_general_marketplace_listing_compliance": true,
+    "requires_public_marketplace_app_installability": true,
+    "requires_public_availability": true,
+    "requires_value_beyond_authentication": true,
+    "required_marketplace_events_when_free_only": [
+      "purchased",
+      "cancelled"
+    ],
+    "paid_trial_upgrade_downgrade_handling_required_while_free_only": false,
+    "free_plan_definition": {
+      "status": "operator_decision_required",
+      "catalog_plan_id": null,
+      "marketplace_plan_id": null,
+      "entitlements": [],
+      "rule": "Do not invent a Community/free entitlement set merely to collect installations. Define real user value and explicit free entitlements before publication, validate them against runtime authorization, and keep paid Developer/Pro/Team/Enterprise drafts unchanged until separately approved."
+    },
+    "outside_marketplace_paid_service_consideration": "If a paid version is offered outside GitHub Marketplace while the Marketplace listing is free, re-check GitHub's current free-app rules; the 2026-09-04 source states that after the listing meets paid-app requirements, at least one paid plan must be offered in GitHub Marketplace.",
+    "evidence_required": [
+      "published_free_listing_url",
+      "public_marketplace_app_registration",
+      "approved_free_plan_definition",
+      "real_product_value_beyond_authentication",
+      "privacy_and_support_urls",
+      "listing_assets",
+      "purchase_and_cancellation_webhook_e2e",
+      "real_installation_metrics"
+    ]
+  },
+  "phase_2_paid_eligibility": {
+    "current_minimum_github_app_installations": 100,
+    "verified_publisher_required": true,
+    "financial_onboarding_required": true,
+    "organization_owner_listing_control_required": true,
+    "paid_plans_can_be_added_to_existing_free_listing": true,
+    "paid_plan_requirements_reference": "blueprints/commercial/github-marketplace-compliance.json",
+    "required_before_conversion": [
+      "real_installation_threshold_evidence",
+      "verified_publisher_evidence",
+      "financial_onboarding_evidence",
+      "approved_monthly_and_annual_usd_prices",
+      "real_marketplace_plan_ids",
+      "paid_purchase_change_cancel_and_trial_e2e_when_applicable",
+      "customer_billing_experience_evidence",
+      "production_ready_endpoint_pass"
+    ]
+  },
+  "conversion": {
+    "automatic": false,
+    "operator_approval_required": true,
+    "repository_can_authorize_paid_conversion": false,
+    "paid_product_catalog_mutation_allowed_by_this_blueprint": false,
+    "rule": "This strategy may recommend when to apply for paid publication, but it cannot change Marketplace pricing, publish paid plans, activate premium entitlements, or claim GitHub approval."
+  },
+  "safety": [
+    "Never create artificial, purchased, duplicate, deceptive, or otherwise non-genuine installations to satisfy an eligibility threshold.",
+    "Do not publish a free app whose only purpose is authentication or installation counting; it must provide real GitHub-integrated user value.",
+    "Do not collapse the public Marketplace App and private Vendor Distribution App trust roles or reuse their private keys.",
+    "Do not grant private_template_access or other paid/premium entitlements to a free Marketplace plan unless the operator deliberately approves that product decision and runtime tests enforce it.",
+    "Do not represent a free Marketplace listing as evidence that paid Marketplace requirements have been met.",
+    "Re-check official GitHub documentation immediately before free listing submission and again before paid conversion."
+  ]
+}

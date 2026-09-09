@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "status": "template_blueprint",
+  "activation_scope": "commercial_distribution_only",
+  "purpose": "Define what ANPOS customer onboarding documentation provides and prevent undocumented support/SLA promises from being implied by a paid package.",
+  "source_is_customer_contract": false,
+  "operator_approval_required_before_customer_support_commitment": true,
+  "developer": {
+    "onboarding": {
+      "included_as_product_documentation": true,
+      "contractual_support_entitlement": false,
+      "guide": "docs/commercial/customer-onboarding-support.md",
+      "covered_flows": [
+        "confirm_marketplace_account_and_active_paid_entitlement",
+        "refresh_current_entitlement_after_github_identity_verification",
+        "request_current_certified_release_metadata",
+        "download_the_same_manifest_verified_immutable_template_release",
+        "preserve_release_provenance_evidence",
+        "bootstrap_or_adopt_an_anpos_project_using_repository_documentation",
+        "diagnose_common_entitlement_release_and_runtime_dependency_failures"
+      ]
+    },
+    "standard_support": {
+      "included_by_default": false,
+      "sla_included": false,
+      "service_credits_included": false,
+      "support_channel": null,
+      "support_hours": null,
+      "support_timezone": null,
+      "initial_response_target": null,
+      "resolution_target": null,
+      "security_incident_contact": null,
+      "escalation_path": null,
+      "activation_status": "operator_required",
+      "rule": "Developer may be sold with self-service onboarding documentation without implying staffed support. If the operator chooses to include support, the real channel, hours, response targets, exclusions, privacy handling and legal terms must be approved and published before sale."
+    }
+  },
+  "team_and_enterprise": {
+    "commercial_support_entitlement_exists_in_draft_catalog": true,
+    "source_activation_status": "external_contract_required",
+    "numeric_sla_commitments_in_source": false,
+    "rule": "Team/Enterprise support or SLA is not activated by this blueprint. It requires an operationally supportable operator commitment and matching customer contract."
+  },
+  "self_service_boundaries": {
+    "included": [
+      "product_and_repository_documentation",
+      "entitlement_and_release_flow_explanation",
+      "manifest_and_release_provenance_explanation",
+      "provider_compatibility_runtime_dependency_explanation",
+      "non_destructive_expiry_and_cancellation_explanation"
+    ],
+    "not_implied": [
+      "guaranteed_response_time",
+      "guaranteed_resolution_time",
+      "24x7_staffing",
+      "live_debugging_or_code_fix_service",
+      "custom_implementation_or_consulting",
+      "provider_vendor_support_on_behalf_of_third_parties",
+      "security_incident_sla",
+      "service_credits"
+    ]
+  },
+  "support_request_data_rules": {
+    "never_request_raw_passwords": true,
+    "never_request_private_keys": true,
+    "never_request_session_cookies": true,
+    "never_request_full_database_credentials": true,
+    "prefer_request_id_and_sanitized_error_code": true,
+    "customer_secrets_must_be_redacted": true
+  },
+  "launch_gates": [
+    "Customer-facing onboarding URLs and instructions must match the actually deployed service and Marketplace flow.",
+    "Any support contact shown to customers must be a real monitored operator-owned channel.",
+    "Any numeric response or resolution target requires staffing, escalation, monitoring and approved contractual language.",
+    "Privacy/retention behavior for support communications must match the final Privacy Policy.",
+    "Source documentation cannot authorize a support entitlement or SLA."
+  ]
+}

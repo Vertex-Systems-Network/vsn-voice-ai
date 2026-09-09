@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "status": "requirements_verified_external_eligibility_pending",
+  "platform": "GitHub Marketplace",
+  "requirements_snapshot": {
+    "verified_on": "2026-09-05",
+    "sources": [
+      "https://docs.github.com/en/apps/github-marketplace/creating-apps-for-github-marketplace/requirements-for-listing-an-app",
+      "https://docs.github.com/en/apps/github-marketplace/github-marketplace-overview/applying-for-publisher-verification-for-your-organization",
+      "https://docs.github.com/en/apps/github-marketplace/selling-your-app-on-github-marketplace/pricing-plans-for-github-marketplace-apps"
+    ],
+    "github_app_minimum_installations_for_paid_listing": 100,
+    "organization_owned_app_required": true,
+    "verified_publisher_required": true,
+    "financial_onboarding_required": true,
+    "monthly_and_annual_paid_billing_required": true,
+    "marketplace_purchase_lifecycle_required": [
+      "purchase",
+      "upgrade",
+      "downgrade",
+      "cancellation",
+      "free_trial_when_offered"
+    ],
+    "reverify_immediately_before_paid_submission": true
+  },
+  "external_eligibility_evidence": {
+    "genuine_installation_count": null,
+    "installation_count_verified_at": null,
+    "installation_count_evidence_reference": null,
+    "organization_verified_publisher": false,
+    "publisher_verification_evidence_reference": null,
+    "financial_onboarding_complete": false,
+    "financial_onboarding_evidence_reference": null,
+    "real_paid_plan_ids_configured": false,
+    "paid_purchase_change_cancel_trial_e2e_verified": false
+  },
+  "activation_gate": {
+    "paid_marketplace_eligible": false,
+    "rule": "A current requirements snapshot is not eligibility evidence. Paid activation remains false until genuine installation count meets the then-current GitHub threshold and publisher verification, financial onboarding, real paid plans and required lifecycle E2E are externally evidenced. Never fabricate, buy or infer installations from repository state."
+  }
+}

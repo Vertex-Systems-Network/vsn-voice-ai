@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "status": "pending_real_production_verification",
+  "scope": "commercial_production_smoke_rollback_and_recovery",
+  "expected_identity": {
+    "service_version": "0.3.9",
+    "protocol_version": "1.3.13",
+    "runtime_contract": "split-github-app-v1"
+  },
+  "observed_production": {
+    "deployment_revision": null,
+    "deployment_tree": null,
+    "version_endpoint_verified": false,
+    "ready_endpoint_verified": false,
+    "authenticated_customer_smoke_verified": false,
+    "authenticated_operator_smoke_verified": false
+  },
+  "recovery": {
+    "rollback_procedure_verified": false,
+    "restore_test_verified": false,
+    "backup_evidence_reference": null,
+    "rpo_minutes": null,
+    "rto_minutes": null,
+    "evidence_reference": null
+  },
+  "production_gate": {
+    "exact_identity_verified": false,
+    "smoke_verified": false,
+    "rollback_and_restore_verified": false,
+    "production_ready": false,
+    "rule": "Do not authorize commercial production launch until exact deployed identity, public readiness, authenticated customer/operator smoke, rollback and backup/restore evidence are all verified against the current certified release."
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "status": "pending_external_customer_journey_evidence",
+  "scope": "purchase_to_delivery_and_customer_onboarding",
+  "support_boundary_authority": "config/licensing/customer-onboarding-support.json",
+  "journey": {
+    "marketplace_purchase_event": {"status": "pending", "evidence_reference": null},
+    "billing_reconciliation": {"status": "pending", "evidence_reference": null},
+    "customer_authentication": {"status": "pending", "evidence_reference": null},
+    "entitlement_issue_or_refresh": {"status": "pending", "evidence_reference": null},
+    "archive_or_template_delivery": {"status": "pending", "evidence_reference": null},
+    "customer_install_and_verify": {"status": "pending", "evidence_reference": null},
+    "update_channel_access": {"status": "pending", "evidence_reference": null},
+    "cancellation_non_destructive": {"status": "pending", "evidence_reference": null}
+  },
+  "sale_readiness_gate": {
+    "self_service_onboarding_verified": false,
+    "purchase_to_delivery_verified": false,
+    "support_boundary_verified": false,
+    "sale_ready": false,
+    "rule": "Do not describe the paid customer journey as sale-ready until a real customer-style purchase-to-delivery flow, cancellation behavior and support boundary are verified end to end."
+  }
+}

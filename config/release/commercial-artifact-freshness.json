@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "status": "regeneration_required_after_canonical_changes",
+  "scope": "commercial_vendor_and_operator_artifacts",
+  "invalidation_rule": "Any canonical source revision/tree change invalidates prior vendor export and operator bootstrap freshness until artifacts are regenerated and reverified from the new exact canonical revision.",
+  "required_evidence": {
+    "canonical_source_revision": null,
+    "canonical_source_tree": null,
+    "commercial_service_version": null,
+    "service_export_receipt_sha256": null,
+    "template_export_receipt_sha256": null,
+    "operator_bootstrap_artifact_digest": null,
+    "service_artifact_reference": null,
+    "template_artifact_reference": null,
+    "operator_artifact_reference": null,
+    "generated_from_same_canonical_revision": false,
+    "verified_after_latest_source_change": false
+  },
+  "freshness_gate": {
+    "artifact_freshness_verified": false,
+    "rule": "Do not deploy, publish or hand off commercial artifacts as current unless service export, template export and operator bootstrap evidence are regenerated from and verified against the exact latest certified canonical source revision/tree."
+  }
+}

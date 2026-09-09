@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "status": "operator_review_required",
+  "activation_scope": "commercial_distribution_only",
+  "purpose": "Record the operator-owned legal and commercial decisions required before ANPOS can be represented as approved for sale. This file is a fail-closed decision record, not legal advice and not a customer agreement.",
+  "binding_legal_authority_is_external_to_repository": true,
+  "source_may_not_self_approve": true,
+  "approved_for_sale": false,
+  "legal_pack_template_ref": "blueprints/commercial/legal-pack.template.md",
+  "commercial_requirements_ref": "COMMERCIAL-LICENSING.md",
+  "operator_identity": {
+    "status": "pending",
+    "legal_entity": null,
+    "registered_address": null,
+    "country_or_jurisdiction": null,
+    "publisher_contact": null,
+    "legal_privacy_contact": null,
+    "support_contact": null,
+    "tax_or_vat_identifiers": null
+  },
+  "documents": {
+    "terms_of_service": {
+      "status": "template_only_pending_review",
+      "customer_url": null,
+      "approved_version": null,
+      "effective_date": null,
+      "review_evidence": null
+    },
+    "commercial_license_eula": {
+      "status": "template_only_pending_review",
+      "customer_url": null,
+      "approved_version": null,
+      "effective_date": null,
+      "review_evidence": null
+    },
+    "privacy_policy": {
+      "status": "template_only_pending_review",
+      "customer_url": null,
+      "approved_version": null,
+      "effective_date": null,
+      "review_evidence": null
+    },
+    "refund_cancellation_policy": {
+      "status": "template_only_pending_review",
+      "customer_url": null,
+      "approved_version": null,
+      "effective_date": null,
+      "review_evidence": null
+    },
+    "support_sla_policy": {
+      "status": "not_activated",
+      "customer_url": null,
+      "approved_version": null,
+      "effective_date": null,
+      "review_evidence": null,
+      "staffed_support_committed": false,
+      "numeric_sla_committed": false
+    }
+  },
+  "business_decisions": {
+    "pricing_approved": false,
+    "marketplace_plan_ids_approved": false,
+    "refund_rules_approved": false,
+    "tax_treatment_approved": false,
+    "trial_terms_approved": false,
+    "consumer_or_business_eligibility_rules_approved": false,
+    "governing_law_and_dispute_terms_approved": false
+  },
+  "privacy_and_operations_decisions": {
+    "production_data_flow_verified": false,
+    "production_subprocessors_verified": false,
+    "retention_and_deletion_schedule_approved": false,
+    "customer_rights_request_process_approved": false,
+    "international_transfer_or_data_residency_position_approved": false,
+    "support_communication_retention_approved": false,
+    "security_incident_contact_approved": false
+  },
+  "review": {
+    "operator_review_completed": false,
+    "qualified_legal_review_completed": false,
+    "accounting_or_tax_review_completed_when_applicable": false,
+    "reviewer_identity": null,
+    "review_completed_at": null,
+    "approved_release_version": null
+  },
+  "required_gates": [
+    "operator_identity_complete",
+    "terms_of_service_approved",
+    "commercial_license_eula_approved",
+    "privacy_policy_approved",
+    "refund_cancellation_policy_approved",
+    "pricing_and_marketplace_plan_mapping_approved",
+    "tax_treatment_approved_when_applicable",
+    "production_data_flow_and_subprocessors_verified",
+    "retention_deletion_and_customer_rights_process_approved",
+    "support_commitments_match_actual_operations",
+    "qualified_legal_review_completed",
+    "operator_explicit_sale_approval_recorded"
+  ],
+  "approval": {
+    "operator_explicit_sale_approval": false,
+    "approved_by": null,
+    "approved_at": null,
+    "approval_evidence": null
+  },
+  "non_destructive_license_rule": {
+    "expiry_or_cancellation_may_gate_future_premium_access": true,
+    "generated_customer_repositories_must_not_be_deleted": true,
+    "generated_customer_code_must_not_be_encrypted_or_intentionally_broken": true
+  },
+  "rule": "The presence of templates, source implementation, certification, draft pricing, Marketplace eligibility, or this decision record must never be interpreted as legal approval or sale authorization. approved_for_sale may become true only through an operator-controlled process backed by the applicable external legal/business evidence; canonical template source remains false until that deliberately approved state is represented through an authorized release process."
+}

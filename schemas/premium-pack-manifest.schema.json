@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anpos.invalid/schemas/premium-pack-manifest.schema.json",
+  "title": "ANPOS Premium Pack Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "pack_id",
+    "pack_version",
+    "source_protocol_compatibility",
+    "capabilities",
+    "providers",
+    "files",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "pack_id": {
+      "type": "string",
+      "pattern": "^anpos-premium-[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "pack_version": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?$"
+    },
+    "source_protocol_compatibility": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["minimum", "maximum"],
+      "properties": {
+        "minimum": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+        "maximum": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"}
+      }
+    },
+    "capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "display_name", "asset_classes"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^premium_[a-z0-9_]+$"},
+          "display_name": {"type": "string", "minLength": 3, "maxLength": 120},
+          "asset_classes": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "premium_blueprint",
+                "premium_provider_adapter",
+                "premium_governance_recipe",
+                "premium_documentation"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "providers": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "provider_id",
+          "adapter_version",
+          "tested_provider_version_or_api",
+          "capability_ids",
+          "partnership_or_certification_claim"
+        ],
+        "properties": {
+          "provider_id": {"type": "string", "pattern": "^[a-z0-9]+(?:[_-][a-z0-9]+)*$"},
+          "adapter_version": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]+)?$"
+          },
+          "tested_provider_version_or_api": {"type": "string", "minLength": 1, "maxLength": 160},
+          "capability_ids": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {"type": "string", "pattern": "^premium_[a-z0-9_]+$"}
+          },
+          "partnership_or_certification_claim": {"const": false}
+        }
+      }
+    },
+    "files": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "asset_class", "sha256", "bytes", "capability_ids"],
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "^premium/(blueprints|providers|governance|docs)/[A-Za-z0-9._/-]+$",
+            "maxLength": 300
+          },
+          "asset_class": {
+            "enum": [
+              "premium_blueprint",
+              "premium_provider_adapter",
+              "premium_governance_recipe",
+              "premium_documentation"
+            ]
+          },
+          "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+          "bytes": {"type": "integer", "minimum": 1, "maximum": 10485760},
+          "capability_ids": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {"type": "string", "pattern": "^premium_[a-z0-9_]+$"}
+          }
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "distribution_scope",
+        "contains_customer_secrets",
+        "contains_operator_secrets",
+        "derived_only_from_public_core",
+        "immutable_release_identity_required"
+      ],
+      "properties": {
+        "distribution_scope": {"const": "private_premium_repository"},
+        "contains_customer_secrets": {"const": false},
+        "contains_operator_secrets": {"const": false},
+        "derived_only_from_public_core": {"const": false},
+        "immutable_release_identity_required": {"const": true}
+      }
+    }
+  }
+}

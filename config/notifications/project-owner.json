@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "target_role": "repository_or_project_owner",
+  "display_name": null,
+  "email": null,
+  "email_resolution": "explicit_user_input_or_authorized_connected_contact",
+  "never_guess_private_email": true,
+  "preferred_provider": "authorized_connected_email_provider",
+  "material_update_email_required": true,
+  "authenticated_action_supported": false,
+  "preferred_consent_action": "Approve & Start Update",
+  "fallback_approval_command_template": "APPROVE UPDATE <CONSENT-ID>",
+  "notes": "For organization-owned repositories, configure an authorized project-owner notification contact rather than assuming the organization has a usable mailbox."
+}

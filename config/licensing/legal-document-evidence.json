@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "status": "pending_operator_and_counsel_evidence",
+  "authority": "config/licensing/legal-approval.json",
+  "purpose": "Bind any future commercial legal approval to exact customer-facing document versions, immutable digests, reviewer authority, effective locations and a release scope without inventing legal approval in source.",
+  "documents": {
+    "terms_of_service": {"approved": false, "version": null, "sha256": null, "effective_url": null, "reviewed_by": null, "reviewed_at": null},
+    "privacy_policy": {"approved": false, "version": null, "sha256": null, "effective_url": null, "reviewed_by": null, "reviewed_at": null},
+    "commercial_license_eula": {"approved": false, "version": null, "sha256": null, "effective_url": null, "reviewed_by": null, "reviewed_at": null},
+    "refund_cancellation_policy": {"approved": false, "version": null, "sha256": null, "effective_url": null, "reviewed_by": null, "reviewed_at": null},
+    "support_terms": {"approved": false, "version": null, "sha256": null, "effective_url": null, "reviewed_by": null, "reviewed_at": null}
+  },
+  "approval_scope": {
+    "approved_release_version": null,
+    "approved_protocol_version": null,
+    "operator_approval_reference": null,
+    "counsel_review_reference": null
+  },
+  "activation_gate": {
+    "legal_evidence_complete": false,
+    "rule": "Legal approval is not activated by templates or repository state. Every customer-facing document must be approved, digest-bound, externally reachable where applicable, reviewer-attributed, and scoped to the intended commercial release before legal_evidence_complete can become true."
+  }
+}
