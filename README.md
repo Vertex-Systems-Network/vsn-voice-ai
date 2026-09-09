@@ -1,11 +1,13 @@
 # Voice AI — Hybrid Realtime Voice & Meeting Intelligence Platform
 
-**Repository:** `Vertex-Systems-Network/voice-ai`  
+**Repository:** `Vertex-Systems-Network/vsn-voice-ai`  
 **Operating protocol:** ANPOS `1.3.13`  
 **Planning baseline:** 2026-09-10 01:16 PKT (UTC+05:00)  
+**Latest competitive module audit:** 2026-09-10  
 **Development authorization:** `LOCKED — OWNER CONSENT REQUIRED`  
 **Technology stack consent:** `PENDING — Approve Technology Stack required before implementation`  
-**Canonical module count:** **19**
+**Canonical module count:** **19**  
+**Market-audit recommended target:** **25 modules** (6 additional planning candidates; not yet canonical)
 
 > This repository is being planned as a hybrid AI voice/meeting product. Planning, research and documentation updates are authorized. Product implementation, model training, infrastructure provisioning, paid API consumption, production credentials and deployment must not begin until the owner gives explicit consent.
 
@@ -33,6 +35,25 @@ Voice AI is intended to combine realtime communication enhancement with meeting 
 - VSN-owned speech/audio models progressively replacing or complementing third-party providers.
 
 The architecture is explicitly **hybrid**: external AI providers and VSN-owned models must implement normalized capability contracts behind one provider gateway, allowing routing, comparison, health checks, fallback and future replacement without rewriting product-domain logic.
+
+## 2026 competitive module audit
+
+A current-market audit against Krisp, Sanas, Otter, Fireflies, Read AI, Zoom/ZoomMate and adjacent meeting/conversation platforms found that the existing 19-module decomposition is a strong foundation but is **not considered the final competitive decomposition**.
+
+Six top-level responsibility areas are recommended for later canonical addition:
+
+1. **Multi-Platform Clients & In-Person Capture** — iOS, Android, browser/Chrome, in-person recording and cross-device capture.
+2. **Business Integrations & Workflow Automation** — CRM, calendar, email, Slack/Teams, docs/storage, PM, automation platforms and MCP.
+3. **Conversation Intelligence, QA & Compliance Scoring** — scorecards, call scoring, compliance monitoring, sales/support signals and manager QA.
+4. **Unified Conversation Knowledge & Cross-App Search** — permission-aware search/Q&A across conversations plus connected work systems.
+5. **Agentic Actions, AI Skills & Voice Agents** — authorized actions, skills, specialist agents and workflow execution.
+6. **Enterprise Administration, Device Fleet & Deployment Control** — SSO/SCIM, fleet policy, remote configuration, staged rollout and enterprise controls.
+
+In addition, `MOD-012 Voice Personalization & Identity Safety` should be expanded during canonical restructuring to include deepfake/synthetic-voice detection, customer speaker-change detection and agent voice verification rather than creating a duplicate security module.
+
+Full evidence and scope are recorded in `docs/ai/MARKET-COMPETITIVE-MODULE-AUDIT.md`.
+
+The canonical dashboard below remains at 19 until those candidate responsibilities are formally added to `config/ai/modules-bank.json`, per the repository reconciliation rule. This audit does not authorize implementation.
 
 ## README reconciliation rule — mandatory
 
@@ -178,7 +199,7 @@ Dataset/evaluation infrastructure, proprietary noise/BVC and/or accent models, o
 
 Public APIs, webhooks, SDKs and developer portal after internal contracts become stable.
 
-Full details live in `docs/ai/PRE-PLAN.md`, with canonical module definitions in `config/ai/modules-bank.json` and architecture choices in `config/ai/options-bank.json`.
+Full details live in `docs/ai/PRE-PLAN.md`, with canonical module definitions in `config/ai/modules-bank.json`, architecture choices in `config/ai/options-bank.json`, and the latest market audit in `docs/ai/MARKET-COMPETITIVE-MODULE-AUDIT.md`.
 
 ## Development consent boundary
 
@@ -192,8 +213,9 @@ Before product implementation begins, ANPOS child initialization must be reconci
 
 - `PROJECT-IDEA.md` — normalized project intake, assumptions, constraints and research references.
 - `docs/ai/PRE-PLAN.md` — living product/architecture pre-plan.
+- `docs/ai/MARKET-COMPETITIVE-MODULE-AUDIT.md` — 2026 competitor-driven module-gap analysis.
 - `config/ai/options-bank.json` — selected/candidate architecture/product options.
-- `config/ai/modules-bank.json` — canonical 19-module product decomposition.
+- `config/ai/modules-bank.json` — canonical 19-module product decomposition; market audit recommends expansion to 25 during planning restructuring.
 - `AGENTS.md` — ANPOS universal agent router.
 - `START-HERE.md` — discovery/research/planning flow.
 - `PROJECT-INITIALIZATION.md` — child initialization rules.
