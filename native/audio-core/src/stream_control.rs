@@ -64,10 +64,7 @@ pub enum RecoveryPolicyError {
 pub enum StreamEvent {
     StartRequested,
     OpenSucceeded,
-    OpenFailed {
-        fault: StreamFault,
-        retryable: bool,
-    },
+    OpenFailed { fault: StreamFault, retryable: bool },
     DeviceInvalidated,
     RetryTimerElapsed,
     ProcessingFailed(String),
