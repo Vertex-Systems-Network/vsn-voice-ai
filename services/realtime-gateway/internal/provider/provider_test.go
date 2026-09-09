@@ -9,17 +9,17 @@ import (
 
 func manifest(id string, latency int, quality int, privacy int, cost int64) ProviderManifest {
 	return ProviderManifest{
-		ID:                     id,
-		Version:                "1",
-		AccessMode:             AccessAPI,
-		Capabilities:           []Capability{CapabilityNoiseCancel, CapabilityAccentConvert},
-		Regions:                []string{"us-east", "eu-west"},
-		Enabled:                true,
-		VerifiedAccess:         true,
-		Health:                 HealthHealthy,
-		LatencyP95Milliseconds: latency,
-		QualityScore:           quality,
-		PrivacyScore:           privacy,
+		ID:                      id,
+		Version:                 "1",
+		AccessMode:              AccessAPI,
+		Capabilities:            []Capability{CapabilityNoiseCancel, CapabilityAccentConvert},
+		Regions:                 []string{"us-east", "eu-west"},
+		Enabled:                 true,
+		VerifiedAccess:          true,
+		Health:                  HealthHealthy,
+		LatencyP95Milliseconds:  latency,
+		QualityScore:            quality,
+		PrivacyScore:            privacy,
 		CostMicrounitsPerMinute: cost,
 	}
 }
