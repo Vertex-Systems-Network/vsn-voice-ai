@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "next_sequence": 2,
+  "next_sequence": 3,
   "requests": [
     {
       "id": "CONSENT-000001",
@@ -22,11 +22,7 @@
         "Allow repository planning, system design, threat/data architecture, provider evaluation and technology-selection work.",
         "Keep product implementation behind the separate Approve Technology Stack gate."
       ],
-      "affected_modules": [
-        "MOD-001",
-        "MOD-010",
-        "MOD-017"
-      ],
+      "affected_modules": ["MOD-001", "MOD-010", "MOD-017"],
       "risk": "medium",
       "status": "approved",
       "approved_scope": [
@@ -40,6 +36,42 @@
       "decision_at": "2026-09-09T21:25:00+00:00",
       "decision_evidence": "chat://current-conversation/user-message/consent-yes",
       "decision_request_hash": "57f5f9cf7d69aa2580ddecc19edabf711647c6cdc493ea886c136333bde9be27",
+      "implementation_reference": null,
+      "verification_reference": null
+    },
+    {
+      "id": "CONSENT-000002",
+      "type": "technology_stack_approval",
+      "title": "Approve VSN Voice AI technology stack",
+      "summary": "Approve the PHASE-000 recommended technology stack so product implementation can begin after architecture/security gates are satisfied.",
+      "requested_by": "assistant-supervisor",
+      "requested_at": "2026-09-09T21:31:17+00:00",
+      "request_hash": "6ad1aea44d34b2ece9e98eec9552f9eba4b4dbed18c8b711b513defc88cd26b3",
+      "nonce": "011d78f4-5f52-4714-a86c-1d27587b8936",
+      "expires_at": "2026-09-16T21:31:17+00:00",
+      "nonce_consumed_at": null,
+      "owner_identity": "authenticated_conversation_user",
+      "canonical_review_reference": "docs/architecture/PHASE-000-SYSTEM-DESIGN.md",
+      "email_notification_reference": null,
+      "proposed_changes": [
+        "Use Next.js + TypeScript for web.",
+        "Use NestJS + Fastify for the control API.",
+        "Use Tauri 2 + Rust for desktop, with C++ for Windows virtual-audio/platform pieces where required.",
+        "Use Go + WebRTC for realtime cloud media.",
+        "Use Python + PyTorch for AI R&D and ONNX Runtime for portable production inference where compatible.",
+        "Use PostgreSQL + pgvector + Redis + S3-compatible storage.",
+        "Use Docker + Terraform with AWS as the initial cloud candidate.",
+        "Use OpenTelemetry/Sentry/Grafana-compatible observability and GitHub Actions CI/CD."
+      ],
+      "affected_modules": ["MOD-002", "MOD-003", "MOD-004", "MOD-005", "MOD-006", "MOD-010", "MOD-011", "MOD-014", "MOD-016", "MOD-018"],
+      "risk": "high",
+      "status": "pending",
+      "approved_scope": [],
+      "decision_by": null,
+      "decision_identity_evidence_ref": null,
+      "decision_at": null,
+      "decision_evidence": null,
+      "decision_request_hash": null,
       "implementation_reference": null,
       "verification_reference": null
     }
@@ -71,16 +103,7 @@
     "implementation_reference": null,
     "verification_reference": null
   },
-  "status_values": [
-    "pending",
-    "approved",
-    "partially_approved",
-    "rejected",
-    "expired",
-    "implemented",
-    "verified",
-    "closed"
-  ],
+  "status_values": ["pending", "approved", "partially_approved", "rejected", "expired", "implemented", "verified", "closed"],
   "security_rules": {
     "decision_must_match_exact_request_hash": true,
     "nonce_is_single_use": true,
