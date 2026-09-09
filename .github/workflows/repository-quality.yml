@@ -27,6 +27,12 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
+      - name: Set up pinned Go toolchain
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: services/realtime-gateway/go.mod
+          cache: false
+
       - name: Install pinned ANPOS validation dependencies
         run: python -m pip install --disable-pip-version-check -r requirements-anpos.txt
 
@@ -38,6 +44,35 @@ jobs:
 
       - name: Validate current AI-native state and workflow safety
         run: python scripts/validate_ai_native_repo.py
+
+      - name: Check Go formatting
+        shell: bash
+        run: |
+          set -euo pipefail
+          unformatted="$(gofmt -l services/realtime-gateway)"
+          if [ -n "$unformatted" ]; then
+            echo "Go files require gofmt:" >&2
+            echo "$unformatted" >&2
+            exit 1
+          fi
+
+      - name: Test realtime gateway
+        working-directory: services/realtime-gateway
+        run: go test ./...
+
+      - name: Validate product JSON Schemas
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+
+          for path in sorted(Path("packages/contracts/schemas").glob("*.schema.json")):
+              schema = json.loads(path.read_text(encoding="utf-8"))
+              Draft202012Validator.check_schema(schema)
+              print(f"valid schema: {path}")
+          PY
 
       - name: Run protected-base validator against proposed tree
         if: github.event_name == 'pull_request'
@@ -72,10 +107,10 @@ jobs:
       - name: Reject trailing whitespace in machine/code files
         shell: bash
         run: |
-          if git grep -nE '[[:blank:]]+$' -- '*.py' '*.json' '*.yml' '*.yaml'; then
+          if git grep -nE '[[:blank:]]+$' -- '*.py' '*.go' '*.json' '*.yml' '*.yaml'; then
             echo 'Trailing whitespace found in machine/code files.' >&2
             exit 1
           fi
 
       - name: Show repository integrity success
-        run: echo 'Repository integrity, conformance tests, JSON Schema, protected-base validation, workflow pinning, JSON, and YAML checks passed.'
+        run: echo 'Repository integrity, conformance tests, Go tests, product JSON Schemas, workflow pinning, JSON, and YAML checks passed.'
