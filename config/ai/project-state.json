@@ -28,7 +28,7 @@
   "critical_defects": [],
   "qa_readiness": "baseline_verified",
   "security_readiness": "voice_ai_threat_and_data_baselines_defined_pending_implementation_verification",
-  "last_reconciled_repository_ref": "a3405b81c871788703239587c1f1f16b98328df0",
-  "last_reconciled_at": "2026-09-09T22:01:14+00:00",
-  "notes": "Owner development consent CONSENT-000001 and technology stack approval CONSENT-000002 are approved. PHASE-000 remains in progress while architecture/security baselines are finalized. WU-001 is complete; WU-010 hybrid provider architecture and WU-017 privacy/security/data governance are in progress. Product implementation is now technology-authorized, but paid provider usage, proprietary model training, production credentials/infrastructure and deployment remain subject to their applicable provider/data/compute/release gates."
+  "last_reconciled_repository_ref": "47ba4c09ab4218bc7690a52489b1f1b91bb8f733",
+  "last_reconciled_at": "2026-09-09T22:07:58+00:00",
+  "notes": "CONSENT-000001 development start and CONSENT-000002 technology stack are approved. PHASE-000 remains in progress with WU-010 hybrid provider architecture and WU-017 privacy/security/data governance in progress. GitHub Actions run 34410608105 succeeded after the technology-approval transition, including unit tests, ANPOS validation, YAML validation and whitespace checks. Product feature implementation is technology-authorized after PHASE-000 handoff; paid provider usage, proprietary model training, production credentials/cloud spend and deployment remain subject to applicable provider/data/compute/release gates."
 }
