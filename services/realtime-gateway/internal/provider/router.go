@@ -6,11 +6,12 @@ import (
 )
 
 type Router struct {
-	registry *Registry
+	registry  *Registry
+	observers []RoutingObserver
 }
 
-func NewRouter(registry *Registry) *Router {
-	return &Router{registry: registry}
+func NewRouter(registry *Registry, observers ...RoutingObserver) *Router {
+	return &Router{registry: registry, observers: append([]RoutingObserver(nil), observers...)}
 }
 
 func (r *Router) Select(request RoutingRequest) (RoutingDecision, error) {
@@ -24,6 +25,11 @@ func (r *Router) Select(request RoutingRequest) (RoutingDecision, error) {
 		}
 	}
 	if len(candidates) == 0 {
+		r.observe(RoutingEvent{
+			Capability: request.Capability,
+			Mode:       request.Mode,
+			Outcome:    RoutingOutcomeNoEligible,
+		})
 		return RoutingDecision{}, ErrNoEligibleProvider
 	}
 
@@ -33,13 +39,30 @@ func (r *Router) Select(request RoutingRequest) (RoutingDecision, error) {
 		fallbacks = append(fallbacks, candidate.ID)
 	}
 
-	return RoutingDecision{
+	decision := RoutingDecision{
 		Capability:        request.Capability,
 		Mode:              request.Mode,
 		SelectedProvider:  candidates[0].ID,
 		FallbackProviders: fallbacks,
 		Reason:            fmt.Sprintf("selected %s from %d eligible providers using %s policy", candidates[0].ID, len(candidates), request.Mode),
-	}, nil
+	}
+	r.observe(RoutingEvent{
+		Capability:       request.Capability,
+		Mode:             request.Mode,
+		Outcome:          RoutingOutcomeSelected,
+		SelectedProvider: decision.SelectedProvider,
+		EligibleCount:    len(candidates),
+		FallbackCount:    len(fallbacks),
+	})
+	return decision, nil
+}
+
+func (r *Router) observe(event RoutingEvent) {
+	for _, observer := range r.observers {
+		if observer != nil {
+			observer.ObserveRouting(event)
+		}
+	}
 }
 
 func eligible(manifest ProviderManifest, request RoutingRequest) bool {
@@ -50,6 +73,9 @@ func eligible(manifest ProviderManifest, request RoutingRequest) bool {
 		return false
 	}
 	if manifest.Health == HealthUnhealthy || manifest.Health == HealthOpen {
+		return false
+	}
+	if manifest.RateLimit == RateLimitExhausted {
 		return false
 	}
 	if len(request.AllowedProviders) > 0 && !containsString(request.AllowedProviders, manifest.ID) {
@@ -94,6 +120,9 @@ func sortCandidates(candidates []ProviderManifest, mode RoutingMode) {
 			if healthRank(a.Health) != healthRank(b.Health) {
 				return healthRank(a.Health) > healthRank(b.Health)
 			}
+			if rateLimitRank(a.RateLimit) != rateLimitRank(b.RateLimit) {
+				return rateLimitRank(a.RateLimit) > rateLimitRank(b.RateLimit)
+			}
 			if a.QualityScore != b.QualityScore {
 				return a.QualityScore > b.QualityScore
 			}
@@ -119,6 +148,19 @@ func healthRank(state HealthState) int {
 		return 3
 	case HealthDegraded:
 		return 2
+	default:
+		return 0
+	}
+}
+
+func rateLimitRank(state RateLimitState) int {
+	switch state {
+	case RateLimitAvailable:
+		return 3
+	case RateLimitUnknown:
+		return 2
+	case RateLimitConstrained:
+		return 1
 	default:
 		return 0
 	}
