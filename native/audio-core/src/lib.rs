@@ -1,3 +1,5 @@
+pub mod device;
+
 use std::collections::VecDeque;
 use std::error::Error;
 use std::fmt::{Display, Formatter};
