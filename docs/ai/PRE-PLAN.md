@@ -1,72 +1,94 @@
-# AI-Native Pre-Plan — Voice AI Platform
+# AI-Native Pre-Plan — VSN Voice AI Platform
 
-> Living planning document for `Vertex-Systems-Network/voice-ai`.
+> Living planning document for `Vertex-Systems-Network/vsn-voice-ai`.
 >
-> **Authorization state:** planning/research/documentation only. Product implementation, model training, infrastructure provisioning, production credentials, paid API usage and deployment are locked until explicit owner consent. Technology selection also retains the mandatory Stage 9 `Approve Technology Stack` gate.
+> **Authorization state:** planning/research/documentation only. Product implementation, model training, infrastructure provisioning, production credentials, paid API usage and deployment are locked until explicit owner consent. Technology selection retains the mandatory Stage 9 `Approve Technology Stack` gate.
 
 ## 1. Product Objective
 
-Build a commercial, subscription-based **AI Voice + Meeting Intelligence platform** that can operate across calls, meetings and supported telephony environments.
+Build a commercial subscription-based **AI Voice + Meeting + Conversation Intelligence platform** that can operate across calls, meetings, telephony, mobile, browser and in-person environments.
 
 Primary outcomes:
 
-- Make speech clearer in real time through noise/background-voice cleanup.
-- Convert accents toward a selected target accent while preserving the user's recognizable voice and natural delivery.
-- Translate speech bidirectionally in near real time where appropriate.
-- Produce live captions/transcripts and high-quality finalized meeting records.
-- Turn meetings into notes, summaries, decisions, action items, searchable knowledge and follow-up workflows.
-- Provide opt-in live AI assistance/coaching.
+- Improve speech clarity in real time through noise/background-voice cleanup.
+- Convert accents toward selected target accents while preserving recognizable voice and natural delivery.
+- Translate speech bidirectionally where appropriate.
+- Produce live captions/transcripts and high-quality finalized records.
+- Turn meetings/calls into notes, summaries, decisions, action items, searchable knowledge and follow-up workflows.
+- Provide opt-in realtime communication coaching.
+- Support contact-center QA, compliance and conversation intelligence.
+- Connect conversation outcomes to CRM, calendar, email, chat, documents and workflow systems.
+- Progress from passive AI assistance to safe, authorized agentic actions and specialist agents.
+- Support enterprise identity, device fleets, deployment policy and governance.
 - Use a **hybrid AI architecture** where external providers and VSN-owned models are interchangeable capability providers.
-- Progressively improve VSN ownership of core models where quality, privacy, latency or economics justify replacing third-party processing.
+- Progressively improve VSN ownership of core speech/audio models where quality, privacy, latency or economics justify replacement.
 
 Primary users:
 
-- Individual professionals who communicate internationally.
+- Individual professionals communicating internationally.
 - Sales/support/contact-center agents.
-- Remote teams and meeting-heavy professionals.
+- Remote and meeting-heavy teams.
 - BPO/contact-center organizations.
-- Enterprise teams needing meeting intelligence and voice enhancement.
-- Developers/partners later consuming selected capabilities through APIs/SDKs.
+- Enterprise teams requiring meeting/conversation intelligence and managed deployment.
+- Developers/partners later consuming capabilities through APIs/SDKs.
 
 ## 2. Scope
 
-### In scope
-
-### A. Realtime audio
+### A. Realtime audio and voice
 
 - Microphone/speaker routing.
 - Virtual microphone and relevant virtual audio devices.
 - Noise cancellation.
 - Background voice cancellation/isolation.
-- Echo/de-reverberation where supported.
+- Echo reduction/de-reverberation where supported.
 - VAD and audio quality telemetry.
 - Accent conversion, inbound/outbound where supported.
 - Voice identity preservation and adjustable accent strength where technically viable.
 - Realtime speech translation.
-- Safe bypass if processing or provider fails.
+- Safe bypass if processing/provider fails.
+- Voice personalization, speaker verification and voice-security signals.
 
-### B. Speech and meetings
+### B. Speech, meetings and capture
 
 - Streaming and finalized transcription.
 - Live captions.
 - Speaker diarization and timestamped utterances.
-- Meeting bots and/or botless/native/desktop capture depending on platform and permissions.
-- Zoom, Google Meet, Microsoft Teams, Webex and other practical surfaces as adapters become verified.
-- Calendar scheduling for meeting capture.
-- Meeting recordings where explicitly authorized.
-- Live/post-meeting notes.
-- Summaries, key points, decisions, action items, owners/due dates.
-- Topics/chapters, entities, keywords, highlights/bookmarks and clips.
-- Search/Q&A over authorized meeting knowledge.
-- Follow-up drafts and export/share workflows.
-- Meeting analytics such as talk ratio/speaker stats where appropriate.
-- Optional sentiment/communication signals with careful product framing.
-- Live assistant/coaching and authorized meeting-agent participation.
+- Meeting bots and/or botless/native/desktop capture depending on platform permissions.
+- Zoom, Google Meet, Microsoft Teams, Webex and other verified surfaces.
+- Calendar scheduling.
+- Recording where explicitly authorized.
+- Participant/chat/lifecycle events where supported.
+- iOS/Android/browser/in-person capture.
+- Cross-device capture and session continuity.
 
-### C. Hybrid AI platform
+### C. Meeting and conversation intelligence
+
+- Live/post-meeting notes.
+- Summaries, key points, decisions, action items and owners/due dates.
+- Topics/chapters, entities, keywords, highlights, bookmarks and clips.
+- Per-meeting Q&A and traceable source evidence.
+- Talk ratio, speaker stats and communication signals where appropriate.
+- Follow-up drafts and exports.
+- Conversation QA scorecards and manager review queues.
+- Compliance/policy detection.
+- Sales/support signals, objections, dispositions and coaching opportunities.
+
+### D. Knowledge, integrations and automation
+
+- Semantic search across calls/meetings.
+- Permission-aware cross-app knowledge over email, calendar, chat, documents and CRM where authorized.
+- Source-cited Q&A and entity/project/person context.
+- Daily/weekly briefs and saved topics.
+- CRM, calendar, email, chat, docs/storage and PM integrations.
+- Zapier/Make/n8n-style automation and MCP where appropriate.
+- Reusable AI skills/templates.
+- Specialist agents and authorized action execution.
+- Human approval gates, tool permissions, idempotency and action audit trails.
+
+### E. Hybrid AI platform
 
 - Provider capability registry.
-- Provider adapter SDK/contracts.
+- Provider adapter contracts.
 - Per-capability routing.
 - Health, rate-limit and outage fallback.
 - Quality/latency/cost/privacy/region-aware routing.
@@ -74,127 +96,123 @@ Primary users:
 - Provider version/capability discovery and continuous re-evaluation.
 - Optional enterprise BYOK later.
 
-### D. SaaS/business platform
+### F. SaaS and enterprise platform
 
 - Accounts, organizations, roles and team administration.
-- Desktop ↔ web account linking.
-- Meeting library and workspace.
-- Subscription plans, trials, entitlements, usage minutes and quotas.
-- Provider-cost and gross-margin telemetry.
-- Admin/operations dashboards.
-- Developer API/SDK/webhooks in a later phase.
+- Desktop/mobile/browser ↔ web account linking.
+- Subscription plans, entitlements, quotas and usage metering.
+- Admin/product/provider analytics and cost controls.
+- SSO/SAML/OIDC, SCIM and enterprise identity lifecycle.
+- Device fleet inventory and remote configuration.
+- Team-level provider/model/accent/language/retention policies.
+- Managed deployment packages and staged rollouts.
+- Public API/SDK/webhooks later.
 
-### Out of scope / non-goals
+## 3. Out of Scope / Non-Goals Until Explicitly Approved
 
-- Claiming every provider is integrated merely because it exists.
-- Unauthorized meeting recording or transcription.
-- Covert impersonation or unauthorized voice cloning.
-- Starting proprietary model training before data rights, budget, evaluation plan and owner consent are approved.
-- Forcing all realtime and post-meeting tasks through one provider.
-- Treating accent conversion and language translation as the same latency/problem class.
-- Shipping every listed meeting feature in the first commercial release.
+- Product implementation before owner consent.
+- Paid provider usage before cost/access approval.
+- Production secrets, infrastructure or deployment before approval.
+- Proprietary model training before dataset rights, compute budget and technology approval.
+- Unsupported provider/API claims.
+- Covert recording, impersonation or unauthorized voice cloning.
+- Automatic high-impact decisions based solely on model inference.
 
-## 3. Current Repository Reality
+## 4. Current Repository Reality
 
-- Existing Voice AI product implementation: **none verified**.
-- Existing architecture: ANPOS governance/template blueprint only.
-- Current `config/protocol/instance.json`: inherited `template_source` state while actual repo is `Vertex-Systems-Network/voice-ai`; therefore the repository is an **uninitialized child** under ANPOS rules.
-- Existing product tests/build: none verified.
-- Existing product deployment/environments: none verified.
-- Existing product provider credentials/connections: none verified.
-- Planning files now contain project-specific intake/options/modules.
-- Child bootstrap remains pending and must be reconciled before implementation execution.
-
-## 4. Primary Actors and Workflows
-
-### Individual user
-
-1. Install desktop application.
-2. Sign in and select physical mic/speaker.
-3. Enable processing modules such as Noise Clean, Accent, Translation or Captions.
-4. Select the product's virtual microphone in Zoom/Teams/Meet/dialer.
-5. Start a call/meeting.
-6. Realtime pipeline processes audio using the best allowed provider/model.
-7. User optionally sees captions/live notes/assistant signals.
-8. Final meeting artifacts appear in the web/desktop workspace.
-
-### Team/enterprise admin
-
-1. Create/connect organization.
-2. Invite users and assign roles.
-3. Set provider/data-retention/privacy policy.
-4. Configure default languages/accent behavior and meeting capture policy.
-5. View usage, cost, quality, meeting and operational analytics.
-
-### Meeting workflow
-
-Calendar/meeting URL → authorized capture path → realtime audio/transcript events → live notes/assistant → recording/final transcript where allowed → transcript reconciliation → summary/decisions/action items/search index → export/integrations.
-
-### Provider workflow
-
-Capability request → policy evaluation → eligible provider set → route using health/latency/quality/cost/privacy/region → execute → normalize events/errors → meter usage/cost → fallback if safe → persist provenance.
+- Repository: `Vertex-Systems-Network/vsn-voice-ai`.
+- ANPOS child project still requires bootstrap/reconciliation before implementation.
+- Current canonical module bank: **25 modules**.
+- Current implementation progress: **0 / 25 modules started**.
+- Current development authorization: **LOCKED — OWNER CONSENT REQUIRED**.
+- Technology stack: not yet approved.
+- No provider is considered integrated until real API/SDK/commercial access and contract tests exist.
+- No VSN proprietary speech model has been trained yet.
 
 ## 5. Validated Requirements
 
-- Hybrid external + proprietary AI architecture.
-- Relevant third-party API/SDK integrations when actually available and commercially usable.
-- VSN-owned AI as a first-class provider.
-- Realtime noise cancellation/audio cleanup.
+- Hybrid external-provider + VSN-owned-model architecture.
+- Integrate every relevant AI provider that exposes usable/approved API or SDK access when it improves coverage, economics or resilience.
+- Provider-neutral internal capability contracts.
+- Realtime noise/background voice removal.
 - Accent conversion with voice preservation.
-- Speech translation.
-- Live transcription/captions.
-- Broad meeting intelligence including notes.
-- Major meeting/calling compatibility.
-- Provider fallback and non-hardcoded vendor architecture.
-- README total-module tracker updated after every project-changing owner query/update.
-- No implementation until explicit owner consent.
+- Realtime translation.
+- Transcription/captions/diarization.
+- Meeting notes and broad meeting-intelligence functions.
+- Meeting/call platform connectivity.
+- Contact-center/telephony support.
+- Commercial SaaS subscription model.
+- README module dashboard updated after each owner query/update related to this project.
+- Every module dashboard row includes module identity, scope, start/end datetime, progress, ETA and planning duration.
+- Development does not begin until explicit owner consent.
 
-## 6. Assumptions Still Requiring Validation
+## 6. Competitive Requirements Added by 2026 Market Audit
 
-- Windows-first commercial desktop launch is likely optimal; final platform order remains unapproved.
-- On-device processing should be preferred for selected low-latency functions when licensing/model footprint/device performance support it.
-- A unified meeting API/SDK can accelerate cross-platform meeting capture, with native adapters added selectively.
-- Initial proprietary model focus should be one or both of: realtime noise/BVC; Pakistan/India/Middle-East English → US English accent conversion.
-- Subscription pricing will likely combine plan entitlements with minute/usage protection because provider costs are variable.
-- Enterprise buyers may require regional processing, configurable retention, SSO and BYOK/provider controls.
+The market audit against Krisp, Sanas, Otter, Fireflies, Read AI, Zoom/ZoomMate and adjacent platforms added six top-level responsibilities that are now canonical:
 
-## 7. Constraints and Risks
+- `MOD-020` Multi-Platform Clients & In-Person Capture.
+- `MOD-021` Business Integrations & Workflow Automation.
+- `MOD-022` Conversation Intelligence, QA & Compliance Scoring.
+- `MOD-023` Unified Conversation Knowledge & Cross-App Search.
+- `MOD-024` Agentic Actions, AI Skills & Voice Agents.
+- `MOD-025` Enterprise Administration, Device Fleet & Deployment Control.
 
-### Technical
+The audit also expanded `MOD-012` to include voice security such as deepfake/synthetic-speech detection, speaker-change detection and agent voice verification.
 
-- Accent conversion at conversational latency while preserving identity/naturalness is a major R&D challenge.
-- Full speech translation has materially higher latency than accent-only transformation.
-- Audio routing/virtual drivers are OS-sensitive and can destabilize user calls if poorly engineered.
-- Realtime provider failure must not cut off the base call; bypass/fallback is critical.
-- Overlapping speech, noise, code-switching and diarization remain hard meeting cases.
+## 7. Assumptions Still Requiring Validation
 
-### Commercial/vendor
+- Which accent directions must ship first beyond Pakistan/India/Middle-East English → US English.
+- Commercial/partner API access for providers that do not expose a fully self-serve public integration path.
+- Exact on-device vs cloud split by operating system/device capability.
+- Translation latency acceptable for each target use case.
+- Recording/transcription consent requirements by launch geography and customer segment.
+- Enterprise compliance/certification requirements and launch order.
+- First telephony/contact-center providers.
+- First CRM/business integration pack.
+- Mobile/browser launch order.
+- VSN proprietary model dataset availability, licensing and budget.
 
-- API/SDK availability does not guarantee redistribution/embedded/commercial rights.
-- Provider pricing/quotas may change; routing and cost telemetry are required.
-- Sanas integration availability must be verified rather than assumed from product documentation.
+## 8. Constraints and Risks
 
-### Privacy/security/legal
+### Realtime engineering
 
-- Audio, recordings, voice identity and transcripts can be highly sensitive.
-- Recording/transcription consent rules vary by context/jurisdiction.
-- External AI providers create data-boundary and retention dependencies.
+- End-to-end latency and jitter can destroy conversational usability.
+- Virtual audio devices and native OS audio differ materially across Windows/macOS/mobile/browser.
+- CPU/GPU/NPU capability varies widely.
+- Provider outage/rate limiting must never unnecessarily break base call audio.
+
+### AI quality
+
+- Accent conversion must preserve intelligibility, identity and naturalness.
+- Translation latency/quality must be evaluated separately from accent conversion.
+- Diarization and live transcripts may need final reconciliation.
+- Meeting/QA/knowledge outputs require evidence traceability.
+- Voice-security classifiers can produce false positives/negatives and require explicit evaluation.
+
+### Privacy and legal
+
+- Voice is sensitive identity data in many contexts.
+- Recording/transcription rules vary by jurisdiction and meeting context.
+- External providers create data-boundary, retention and residency dependencies.
 - Voice personalization requires anti-impersonation controls and strong consent.
+- Cross-app knowledge must inherit source permissions and deletion/revocation.
 
 ### Product scope
 
-- Attempting every meeting feature in V1 would compromise the core realtime experience.
-- Core audio quality, latency, stability and provider economics must outrank secondary feature breadth in early phases.
+- Attempting every module in V1 would compromise the core realtime experience.
+- Core audio quality, latency, stability and provider economics outrank secondary feature breadth in early phases.
+- New modules are top-level ownership boundaries, not a commitment to ship all features simultaneously.
 
-## 8. Approved Technology Decisions
+## 9. Approved Technology Decisions
 
 No concrete implementation stack is approved yet.
 
 - Frontend: **TBD — Stage 9 consent required**
 - Backend: **TBD — Stage 9 consent required**
 - Desktop/native audio: **TBD — Stage 9 consent required**
+- Mobile/browser: **TBD — Stage 9 consent required**
 - AI training/runtime: **TBD — Stage 9 consent required**
-- Data: **TBD — Stage 9 consent required**
+- Data/search/vector strategy: **TBD — Stage 9 consent required**
 - Infrastructure: **TBD — Stage 9 consent required**
 - Consent status: **pending**
 
@@ -204,41 +222,49 @@ No concrete implementation stack is approved yet.
 - VSN-owned models as first-class providers.
 - Provider-neutral routing/fallback.
 - Desktop virtual-audio capability.
-- Dual-path live + finalized meeting intelligence.
+- Realtime + finalized meeting intelligence.
+- Broad competitive feature plan without starting implementation before consent.
 
 These are product/architecture requirements, **not approval of a programming-language/cloud stack**.
 
-### Initial provider research catalog
+## 10. Initial Provider Research Catalog
 
 The following are integration **candidates**, not claims of completed integration:
 
-| Provider | Publicly verified relevant capability | Planning status |
+| Provider | Relevant capability area | Planning status |
 |---|---|---|
-| Krisp SDK | Noise cancellation, background-voice cancellation, accent conversion; device/server SDKs | High-priority candidate; commercial access/licensing required |
-| Sanas | Accent Translation, inbound/outbound accent features, Language Translation | Benchmark/candidate; programmatic/partner integration access must be verified |
-| OpenAI | Realtime voice, realtime translation, realtime transcription, tool-capable voice models | High-priority cloud candidate |
-| Deepgram | Streaming STT, TTS, Voice Agent API, third-party/BYO provider composition | High-priority speech candidate |
-| ElevenLabs | Speech-to-speech/voice transformation and voice APIs | Candidate for voice/speech transformation |
-| Recall.ai | Cross-platform meeting bots/desktop capture, realtime audio/video/transcripts/metadata, AI agent I/O | High-priority meeting-capture candidate |
-| AssemblyAI | Realtime STT, speaker diarization/revision and meeting-oriented transcript intelligence | High-priority STT/diarization candidate |
-| Azure AI Speech / Voice Live | Realtime voice, translation, STT/TTS ecosystem | Enterprise cloud candidate |
-| Google Cloud Speech | Streaming STT and broad speech ecosystem | Candidate |
-| AWS Transcribe/Polly | Streaming transcription and bidirectional streaming speech synthesis | Candidate |
-| Speechmatics | Realtime/batch STT, TTS, voice-agent APIs; cloud/on-prem deployment options | Enterprise/privacy candidate |
-| VSN AI | Proprietary models to be trained/evaluated and exposed through the same provider contract | Required first-class internal provider |
+| Krisp SDK | Noise/background voice cancellation, accent conversion, meeting/contact-center capabilities | High-priority candidate; commercial access/licensing required |
+| Sanas | Accent Translation, Language Translation, speech enhancement | Benchmark/candidate; programmatic/partner access must be verified |
+| OpenAI | Realtime speech, transcription, translation and tool-capable voice/agent models | High-priority cloud candidate |
+| Deepgram | Streaming STT/TTS and Voice Agent APIs | High-priority speech candidate |
+| ElevenLabs | Voice/speech transformation and synthesis APIs | Candidate |
+| Recall.ai | Cross-platform meeting capture and realtime meeting media/transcripts/metadata | High-priority capture candidate |
+| AssemblyAI | Realtime STT and diarization | High-priority STT candidate |
+| Azure AI Speech / Voice Live | Speech, translation and realtime voice ecosystem | Enterprise candidate |
+| Google Cloud Speech | Streaming STT | Candidate |
+| AWS Transcribe / Polly | Streaming STT and speech synthesis | Candidate |
+| Speechmatics | Realtime/batch STT, TTS and voice-agent APIs | Enterprise/privacy candidate |
+| VSN AI | Proprietary models using the same internal provider contracts | Required internal provider; no models trained yet |
 
-Provider catalog must expand over time when other relevant providers expose usable API/SDK access. Activation requires verified documentation, access, terms, data policy, region, quota, cost and contract tests.
+Activation requires verified documentation, access, terms, data policy, region, quotas, cost and contract tests.
 
-## 9. Options Bank Summary
+## 11. Options Bank Summary
 
-- Selected: `OPT-001`, `OPT-002`, `OPT-003`, `OPT-006`, `OPT-010`, `OPT-012`
-- Candidate: `OPT-004`, `OPT-005`, `OPT-007`, `OPT-008`, `OPT-009`, `OPT-011`
-- Rejected: none yet
-- Deferred: none yet
+Canonical architecture/product option details live in `config/ai/options-bank.json`.
 
-## 10. Proposed Modules
+Current direction includes:
 
-Canonical modules are stored in `config/ai/modules-bank.json`.
+- hybrid external AI providers;
+- proprietary VSN provider;
+- provider-neutral orchestration;
+- desktop virtual audio;
+- meeting capture abstraction;
+- realtime/final transcript paths;
+- privacy/cost/latency-aware routing.
+
+## 12. Canonical Modules — 25
+
+Canonical definitions live in `config/ai/modules-bank.json` and status is mirrored in `README.md`.
 
 1. `MOD-001` Project Governance, Bootstrap & Consent
 2. `MOD-002` Desktop Audio Core & Virtual Devices
@@ -251,7 +277,7 @@ Canonical modules are stored in `config/ai/modules-bank.json`.
 9. `MOD-009` Live AI Assistant & Communication Coach
 10. `MOD-010` Hybrid AI Provider Gateway & Orchestration
 11. `MOD-011` Proprietary VSN AI Runtime & Model Registry
-12. `MOD-012` Voice Personalization & Identity Safety
+12. `MOD-012` Voice Personalization, Identity Safety & Voice Security
 13. `MOD-013` Telephony & Contact Center Integrations
 14. `MOD-014` SaaS Web App, Accounts, Teams & Workspace
 15. `MOD-015` Subscriptions, Entitlements & Usage Metering
@@ -259,17 +285,23 @@ Canonical modules are stored in `config/ai/modules-bank.json`.
 17. `MOD-017` Privacy, Security, Compliance & Data Governance
 18. `MOD-018` Quality, Performance, Release & Desktop Updates
 19. `MOD-019` Public Developer API, SDKs & Webhooks
+20. `MOD-020` Multi-Platform Clients & In-Person Capture
+21. `MOD-021` Business Integrations & Workflow Automation
+22. `MOD-022` Conversation Intelligence, QA & Compliance Scoring
+23. `MOD-023` Unified Conversation Knowledge & Cross-App Search
+24. `MOD-024` Agentic Actions, AI Skills & Voice Agents
+25. `MOD-025` Enterprise Administration, Device Fleet & Deployment Control
 
-## 11. Phase / Milestone Strategy
+## 13. Phase / Milestone Strategy
 
-All durations below are planning estimates **after** an approved development start; they are not active schedules and do not create start/end timestamps.
+All durations are planning estimates **after** an approved development start. They do not create real start/end timestamps.
 
-### Phase 0 — Initialization, evidence and architecture gates
+### Phase 0 — Initialization + Architecture Gates
 
 Target: 1–2 weeks after approved start.
 
-- Bootstrap child project.
-- Select/skip PM and select verified development AI runtime.
+- Bootstrap/reconcile child project.
+- Resolve PM/development-AI setup as applicable.
 - Capability-aware quality baseline.
 - Provider-access investigation.
 - System design.
@@ -279,78 +311,100 @@ Target: 1–2 weeks after approved start.
 
 Primary modules: `MOD-001`, `MOD-010`, `MOD-017`.
 
-### Phase 1 — Realtime audio commercial core
+### Phase 1 — Realtime Audio Commercial Core
 
 Target: 6–10 weeks after Phase 0.
 
 - Desktop audio path and virtual mic.
 - Noise/background-voice cancellation.
 - Provider gateway foundation.
-- One external accent provider path if licensed/available.
+- Initial accent provider path if licensed/available.
 - Accent controls and safe bypass.
-- Basic auth/account/app shell.
-- Usage telemetry.
+- Basic account/app shell.
+- Usage telemetry and release baseline.
 
 Primary modules: `MOD-002`, `MOD-003`, `MOD-004`, `MOD-010`, `MOD-014`, `MOD-016`, `MOD-017`, `MOD-018`.
 
-### Phase 2 — Translation + live transcription
+### Phase 2 — Translation + Live Transcription
 
 Target: 4–7 weeks after Phase 1.
 
-- Realtime translation provider adapters.
+- Realtime translation adapters.
 - Streaming STT/captions.
 - Diarization/final transcript reconciliation.
 - Provider quality/latency/cost comparison.
 
 Primary modules: `MOD-005`, `MOD-006`, `MOD-010`, `MOD-016`, `MOD-018`.
 
-### Phase 3 — Meeting intelligence
+### Phase 3 — Meeting Intelligence + Multi-Platform Capture
 
-Target: 5–8 weeks after Phase 2.
+Target: 6–10 weeks after Phase 2.
 
 - Meeting capture adapters.
 - Calendar/scheduling.
-- Meeting workspace.
-- Notes, summaries, action items, decisions, topics, Q&A/search and export.
-- Live/final artifact reconciliation.
+- Meeting workspace and intelligence.
+- iOS/Android/browser/in-person capture foundations.
 
-Primary modules: `MOD-007`, `MOD-008`, `MOD-014`, `MOD-017`, `MOD-018`.
+Primary modules: `MOD-007`, `MOD-008`, `MOD-014`, `MOD-017`, `MOD-018`, `MOD-020`.
 
-### Phase 4 — Commercial SaaS and team readiness
+### Phase 4 — Commercial SaaS + Integrations
 
-Target: 4–6 weeks; can overlap selected Phase 3 work after architecture approval.
+Target: 5–8 weeks; selected work may overlap after architecture approval.
 
 - Subscription/entitlements/usage metering.
 - Team/org controls.
-- Admin analytics, provider cost and health.
-- Enterprise retention/provider policy foundations.
+- CRM/calendar/email/chat/docs/automation integration pack.
+- Admin analytics/provider cost and health.
 
-Primary modules: `MOD-014`, `MOD-015`, `MOD-016`, `MOD-017`, `MOD-018`.
+Primary modules: `MOD-014`, `MOD-015`, `MOD-016`, `MOD-017`, `MOD-018`, `MOD-021`.
 
-### Phase 5 — Live assistant, telephony and broader integrations
+### Phase 5 — Conversation Intelligence + Enterprise
+
+Target: 6–10 weeks.
+
+- QA/compliance scorecards and review workflows.
+- Sales/support/contact-center intelligence.
+- Enterprise SSO/SCIM and policy hierarchy.
+- Device fleet/deployment controls.
+
+Primary modules: `MOD-013`, `MOD-022`, `MOD-025`, `MOD-016`, `MOD-017`.
+
+### Phase 6 — Unified Knowledge + Agentic Automation
+
+Target: 7–12 weeks initial foundation.
+
+- Cross-meeting/call/app knowledge.
+- Permission-aware search and source-cited Q&A.
+- AI skills and specialist agents.
+- Authorized CRM/task/email/calendar actions.
+- Human approval and action audit system.
+
+Primary modules: `MOD-021`, `MOD-023`, `MOD-024`, `MOD-017`.
+
+### Phase 7 — Live Assistant + Telephony Expansion
 
 Target: 6–10 weeks.
 
 - Live AI coach/assistant.
-- Contact-center/telephony adapters.
-- Native meeting integrations where justified.
-- CRM/workflow integrations as product evidence supports them.
+- Contact-center/telephony expansion.
+- Realtime context and specialist assistance.
 
-Primary modules: `MOD-009`, `MOD-013`, `MOD-007`, `MOD-010`.
+Primary modules: `MOD-009`, `MOD-013`, `MOD-010`, `MOD-022`, `MOD-024`.
 
-### Phase 6 — Proprietary AI expansion
+### Phase 8 — Proprietary VSN AI Expansion
 
 Runs in parallel only after approved dataset/compute plan; first production-capable model may require several months.
 
 - VSN dataset/evaluation pipeline.
 - Proprietary noise/BVC and/or accent model research.
+- Voice-security model research where justified.
 - On-device/server inference packaging.
 - Shadow evaluation against external providers.
 - Controlled production routing only after quality/security evidence.
 
 Primary modules: `MOD-011`, `MOD-003`, `MOD-004`, `MOD-010`, `MOD-012`, `MOD-017`, `MOD-018`.
 
-### Phase 7 — Developer platform
+### Phase 9 — Developer Platform
 
 Later milestone after internal contracts stabilize.
 
@@ -361,104 +415,91 @@ Later milestone after internal contracts stabilize.
 
 Primary module: `MOD-019`.
 
-## 12. Dependency and Critical-Path Notes
+## 14. Dependency and Critical-Path Notes
 
-Critical path for a usable realtime product:
+- `MOD-001` must precede implementation execution.
+- `MOD-010` is a core dependency for most AI capability modules.
+- `MOD-017` is cross-cutting and must influence architecture before data/audio integrations.
+- `MOD-002` is critical for system-wide desktop call processing.
+- `MOD-006` is foundational for meeting intelligence, QA and knowledge.
+- `MOD-021` feeds `MOD-023` and `MOD-024` for cross-app context/actions.
+- `MOD-018` gates production releases.
+- `MOD-011` proprietary model work can parallelize only after data/compute approval.
+- `MOD-019` should follow stabilized internal contracts.
 
-`MOD-001 → MOD-010 → MOD-002 → MOD-003 → MOD-004 → MOD-018`
+## 15. QA Strategy
 
-Meeting path:
+Plan for:
 
-`MOD-010 → MOD-006 + MOD-007 → MOD-008 → MOD-014`
+- audio quality and intelligibility corpora;
+- latency/jitter/CPU/GPU/NPU benchmarks;
+- device/OS/platform compatibility matrices;
+- provider adapter contract tests;
+- provider outage/fallback/fault-injection tests;
+- transcription/diarization accuracy testing;
+- translation and accent listening evaluation;
+- speaker-similarity and voice-security evaluation;
+- meeting artifact factuality/traceability checks;
+- conversation scoring evaluation;
+- knowledge retrieval relevance/citation tests;
+- permission/tenant leakage testing;
+- workflow/agent idempotency and authorization testing;
+- billing/usage accuracy;
+- accessibility, responsive and E2E testing;
+- install/update/rollback verification.
 
-Commercial path:
+## 16. Security Strategy
 
-`MOD-014 + MOD-010 + MOD-016 → MOD-015`
-
-Proprietary AI path:
-
-`MOD-001 + MOD-017 → MOD-011 → MOD-010 → capability-specific module`
-
-Key rule: meeting feature development must not delay proving stable realtime audio, provider routing and latency first.
-
-## 13. QA Strategy
-
-- Provider adapter contract tests.
-- Golden audio regression corpus.
-- Realtime latency/jitter/packet-loss benchmarks.
-- CPU/GPU/NPU resource tests where local inference applies.
-- Speaker similarity and accent intelligibility evaluation.
-- Translation quality and code-switching tests.
-- WER/cpWER and diarization tests.
-- Zoom/Teams/Meet/Webex compatibility matrix where supported.
-- Device hotplug/sleep/wake/reconnect/crash recovery.
-- Provider outage/rate-limit/fallback chaos tests.
-- Billing metering/idempotency tests.
-- RBAC/tenant isolation and retention/deletion tests.
-- Web WCAG 2.2 AA baseline.
-- Installer/update/rollback tests.
-
-No capability is complete from code existence alone; evidence is required.
-
-## 14. Security Strategy
-
-- Explicit data classification for raw audio, recordings, voice identity, transcripts, embeddings and derived notes.
-- Default-minimize audio/recording storage.
+- Explicit recording/transcription/voice consent.
 - Strong tenant isolation and RBAC.
-- Provider credentials in secure secret storage only.
-- Ephemeral credentials for client realtime sessions where supported.
-- Provider routing blocked when tenant region/privacy policy is incompatible.
-- Recording/transcription consent/disclosure controls.
-- Voice identity consent/revocation and anti-impersonation controls.
-- Signed desktop artifacts/model updates.
-- Prompt/tool-injection defenses for live assistant and meeting agents.
-- Auditable provider/model/version provenance for generated artifacts.
-- Retention/deletion/export workflows.
-- Security/compliance claims only from verified evidence.
+- Least-privilege OAuth/integration scopes.
+- Voice profile/embedding protection.
+- Anti-impersonation and voice-cloning abuse controls.
+- Prompt-injection/tool-abuse resistance for agents/integrations.
+- Sensitive content redaction in telemetry.
+- Provider data-boundary and residency enforcement.
+- Retention/deletion propagation across derived artifacts/knowledge.
+- Action approvals and auditable tool execution.
+- Artifact/update signing and supply-chain assurance.
 
-## 15. Deployment / Operations Implications
+## 17. Deployment / Operations Implications
 
-- Realtime audio services require regional routing and stable low-jitter media paths.
-- On-device processing should reduce latency/cloud cost where feasible.
-- Cloud capabilities require provider/session health, timeout, circuit-breaker and safe bypass.
-- Provider unit cost must be captured per minute/session/capability.
-- Model/provider updates require staged rollout and rollback.
-- Desktop auto-update and native driver signing are operationally critical.
-- Meeting webhooks/jobs require idempotency and replay handling.
-- SLOs should separately measure audio path continuity, processing latency, transcription availability, meeting artifact finalization and provider health.
+- Realtime audio must degrade safely if AI/provider connectivity fails.
+- On-device inference should be preferred where quality/device economics justify it.
+- Cloud processing requires region, cost and provider-policy routing.
+- Desktop/mobile/browser releases require separate compatibility/release channels.
+- Enterprise fleet rollout requires staged deployment and rollback.
+- Provider health, latency, quality and cost need continuous telemetry.
+- No production deployment is authorized yet.
 
-## 16. Unresolved Human Decisions
+## 18. Unresolved Human Decisions
 
-- Explicit consent to initialize/start development.
-- Final technology stack approval after architecture alternatives are presented.
-- Windows-only first release vs Windows + macOS initial release.
-- Initial geographic market/hosting regions.
-- External provider contracts/accounts to activate first.
-- First VSN proprietary model priority and approved R&D/data budget.
-- Meeting recording default behavior and retention policy.
-- Initial subscription packaging/pricing.
-- Enterprise compliance targets beyond baseline security/privacy readiness.
-- Project Management provider choice or explicit skip.
-- Development AI pool after child bootstrap/discovery.
-- Whether/when to apply recommended GitHub Rules.
+Before implementation can begin:
 
-## 17. Execution Readiness
+- Explicit owner consent to start development.
+- Project bootstrap/reconciliation decisions required by ANPOS.
+- Technology stack approval via Stage 9.
+- Initial provider licensing/access and budget decisions.
+- First accent/language/platform launch priorities.
+- Proprietary dataset/compute budget when model R&D begins.
+- Initial compliance/geographic launch requirements.
 
-- [x] validated project objective exists
-- [ ] child repository bootstrap/reality has been reconciled
-- [ ] system design is approved enough to proceed
-- [ ] technology stack has required consent
-- [x] options bank is populated sufficiently for current planning
-- [x] modules bank is populated with stable module IDs
-- [x] module-option attachments are defined at planning level
-- [x] phases/milestones are mapped to modules
-- [ ] modules are decomposed into implementation work units
-- [x] major dependencies and blockers are visible
-- [x] module-level acceptance criteria and quality gates exist
-- [ ] project state identifies a valid implementation resume point
+## 19. Execution Readiness
 
-### Development lock
+Before implementation begins at scale, confirm:
 
-`LOCKED — OWNER CONSENT REQUIRED`
+- [x] validated product objective exists
+- [x] hybrid architecture requirement is recorded
+- [x] competitive market module audit exists
+- [x] canonical module bank contains 25 modules
+- [x] README contains full 25-module dashboard
+- [ ] ANPOS child repository bootstrap/reconciliation completed
+- [ ] system design completed
+- [ ] technology stack approved by owner
+- [ ] provider access/licensing needed for first phase verified
+- [ ] phases decomposed into small verifiable work units
+- [ ] dependencies/blockers mapped at work-unit level
+- [ ] acceptance criteria/checks finalized for first implementation phase
+- [ ] project state identifies an authorized implementation resume point
 
-Until the owner explicitly authorizes development, only planning/research/documentation reconciliation is permitted. README progress must remain evidence-based and implementation modules must not be given fabricated start/end datetimes or non-zero completion.
+**Current execution state: NOT READY FOR IMPLEMENTATION — OWNER DEVELOPMENT CONSENT NOT GIVEN.**
