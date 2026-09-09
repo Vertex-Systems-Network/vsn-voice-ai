@@ -24,6 +24,9 @@ func (r *Registry) Register(manifest ProviderManifest) error {
 	if manifest.Health == "" {
 		manifest.Health = HealthHealthy
 	}
+	if manifest.RateLimit == "" {
+		manifest.RateLimit = RateLimitUnknown
+	}
 
 	manifest.Capabilities = uniqueCapabilities(manifest.Capabilities)
 	manifest.Regions = uniqueStrings(manifest.Regions)
@@ -64,6 +67,19 @@ func (r *Registry) SetHealth(id string, state HealthState) error {
 		return ErrProviderNotFound
 	}
 	manifest.Health = state
+	r.providers[id] = manifest
+	return nil
+}
+
+func (r *Registry) SetRateLimit(id string, state RateLimitState, remainingMicrounits int64) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	manifest, ok := r.providers[id]
+	if !ok {
+		return ErrProviderNotFound
+	}
+	manifest.RateLimit = state
+	manifest.RemainingQuotaMicrounits = remainingMicrounits
 	r.providers[id] = manifest
 	return nil
 }
