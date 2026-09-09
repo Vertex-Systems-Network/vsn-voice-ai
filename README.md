@@ -7,36 +7,34 @@
 **Canonical module count:** **25**  
 **Machine execution plan:** **10 phases / 25 Level-1 work units**
 
-> Development and the approved technology stack are authorized. PHASE-000 architecture/security work is still being completed before the clean PHASE-001 handoff. Paid third-party consumption, proprietary model training, production credentials/cloud spend and deployment remain subject to their applicable provider/data/compute/release gates.
+> Development is active. **PHASE-000 is complete and PHASE-001 is in progress.** The first product implementation is `MOD-002 / WU-002` (Desktop Audio Core & Virtual Devices). Paid third-party consumption, proprietary model training, production credentials/cloud spend and production deployment remain subject to their applicable provider/data/compute/release gates.
 
-## Initial Product Plan — Confirmed
+## Product Direction — Confirmed
 
-The original owner plan remains the core requirement:
+The owner-approved product direction is:
 
 1. Build a **hybrid AI platform**, not a single-vendor wrapper.
-2. Integrate **every relevant provider that actually exposes a usable and approved API/SDK** when it improves capability coverage, quality, latency, privacy, resilience or economics.
+2. Integrate every relevant provider that actually exposes a usable and approved API/SDK when it improves capability coverage, quality, latency, privacy, resilience or economics.
 3. Add **VSN-owned AI models/runtime as first-class providers** behind the same internal contracts.
 4. Build a directly usable realtime calls/meetings product covering noise cancellation, background-voice removal, echo/de-reverb, VAD, accent conversion, voice preservation, realtime translation, transcription, captions, diarization, meeting capture, notes, summaries, decisions, action items, highlights, Q&A, communication coaching, conversation intelligence, cross-app search, authorized AI actions, mobile/browser/in-person capture, integrations, telephony/contact-center, SaaS subscriptions, enterprise controls and later public APIs/SDKs.
 
 ## Current Repository State
 
 - Child project: `active_project`; bootstrap complete.
-- Active GitHub Actions quality workflow installed.
-- Commercial-template validator/test residue removed.
-- Canonical module dependency graph is acyclic.
-- Machine execution plan contains 10 phases and 25 Level-1 work units.
-- `CONSENT-000001` development approval: **approved**.
-- `CONSENT-000002` technology-stack approval: **approved**.
-- PHASE-000: **in progress**.
+- Development and technology stack approvals are recorded.
+- **PHASE-000 — Initialization & Architecture Gates: complete.**
+- **PHASE-001 — Realtime Audio Commercial Core: in progress.**
 - `WU-001` governance/bootstrap/consent: **complete**.
-- `WU-010` hybrid provider/system architecture: **in progress**.
-- `WU-017` privacy/security/data governance: **in progress**.
-- Voice AI threat baseline: defined in `config/security/threat-model.json`.
-- Voice AI data-classification baseline: defined in `config/data/data-governance.json`.
-- Approved system design: `docs/architecture/PHASE-000-SYSTEM-DESIGN.md`.
-- Actual product feature implementation: **not started yet**; it begins after PHASE-000 handoff.
+- `WU-010` provider-gateway foundation: **complete**; broader `MOD-010` provider work remains cross-cutting/in progress.
+- `WU-017` PHASE-000 privacy/security/data-governance baseline: **complete**; broader `MOD-017` security work remains cross-cutting/in progress.
+- `WU-002` desktop audio core and virtual devices: **in progress** since **2026-09-10 03:43 PKT**.
+- Rust native workspace and `vsn-audio-core` exist.
+- Verified audio-core slice includes `AudioFormat`, `AudioFrame`, bounded queues and safe processing bypass.
+- Verified device-lifecycle slice includes stable device IDs, capture/render roles, preferred/default selection, active fallback and lifecycle-state handling.
+- Windows implementation contract is documented in `docs/architecture/WINDOWS-AUDIO-IMPLEMENTATION.md`.
+- **Windows WASAPI capture and the production virtual microphone are not yet claimed operational.** They require platform-specific implementation and verification.
 
-**Latest verified green CI before this reconciliation:** GitHub Actions run `34407760342` passed conformance unit tests, ANPOS validation, YAML validation and whitespace checks. New commits must continue to pass the same gate.
+**Latest verified green implementation CI:** GitHub Actions run `34416070554` — ANPOS validation, Go provider-gateway tests, Rust formatting, Clippy, Rust unit tests, product JSON Schemas, YAML and whitespace gates all passed.
 
 ## README Reconciliation Rule — Mandatory
 
@@ -49,15 +47,16 @@ After every owner query/update related to this project, the acting AI must recon
 5. Calendar ETA stays `TBD` until a real working schedule exists.
 6. Module/dependency changes go to the canonical module bank first.
 7. Execution changes must stay synchronized with `config/ai/execution-plan.json` and `config/ai/project-state.json`.
+8. In-progress Level-1 modules remain at `0%` until a verified module-completion boundary exists; evidence is listed separately rather than converted into invented fractional percentages.
 
 # Total Modules Dashboard — 25 Modules
 
-Progress scale: `░░░░░░░░░░ 0%` → `██████████ 100%`. In-progress Level-1 work units remain at 0% until a verified completion boundary exists; this avoids fabricated fractional progress.
+Progress scale: `░░░░░░░░░░ 0%` → `██████████ 100%`.
 
 | ID | Module | Major scope / purpose | Start datetime | End datetime | Progress | Estimated completion datetime | Planning duration after dependencies |
 |---|---|---|---|---|---|---|---|
-| MOD-001 | Project Governance, Bootstrap & Consent | Project identity, governance, consent gates, traceability, README/state reconciliation | 2026-09-10 02:25 PKT | 2026-09-10 03:01 PKT | `██████████ 100%` | Complete for PHASE-000 gate | Governance continues cross-cutting |
-| MOD-002 | Desktop Audio Core & Virtual Devices | Mic/speaker capture, virtual mic/audio routing, device lifecycle, safe bypass | Not started | — | `░░░░░░░░░░ 0%` | TBD | 4–7 weeks |
+| MOD-001 | Project Governance, Bootstrap & Consent | Project identity, governance, consent gates, traceability, README/state reconciliation | 2026-09-10 02:25 PKT | 2026-09-10 03:01 PKT | `██████████ 100%` | Complete for initial gate | Governance continues cross-cutting |
+| MOD-002 | Desktop Audio Core & Virtual Devices | Mic/speaker capture, virtual mic/audio routing, device lifecycle, safe bypass | 2026-09-10 03:43 PKT | — | `░░░░░░░░░░ 0% — in progress` | TBD | 4–7 weeks |
 | MOD-003 | Realtime Audio Enhancement | Noise cancellation, background voice removal, echo/de-reverb, VAD, quality metrics | Not started | — | `░░░░░░░░░░ 0%` | TBD | 3–5 weeks |
 | MOD-004 | Accent Conversion & Voice Preservation | Accent conversion, inbound/outbound handling, voice preservation, strength controls | Not started | — | `░░░░░░░░░░ 0%` | TBD | 5–10 weeks integrated-provider path; proprietary R&D separate |
 | MOD-005 | Realtime Speech Translation | Bidirectional speech translation, language detection, translated audio/captions | Not started | — | `░░░░░░░░░░ 0%` | TBD | 3–5 weeks initial provider path |
@@ -65,14 +64,14 @@ Progress scale: `░░░░░░░░░░ 0%` → `███████�
 | MOD-007 | Meeting Capture & Platform Connectors | Zoom/Teams/Meet/Webex, bot/botless/native capture, calendar, participant/chat/events | Not started | — | `░░░░░░░░░░ 0%` | TBD | 4–7 weeks initial platforms |
 | MOD-008 | Meeting Intelligence & Knowledge | Notes, summaries, decisions, action items, topics, highlights, clips, meeting Q&A | Not started | — | `░░░░░░░░░░ 0%` | TBD | 4–7 weeks initial feature set |
 | MOD-009 | Live AI Assistant & Communication Coach | Live suggestions, clarity/pace/interruption coaching, contextual Q&A | Not started | — | `░░░░░░░░░░ 0%` | TBD | 4–7 weeks |
-| MOD-010 | Hybrid AI Provider Gateway & Orchestration | Provider registry, adapters, routing, fallback, health, quality/latency/privacy/cost policy | 2026-09-10 02:31 PKT | — | `░░░░░░░░░░ 0% — in progress` | TBD | 4–6 weeks foundation; adapters continuous |
+| MOD-010 | Hybrid AI Provider Gateway & Orchestration | Provider registry, adapters, routing, fallback, health, quality/latency/privacy/cost policy | 2026-09-10 02:31 PKT | — | `░░░░░░░░░░ 0% — in progress` | TBD | Foundation verified; adapters continuous |
 | MOD-011 | Proprietary VSN AI Runtime & Model Registry | Datasets/evaluation, model registry, training, inference, versioning, rollout/rollback | Not started | — | `░░░░░░░░░░ 0%` | TBD — data/compute authorization required before training | 6–12+ weeks runtime foundation; model R&D may take months |
 | MOD-012 | Voice Personalization, Identity Safety & Voice Security | Voice profiles, verification, deepfake/spoof detection, speaker-change/agent verification | Not started | — | `░░░░░░░░░░ 0%` | TBD | 4–7 weeks initial controls/security path |
 | MOD-013 | Telephony & Contact Center Integrations | SIP/PSTN/contact-center media, dialers, inbound/outbound calls, agent-assist hooks | Not started | — | `░░░░░░░░░░ 0%` | TBD | 4–8 weeks initial providers |
 | MOD-014 | SaaS Web App, Accounts, Teams & Workspace | Auth, organizations, team roles, meeting library, settings, notifications | Not started | — | `░░░░░░░░░░ 0%` | TBD | 5–8 weeks core |
 | MOD-015 | Subscriptions, Entitlements & Usage Metering | Plans, trials, billing, quotas, minutes, entitlements, overages, cost ledger | Not started | — | `░░░░░░░░░░ 0%` | TBD | 3–5 weeks |
 | MOD-016 | Admin, Analytics, Observability & Cost Control | Admin, provider health, latency, usage/cost, logs/metrics/traces, SLOs | Not started | — | `░░░░░░░░░░ 0%` | TBD | 3–5 weeks foundation; continuous |
-| MOD-017 | Privacy, Security, Compliance & Data Governance | Threat model, consent, retention/deletion, encryption, residency, RBAC, audit | 2026-09-10 03:01 PKT | — | `░░░░░░░░░░ 0% — in progress` | TBD | Cross-cutting; baseline 2–4 weeks then continuous |
+| MOD-017 | Privacy, Security, Compliance & Data Governance | Threat model, consent, retention/deletion, encryption, residency, RBAC, audit | 2026-09-10 03:01 PKT | — | `░░░░░░░░░░ 0% — in progress` | TBD | PHASE-000 baseline complete; continuous implementation verification |
 | MOD-018 | Quality, Performance, Release & Desktop Updates | Product QA, audio benchmarks, E2E, signing, installers, updates, rollback | Not started | — | `░░░░░░░░░░ 0%` | TBD | Cross-cutting; release baseline 4–6 weeks |
 | MOD-019 | Public Developer API, SDKs & Webhooks | REST/realtime APIs, SDKs, API keys, webhooks, rate limits, docs, sandbox | Not started | — | `░░░░░░░░░░ 0%` | TBD — later milestone | 5–8 weeks after internal contracts stabilize |
 | MOD-020 | Multi-Platform Clients & In-Person Capture | iOS, Android, browser/Chrome, in-person recording, voice notes, cross-device sync | Not started | — | `░░░░░░░░░░ 0%` | TBD | 5–9 weeks initial clients |
@@ -82,12 +81,38 @@ Progress scale: `░░░░░░░░░░ 0%` → `███████�
 | MOD-024 | Agentic Actions, AI Skills & Voice Agents | Authorized actions, skills/agents, CRM/task/email/calendar writes, approvals/audit | Not started | — | `░░░░░░░░░░ 0%` | TBD | 6–10 weeks initial safe agentic layer |
 | MOD-025 | Enterprise Administration, Device Fleet & Deployment Control | SSO/SCIM, org hierarchy, device fleet, remote policy, managed/staged deployment | Not started | — | `░░░░░░░░░░ 0%` | TBD | 6–10 weeks enterprise foundation |
 
-**Machine work-unit state:** `1 / 25 complete`, `2 / 25 in progress`  
-**Verified product feature implementation:** `0 / 25 modules implemented`  
-**Current lifecycle:** `ARCHITECTURE / PHASE-000 IN PROGRESS`  
+**Machine work-unit state:** `3 / 25 complete`, `1 / 25 in progress`  
+**Verified fully completed product modules:** `0 / 25` (MOD-001 is governance, not a user-facing product module)  
+**Current lifecycle:** `DEVELOPMENT / PHASE-001 IN PROGRESS`  
+**Current implementation:** `MOD-002 / WU-002 — Desktop Audio Core & Virtual Devices`  
 **Development consent:** `APPROVED`  
-**Technology stack:** `APPROVED`  
-**Next clean handoff:** complete/verify PHASE-000 → start PHASE-001 realtime commercial core.
+**Technology stack:** `APPROVED`
+
+## MOD-002 — Current Verified Boundary
+
+Implemented and CI-verified:
+
+- Rust `vsn-audio-core` workspace/crate;
+- explicit sample-rate/channel/frame-duration validation;
+- finite-sample and frame-size validation;
+- bounded realtime frame queue;
+- safe bypass returns the original frame after optional processing-stage failure;
+- platform-neutral capture/render device model;
+- communications/default/preferred device selection policy;
+- deterministic fallback when preferred/default devices are unavailable;
+- lifecycle state handling for disabled, not-present and unplugged devices;
+- Rust `rustfmt`, Clippy `-D warnings` and unit-test gates in CI.
+
+Not yet verified and therefore **not claimed complete**:
+
+- real Windows MMDevice endpoint enumeration;
+- event-driven WASAPI microphone capture;
+- `IAudioClient3` engine-period negotiation;
+- actual hotplug/default-device recovery on Windows;
+- Windows virtual microphone endpoint/driver;
+- processed/bypass audio reaching Zoom/Teams/Meet through that endpoint;
+- latency/jitter/device-recovery hardware evidence;
+- driver signing/install/update/uninstall/rollback.
 
 ## Hybrid Provider Model
 
@@ -97,7 +122,7 @@ Core capability families include:
 
 `audio.noise_cancel`, `audio.background_voice_cancel`, `audio.echo_reduce`, `audio.vad`, `voice.accent_convert`, `voice.identity_preserve`, `voice.deepfake_detect`, `voice.speaker_verify`, `speech.translate_realtime`, `speech.transcribe_stream`, `speech.transcribe_finalize`, `speech.synthesize`, `meeting.capture`, `meeting.transcript`, `meeting.intelligence`, `conversation.score`, `knowledge.search`, `assistant.realtime`, `agent.action`, `telephony.media`.
 
-Every provider adapter tracks verified capabilities, access type, platform/language/accent coverage, latency, privacy/retention/residency, pricing/metering, quotas, credentials, versions, health, licensing and contract-test state. **Safe fallback/bypass is mandatory for realtime audio.**
+Provider presence is not evidence of integration. Activation requires verified API/SDK access, terms/licensing, privacy/retention, region/residency, quota/cost and adapter tests.
 
 ## Provider Candidates — Not Yet Completed Integrations
 
@@ -116,8 +141,6 @@ Every provider adapter tracks verified capabilities, access type, platform/langu
 | Speechmatics | Realtime/batch STT, TTS, voice-agent APIs | Candidate |
 | VSN AI | Proprietary models using same provider contracts | Required internal provider; models not trained yet |
 
-Provider presence is not evidence of integration. Activation requires verified access, terms, data policy, region, quota/cost and adapter tests.
-
 ## Approved Technology Stack
 
 - **Web:** Next.js + React + TypeScript + Tailwind + shadcn/ui
@@ -135,8 +158,8 @@ Approval record: **`CONSENT-000002`**.
 
 ## Execution Phases
 
-1. **PHASE-000 — Initialization & Architecture Gates — IN PROGRESS**
-2. **PHASE-001 — Realtime Audio Commercial Core**
+1. **PHASE-000 — Initialization & Architecture Gates — COMPLETE**
+2. **PHASE-001 — Realtime Audio Commercial Core — IN PROGRESS**
 3. **PHASE-002 — Translation & Live Transcription**
 4. **PHASE-003 — Meeting Intelligence & Multi-Platform Capture**
 5. **PHASE-004 — Commercial SaaS & Business Integrations**
@@ -153,12 +176,14 @@ Canonical sources:
 - runtime state: `config/ai/project-state.json`
 - consent: `config/consent/consent-requests.json`
 - system design/stack: `docs/architecture/PHASE-000-SYSTEM-DESIGN.md`
+- Windows audio contract: `docs/architecture/WINDOWS-AUDIO-IMPLEMENTATION.md`
+- non-functional targets: `docs/architecture/NON-FUNCTIONAL-REQUIREMENTS.md`
 - threat model: `config/security/threat-model.json`
 - data governance: `config/data/data-governance.json`
 
 ## Remaining Gates
 
-These are not technology-approval blockers anymore, but still matter before their respective actions:
+These do not block the current approved local implementation slice, but apply before their respective operations:
 
 - Development AI/Supervisor/Worker identity selection before privileged worker dispatch.
 - Optional PM provider selection or explicit skip.
