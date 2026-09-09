@@ -1,124 +1,182 @@
-# Project Idea
+# Project Idea — VSN Voice AI
 
-> This file is the repository's persistent intake record. The current owner has authorized planning/documentation updates only. Product implementation remains locked until explicit owner consent.
+> Persistent owner-intake record. Repository-readiness/planning updates are authorized. Voice AI product implementation remains locked until separate explicit owner consent and the required technology-stack approval.
 
 ## Intake Status
 
-`CAPTURED — PLANNING ONLY`
+`CAPTURED — INITIAL PLAN CONFIRMED — PRODUCT IMPLEMENTATION LOCKED`
 
-## Raw User Input
+## Original Owner Plan
 
-The product should be a subscription-based AI voice and meeting platform inspired by and intended to exceed the useful capabilities of products such as Krisp and Sanas.
+The original requirement was to build a subscription-based AI voice and meeting platform inspired by products such as Krisp and Sanas, while using a **hybrid AI model** rather than depending on a single provider.
 
-The core concept is real-time voice processing during calls and meetings. A user may speak English with an Urdu/Pakistani or other non-native accent and the system should be able to convert the accent to a selected target accent such as US English while preserving the user's identity and natural delivery. The broader product should also support real-time speech translation where technically appropriate, noise cancellation, background voice removal, live transcription, meeting notes and as many useful meeting/call intelligence capabilities as are feasible.
+The core owner instruction is preserved as follows:
 
-The architecture must use a **hybrid AI model**:
+- integrate every relevant AI/API/SDK provider that actually exposes usable, approved programmatic access;
+- provide a provider-neutral architecture so providers can be added, compared, routed, failed over or replaced;
+- add VSN's own AI models/runtime as first-class providers in the same architecture;
+- make the product usable for realtime calls/meetings with noise cancellation, background voice removal, accent conversion, voice preservation and related realtime audio options;
+- include realtime language translation where technically suitable;
+- include meeting/call capabilities such as transcription, captions, diarization, notes, summaries, decisions, action items and as many useful meeting-intelligence capabilities as are feasible;
+- progressively expand into meeting capture, coaching, conversation intelligence, integrations, cross-app knowledge, agentic actions, telephony/contact-center, multi-platform clients, enterprise administration and developer APIs;
+- do not claim an integration exists until API/SDK access and implementation are verified;
+- do not start Voice AI product development until the owner explicitly authorizes it.
 
-1. Integrate relevant third-party AI APIs/SDKs when they are actually available, technically suitable, licensed and commercially usable.
-2. Provide a provider-neutral adapter/orchestration layer so providers can be added, replaced, routed, compared and failed over without rewriting the product.
-3. Add Vertex Systems Network's own AI models/runtime as first-class providers in the same architecture.
-4. Allow the platform to progressively replace third-party dependencies with proprietary models where quality, latency, privacy or unit economics justify it.
-5. Never claim an integration exists until API/SDK access and implementation are verified.
+## Normalized Product Direction
 
-The product should cover real-time audio enhancement, accent conversion, voice preservation, speech translation, transcription/captions, meeting capture, notes, summaries, decisions, action items, search/Q&A, analytics, live assistance/coaching, integrations and related meeting features where feasible.
+### Hybrid Provider Architecture
 
-For project tracking, the repository README must contain a complete modules table and be reconciled after every owner query/update that changes project scope, requirements, priorities, architecture or verified progress. The table must include at minimum: module name, start datetime, end datetime, progress bar and estimated completion datetime. No timestamp or progress may be invented: modules remain not started until repository evidence shows execution actually began.
+1. Every major AI capability is addressed through an internal capability contract.
+2. Third-party APIs/SDKs implement those contracts through provider adapters.
+3. VSN-owned models implement the same contracts as first-class providers.
+4. The routing layer may choose providers using verified capability, health, latency, quality, privacy, region, cost and tenant policy.
+5. Realtime audio must have safe bypass/fallback so an AI/provider failure does not unnecessarily break the call.
+6. Provider existence or marketing claims do not equal integration status; activation requires real access plus contract tests.
 
-**Development must not start until the owner gives explicit consent.** Planning, research and documentation updates are currently authorized; implementation, model training, infrastructure provisioning, paid API consumption, production credentials and deployment are not.
+### Realtime Voice / Audio
 
-## Normalized Understanding
+Planned capabilities include:
 
-### Explicit Requirements
+- microphone/speaker capture;
+- virtual microphone/audio routing;
+- noise cancellation;
+- background voice cancellation;
+- echo reduction/de-reverberation;
+- VAD and level handling;
+- accent conversion;
+- inbound/outbound accent handling where supported;
+- voice identity preservation;
+- accent-strength controls;
+- realtime speech translation;
+- translated captions;
+- voice personalization and identity safety;
+- deepfake/synthetic speech and speaker verification controls where justified.
 
-- Build a commercial AI voice + meeting SaaS with desktop/realtime capabilities.
-- Use a hybrid architecture combining third-party APIs/SDKs and proprietary VSN AI.
-- Integrate relevant voice/speech/meeting AI providers through a provider-neutral adapter layer when access is actually available and permitted.
-- Make VSN-owned models first-class providers rather than special-case code.
-- Support real-time noise cancellation and related audio cleanup.
-- Support real-time accent conversion with voice identity preservation.
-- Support real-time/bidirectional language translation where feasible.
-- Support live transcription/captions and speaker-aware meeting records.
-- Support meeting notes, summaries, action items, decisions and further meeting intelligence.
-- Support Zoom, Google Meet, Microsoft Teams and other practical meeting/call surfaces through native integrations, meeting APIs, desktop capture and/or virtual audio devices as appropriate.
-- Include provider routing/fallback so one external provider is not a hard dependency.
-- Track all canonical product modules in README.
-- Reconcile the README module tracker after every project-changing owner query/update.
-- Do not start implementation without explicit owner consent.
+Initial proprietary accent research candidate remains Pakistan/India/Middle-East English → US English, subject to dataset, technology and compute approval. This does not block an earlier third-party provider path.
 
-### Facts
+### Meetings / Calls
 
-- The current repository is `Vertex-Systems-Network/voice-ai`.
-- The repository was copied from the ANPOS template and currently still reports `instance_status: template_source`; it is therefore an uninitialized child according to repository rules.
-- The current repository contains governance/planning blueprints but no verified Voice AI product implementation.
-- Current public documentation confirms APIs/SDKs exist across several relevant categories, including Krisp realtime audio/accent SDKs, OpenAI realtime audio/translation/transcription, Deepgram realtime voice/STT/TTS, Recall.ai meeting capture APIs, AssemblyAI realtime transcription, Azure realtime voice/speech translation, Google streaming STT, AWS streaming Transcribe/Polly, ElevenLabs speech-to-speech and Speechmatics speech APIs.
-- Sanas publicly documents current Accent Translation and Language Translation product capabilities; programmatic/partner integration access must be verified before treating Sanas as an active provider adapter.
+Planned capabilities include:
 
-### Assumptions
+- Zoom, Microsoft Teams, Google Meet, Webex and other supported surfaces;
+- bot, botless/native and desktop capture strategies where appropriate;
+- live/final transcription and captions;
+- speaker diarization;
+- meeting notes and summaries;
+- key points and chapters/topics;
+- decisions and action items;
+- owners/due dates;
+- highlights and clips;
+- meeting Q&A;
+- follow-up drafts;
+- collaboration/tags/folders;
+- live communication coaching;
+- call/meeting QA and compliance scoring;
+- sentiment/talk/silence/interruption and sales/support signals;
+- unified search across conversations and connected work systems;
+- authorized AI skills/actions/agents.
 
-- Initial commercial validation should prefer integrations and existing models where they shorten time-to-market without blocking proprietary model development.
-- The Windows desktop app and virtual audio-device path will likely be a primary initial delivery surface; macOS should be designed as a first-class follow-on rather than an afterthought.
-- Accent-only processing should target substantially lower latency than full speech-to-speech language translation.
-- Meeting data may contain confidential or regulated information, so privacy, explicit recording/transcription disclosure, retention and provider data-boundary controls must be first-class requirements.
-- Subscription/billing is a product requirement, distinct from commercial-selling components intentionally excluded from the reusable ANPOS protocol itself.
+### Platforms / Integrations / Commercial Product
 
-### Preferences
+Planned expansion includes:
 
-- AI-native development governed by this repository's ANPOS workflow.
-- Hybrid build-vs-buy strategy rather than a pure third-party wrapper or pure research-first approach.
-- Extensible capability-provider registry rather than hard-coded vendor integrations.
-- Progressive migration toward proprietary VSN AI where it improves quality, control, privacy or cost.
-- Broad meeting feature coverage without sacrificing realtime audio quality/latency.
+- Windows desktop and later other desktop platforms according to approved stack;
+- iOS, Android, browser/Chrome and in-person capture;
+- calendar, email, Slack/Teams, CRM, documents/storage and project/work-management integrations;
+- Salesforce, HubSpot, Pipedrive and other verified CRM paths;
+- Zapier/Make/n8n/MCP-style automation where appropriate;
+- SIP/PSTN/contact-center integrations;
+- user accounts, organizations, teams and roles;
+- subscriptions, usage metering, quotas and entitlements;
+- admin/provider cost/quality/latency observability;
+- enterprise SSO/SCIM, device fleet/policy and managed deployment;
+- REST/realtime APIs, SDKs and webhooks after internal contracts stabilize.
 
-### Constraints
+## Current Repository Reality
 
-- No implementation until explicit owner consent.
-- Technology stack is not approved yet; Stage 9 `Approve Technology Stack` remains mandatory before implementation-specific architecture/code.
-- Current child bootstrap is not complete and must be reconciled before development execution.
-- External provider availability, commercial terms, region availability, quotas and data policies must be verified before activation.
-- Progress, start/end timestamps, completion and integration status must be evidence-based.
+- Repository: `Vertex-Systems-Network/vsn-voice-ai`.
+- Source template: `Vertex-Systems-Network/ai-native-project-operating-system`.
+- ANPOS protocol: `1.3.13`.
+- Child identity is initialized and reports `instance_status: active_project`.
+- Canonical module bank: **25 modules**.
+- Machine-readable execution plan: **10 phases / 25 Level-1 work units**.
+- Active baseline quality workflow is installed.
+- Latest verified baseline CI evidence includes successful GitHub Actions repository-integrity run `34405876582`.
+- Obsolete commercial/selling validator references and stale commercial-service deployment tests have been removed/replaced.
+- Module dependency graph has been corrected to remove the identified circular/incorrect dependencies.
+- Current Voice AI product implementation progress remains **0 / 25 modules started**.
+- Development AI pool is not selected yet.
+- Technology stack is not approved yet.
+- No third-party provider is considered integrated yet.
+- No VSN proprietary speech model has been trained yet.
 
-### Existing Research / Search / References
+## Validated Requirements
 
-- Krisp AI Voice SDK / Accent Conversion: https://sdk-docs.krisp.ai/docs/accent-conversion
-- Krisp SDK API capabilities: https://sdk-docs.krisp.ai/docs/api-reference
-- Sanas Accent Translation model documentation: https://help.sanas.ai/portalv3/docs/ai-models-accent-translation
-- Sanas Language Translation: https://help.sanas.ai/docs/language-translation
-- OpenAI realtime voice models/API: https://openai.com/index/advancing-voice-intelligence-with-new-models-in-the-api/
-- Deepgram Voice Agent API: https://developers.deepgram.com/docs/voice-agent
-- ElevenLabs speech-to-speech API: https://elevenlabs.io/docs/api-reference/speech-to-speech/convert
-- Recall.ai meeting/agent API: https://www.recall.ai/product/ai-agent-api
-- AssemblyAI streaming speech: https://www.assemblyai.com/topic/streaming-speech-to-text
-- Azure Voice Live / Speech: https://learn.microsoft.com/en-us/azure/ai-services/speech-service/voice-live-how-to
-- Google Cloud Speech-to-Text: https://docs.cloud.google.com/speech-to-text/docs
-- AWS Transcribe streaming: https://docs.aws.amazon.com/transcribe/latest/APIReference/API_streaming_StartStreamTranscription.html
-- Speechmatics developer APIs: https://docs.speechmatics.com/
+- Commercial subscription AI voice + meeting SaaS.
+- Hybrid external-provider + VSN-owned-model architecture.
+- Provider-neutral adapters and routing/fallback.
+- Integrate relevant providers that expose usable approved API/SDK access.
+- Realtime audio enhancement/noise/background-voice handling.
+- Accent conversion with voice preservation.
+- Realtime/bidirectional language translation where feasible.
+- Live transcription/captions/diarization.
+- Meeting capture and meeting intelligence.
+- Live assistant/coaching.
+- Telephony/contact-center support.
+- Conversation QA/compliance intelligence.
+- Cross-app knowledge/search.
+- Agentic actions/skills/voice agents with authorization controls.
+- Mobile/browser/in-person capture.
+- Business/CRM/workflow integrations.
+- Team SaaS, usage metering, enterprise controls and later public developer platform.
+- README module dashboard reconciled after every material owner project update.
+- No invented progress, timestamps, integrations, tests or releases.
+- No Voice AI product implementation until explicit owner consent.
 
-### Open Questions
+## Provider Research Catalog — Candidates Only
 
-- Final brand/product name.
-- Exact first-launch operating systems and geographic regions.
-- Which third-party providers will approve commercial/embedded use and on what pricing/contract terms.
-- Which meeting platforms require bot-based vs botless/native/desktop capture for launch.
-- Final data-retention defaults and enterprise compliance targets beyond baseline privacy/security controls.
-- Exact first proprietary model: recommended initial candidates are noise/BVC and Pakistan/India/Middle-East-to-US accent conversion, subject to research and dataset feasibility.
-- Final subscription packaging/pricing and included realtime minutes.
-- Technology stack approval remains pending.
+Initial research candidates include:
 
-### Risks / Unknowns
+- Krisp SDK;
+- Sanas where programmatic/partner access is available;
+- OpenAI;
+- Deepgram;
+- ElevenLabs;
+- Recall.ai;
+- AssemblyAI;
+- Azure AI Speech / Voice Live;
+- Google Cloud Speech;
+- AWS Transcribe / Polly;
+- Speechmatics;
+- VSN AI as the required internal provider family.
 
-- Accent conversion quality and voice-identity preservation at conversational latency are the highest technical-risk product areas.
-- Full language translation has materially different latency and quality constraints from accent conversion.
-- Virtual audio drivers and multi-platform audio routing are complex and require deep native testing.
-- Provider pricing can destroy gross margin unless routing, caching/on-device execution, minute metering and cost controls are built in.
-- External provider policy/licensing changes can create dependency risk; adapter abstraction and proprietary fallback mitigate this.
-- Meeting recording/transcription creates consent, privacy, residency, retention and enterprise-security obligations.
-- Speaker diarization, overlap, code-switching and noisy multi-party meetings remain challenging edge cases.
-- A feature-maximal first release could delay the core realtime audio experience; phased delivery is required.
+This list is intentionally extensible: if another relevant provider exposes a usable API/SDK, it should be evaluated and may be added to the provider catalog. Provider activation requires verified access, licensing/terms, regions, privacy/retention, quotas/cost and implementation tests.
 
-## Research Status
+## Remaining Decisions Before Product Implementation
 
-`INITIAL MARKET/TECHNICAL RESEARCH CAPTURED — CONTINUOUS PROVIDER VERIFICATION REQUIRED`
+- Development AI/Supervisor/Worker selection and identity verification.
+- Optional PM provider selection or explicit skip.
+- Project-specific Voice AI threat model and data classification.
+- Final first-launch platform/geography order.
+- Provider commercial/access matrix.
+- Exact first accent/language launch set.
+- On-device vs cloud split by capability/device.
+- Technology alternatives and system design.
+- Explicit `Approve Technology Stack` decision.
+- Explicit owner authorization to start Voice AI product implementation.
+- Separate approval for proprietary model datasets/compute/training.
 
-## Planning Status
+## Primary Risks
 
-`DRAFT HYBRID PLAN CREATED — IMPLEMENTATION LOCKED PENDING OWNER CONSENT`
+- Conversational latency/jitter and native virtual-audio complexity.
+- Accent naturalness and identity preservation.
+- Translation quality/latency as a distinct problem from accent conversion.
+- Noisy/overlapping/code-switched transcription and diarization.
+- External provider pricing, outages, licensing and policy changes.
+- Meeting/voice privacy, consent, residency and retention obligations.
+- Voice security false positives/negatives.
+- Over-scoping V1 before the realtime commercial core is reliable.
+
+## Current Planning Status
+
+`INITIAL PLAN CONFIRMED — REPOSITORY READINESS RECONCILED — PRODUCT IMPLEMENTATION LOCKED PENDING OWNER CONSENT + TECHNOLOGY APPROVAL`
