@@ -1,7 +1,49 @@
 {
   "schema_version": 2,
-  "next_sequence": 1,
-  "requests": [],
+  "next_sequence": 2,
+  "requests": [
+    {
+      "id": "CONSENT-000001",
+      "type": "development_start",
+      "title": "Authorize VSN Voice AI development flow",
+      "summary": "Owner explicitly authorized the VSN Voice AI development flow. This approval starts PHASE-000 planning/system-design work and unlocks development governance, but does not by itself approve a technology stack or production deployment.",
+      "requested_by": "assistant-supervisor",
+      "requested_at": "2026-09-09T21:25:00+00:00",
+      "request_hash": "57f5f9cf7d69aa2580ddecc19edabf711647c6cdc493ea886c136333bde9be27",
+      "nonce": "b694dd64-ad2d-4996-bc97-885bd4bf2bc1",
+      "expires_at": "2026-09-10T21:25:00+00:00",
+      "nonce_consumed_at": "2026-09-09T21:25:00+00:00",
+      "owner_identity": "authenticated_conversation_user",
+      "canonical_review_reference": "chat://current-conversation/2026-09-10T02:25:00+05:00",
+      "email_notification_reference": null,
+      "proposed_changes": [
+        "Unlock the owner development-consent gate.",
+        "Start PHASE-000 Initialization & Architecture Gates.",
+        "Allow repository planning, system design, threat/data architecture, provider evaluation and technology-selection work.",
+        "Keep product implementation behind the separate Approve Technology Stack gate."
+      ],
+      "affected_modules": [
+        "MOD-001",
+        "MOD-010",
+        "MOD-017"
+      ],
+      "risk": "medium",
+      "status": "approved",
+      "approved_scope": [
+        "PHASE-000 governance and architecture work",
+        "provider and technology evaluation",
+        "security/data threat modeling",
+        "repository planning and development-readiness changes"
+      ],
+      "decision_by": "authenticated_conversation_user",
+      "decision_identity_evidence_ref": "chat://current-authenticated-conversation-user",
+      "decision_at": "2026-09-09T21:25:00+00:00",
+      "decision_evidence": "chat://current-conversation/user-message/consent-yes",
+      "decision_request_hash": "57f5f9cf7d69aa2580ddecc19edabf711647c6cdc493ea886c136333bde9be27",
+      "implementation_reference": null,
+      "verification_reference": null
+    }
+  ],
   "request_schema": {
     "id": "CONSENT-000001",
     "type": "technology_update_or_scope_addition",
