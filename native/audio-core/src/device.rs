@@ -173,11 +173,7 @@ impl DeviceCatalog {
         self.devices.get(id)
     }
 
-    pub fn default_for(
-        &self,
-        flow: DeviceFlow,
-        role: DeviceRole,
-    ) -> Option<&DeviceDescriptor> {
+    pub fn default_for(&self, flow: DeviceFlow, role: DeviceRole) -> Option<&DeviceDescriptor> {
         self.defaults
             .get(&(flow, role))
             .and_then(|id| self.devices.get(id))
@@ -265,11 +261,7 @@ mod tests {
     fn falls_back_to_default_when_preferred_is_unplugged() {
         let mut catalog = DeviceCatalog::new();
         catalog.upsert(device("mic-a", DeviceFlow::Capture, DeviceState::Active));
-        catalog.upsert(device(
-            "mic-b",
-            DeviceFlow::Capture,
-            DeviceState::Unplugged,
-        ));
+        catalog.upsert(device("mic-b", DeviceFlow::Capture, DeviceState::Unplugged));
         catalog
             .set_default(
                 DeviceFlow::Capture,
