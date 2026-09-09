@@ -1,7 +1,7 @@
 {
   "schema_version": 3,
-  "status": "template_blueprint",
-  "activation_scope": "child_project_only",
+  "status": "installed_pending_verification",
+  "activation_scope": "child_project",
   "apply_to_template_source": false,
   "setup_flow": {
     "install_automatically_in_child_project": true,
@@ -13,6 +13,25 @@
     "do_not_require_separate_user_consent_for_normal_non_destructive_quality_tooling": true,
     "if_permissions_or_platform_settings_block_installation": "tell_user_exactly_what_access_or_manual_action_is_required_and_mark_setup_pending",
     "verify_after_installation": true
+  },
+  "setup_state": {
+    "baseline_files_installed_by_bootstrap": true,
+    "installed_blueprints": [
+      "repository-quality.yml",
+      "technology-update-watch.yml",
+      "innovation-scout.yml",
+      "protocol-update-watch.yml",
+      "dependabot.yml"
+    ],
+    "baseline_verification": "pending_first_child_run",
+    "github_security_capability": "unknown",
+    "capability_dependent_workflows": [
+      "codeql-actions.yml",
+      "dependency-review.yml",
+      "scorecard.yml"
+    ],
+    "capability_resolution": "pending_runtime_detection",
+    "stack_specific_tooling": "awaiting_technology_approval"
   },
   "universal_required_checks": [
     "repository-integrity"
