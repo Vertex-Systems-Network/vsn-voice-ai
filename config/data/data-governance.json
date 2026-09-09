@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "status": "template_blueprint",
-  "activation_scope": "child_project_only",
-  "classification_levels": ["public", "internal", "confidential", "restricted", "secret"],
-  "sensitivity_tags": ["pii", "financial", "health", "credentials", "security_sensitive", "regulated", "customer_content"],
+  "status": "pending_project_data_classification",
+  "activation_scope": "child_project",
+  "classification_levels": ["public","internal","confidential","restricted","secret"],
+  "sensitivity_tags": ["pii","financial","health","credentials","security_sensitive","regulated","customer_content","voice_biometric","meeting_content"],
   "data_record_template": {
     "id": "DATA-001",
     "name": "",
@@ -24,5 +24,6 @@
     "sensitive_logs_must_be_redacted": true,
     "production_data_copy_to_lower_environment_requires_approval": true,
     "retention_and_deletion_must_be_defined_before_production_for_sensitive_data": true
-  }
+  },
+  "notes": "Child data policy is active. Voice audio, voice identity/embeddings, transcripts, meeting artifacts, integration data and provider-boundary records must be classified during PHASE-000 before implementation."
 }
