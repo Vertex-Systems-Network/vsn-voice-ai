@@ -4,7 +4,7 @@
   "title": "ProviderManifest",
   "type": "object",
   "additionalProperties": false,
-  "required": ["id", "version", "access_mode", "capabilities", "enabled", "verified_access", "health"],
+  "required": ["id", "version", "access_mode", "capabilities", "enabled", "verified_access", "health", "rate_limit"],
   "properties": {
     "id": {"type": "string", "minLength": 1},
     "version": {"type": "string", "minLength": 1},
@@ -19,10 +19,12 @@
     "enabled": {"type": "boolean"},
     "verified_access": {"type": "boolean"},
     "health": {"enum": ["healthy", "degraded", "unhealthy", "circuit_open"]},
+    "rate_limit": {"enum": ["unknown", "available", "constrained", "exhausted"]},
     "latency_p95_ms": {"type": "integer", "minimum": 0},
     "quality_score": {"type": "integer", "minimum": 0, "maximum": 100},
     "privacy_score": {"type": "integer", "minimum": 0, "maximum": 100},
     "cost_microunits_per_minute": {"type": "integer", "minimum": 0},
+    "remaining_quota_microunits": {"type": "integer", "minimum": 0},
     "retention_policy": {"type": "string"}
   }
 }
