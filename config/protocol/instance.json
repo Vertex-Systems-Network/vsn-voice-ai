@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "instance_status": "template_source",
-  "instance_id": null,
-  "project_name": "AI Native Project Operating System",
-  "repository": "Vertex-Systems-Network/ai-native-project-operating-system",
+  "instance_status": "active_project",
+  "instance_id": "fd320e9b-1f42-4a97-867c-7f88279fec20",
+  "project_name": "VSN Voice AI",
+  "repository": "Vertex-Systems-Network/vsn-voice-ai",
   "repository_owner": "Vertex-Systems-Network",
-  "initialized_at": null,
-  "initialized_by": null,
+  "initialized_at": "2026-09-09T21:08:56.032912+00:00",
+  "initialized_by": "@wpessential",
   "source_protocol_version": "1.3.13",
   "source_template_repository": "Vertex-Systems-Network/ai-native-project-operating-system",
-  "bootstrap_completed": false,
-  "notes": "Canonical inert template source. Child repositories copied from this source must detect their different repository identity and run scripts/bootstrap_child.py before development. Bootstrap initializes project identity, runtime state, repository-local policies, quality workflows, CODEOWNERS, and capability-dependent security setup without creating external resources or inventing platform capabilities."
+  "bootstrap_completed": true,
+  "notes": "Child project identity reconciled for VSN Voice AI. Planning and repository-readiness work is authorized by the owner; Voice AI product implementation remains locked until separate explicit owner consent and technology-stack approval."
 }
