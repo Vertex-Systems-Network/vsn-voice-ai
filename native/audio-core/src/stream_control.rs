@@ -165,7 +165,7 @@ impl StreamController {
                 self.state = StreamState::Opening;
                 StreamAction::OpenDevice
             }
-            StreamEvent::ProcessingFailed(message) if self.state == StreamState::Running => {
+            StreamEvent::ProcessingFailed(_) if self.state == StreamState::Running => {
                 self.state = StreamState::Bypassed;
                 StreamAction::EnterBypass
             }
