@@ -1,14 +1,64 @@
 {
   "schema_version": 1,
-  "status": "pending_project_threat_model",
+  "status": "project_baseline_defined",
   "activation_scope": "child_project",
   "methodology": "project_specific_threat_model_with_OWASP_ASVS_or_equivalent_verification_when_applicable",
-  "assets": [],
-  "actors": [],
-  "trust_boundaries": [],
-  "entry_points": [],
-  "threats": [],
+  "assets": [
+    {"id":"ASSET-001","name":"Raw realtime audio and recordings","sensitivity":"restricted"},
+    {"id":"ASSET-002","name":"Transcripts and meeting intelligence artifacts","sensitivity":"confidential"},
+    {"id":"ASSET-003","name":"Voice profiles, speaker embeddings and verification signals","sensitivity":"restricted"},
+    {"id":"ASSET-004","name":"Provider API credentials and OAuth tokens","sensitivity":"secret"},
+    {"id":"ASSET-005","name":"Tenant, user and organization identity data","sensitivity":"confidential"},
+    {"id":"ASSET-006","name":"CRM, email, calendar, chat and document integration data","sensitivity":"restricted"},
+    {"id":"ASSET-007","name":"Billing, entitlement and usage records","sensitivity":"confidential"},
+    {"id":"ASSET-008","name":"VSN model artifacts, datasets and evaluation corpora","sensitivity":"restricted"},
+    {"id":"ASSET-009","name":"Audit, security and provider-routing events","sensitivity":"confidential"},
+    {"id":"ASSET-010","name":"Desktop signing keys, update metadata and release artifacts","sensitivity":"secret"}
+  ],
+  "actors": [
+    {"id":"ACTOR-001","name":"Authenticated end user","trust":"tenant_scoped"},
+    {"id":"ACTOR-002","name":"Tenant administrator","trust":"privileged_tenant_scoped"},
+    {"id":"ACTOR-003","name":"VSN operations/support personnel","trust":"privileged_internal"},
+    {"id":"ACTOR-004","name":"External AI/meeting/work-system provider","trust":"third_party"},
+    {"id":"ACTOR-005","name":"Unauthenticated internet attacker","trust":"untrusted"},
+    {"id":"ACTOR-006","name":"Malicious or compromised tenant user","trust":"hostile_authenticated"},
+    {"id":"ACTOR-007","name":"Compromised provider/dependency/update channel","trust":"hostile_supply_chain"}
+  ],
+  "trust_boundaries": [
+    {"id":"BOUNDARY-001","name":"User device to VSN cloud"},
+    {"id":"BOUNDARY-002","name":"VSN cloud to external AI providers"},
+    {"id":"BOUNDARY-003","name":"VSN cloud to meeting/CRM/work-system providers"},
+    {"id":"BOUNDARY-004","name":"Browser/web application to VSN APIs"},
+    {"id":"BOUNDARY-005","name":"Tenant A to Tenant B data boundary"},
+    {"id":"BOUNDARY-006","name":"General SaaS services to GPU/model inference services"},
+    {"id":"BOUNDARY-007","name":"Development/test to production"},
+    {"id":"BOUNDARY-008","name":"Local desktop runtime to signed VSN update/model channel"}
+  ],
+  "entry_points": [
+    {"id":"ENTRY-001","name":"Desktop audio capture and virtual-device path"},
+    {"id":"ENTRY-002","name":"Web/API authentication and application endpoints"},
+    {"id":"ENTRY-003","name":"Realtime WebRTC/WebSocket/gRPC media sessions"},
+    {"id":"ENTRY-004","name":"Provider webhooks and callbacks"},
+    {"id":"ENTRY-005","name":"OAuth integrations and connected-app synchronization"},
+    {"id":"ENTRY-006","name":"Meeting links, bot joins and calendar-triggered capture"},
+    {"id":"ENTRY-007","name":"Agentic action/tool execution"},
+    {"id":"ENTRY-008","name":"Desktop installer, updater and model package delivery"},
+    {"id":"ENTRY-009","name":"Admin/support operational interfaces"},
+    {"id":"ENTRY-010","name":"Public developer API, SDK and webhook surfaces"}
+  ],
+  "threats": [
+    {"id":"THREAT-001","title":"Cross-tenant conversation data exposure","asset_ids":["ASSET-001","ASSET-002","ASSET-003","ASSET-006"],"actor_ids":["ACTOR-005","ACTOR-006"],"entry_point":"ENTRY-002","abuse_case":"A caller bypasses tenant authorization and retrieves another tenant's audio, transcript, meeting artifact, voice profile or connected data.","likelihood":"medium","impact":"critical","controls":["tenant-scoped authorization on every object access","deny-by-default RBAC/ABAC","tenant identifiers enforced at persistence/query boundaries","permission-leakage tests","audit events for privileged access"],"verification_refs":["WU-014","WU-017","WU-023"],"residual_risk":"medium","status":"open_for_implementation_verification"},
+    {"id":"THREAT-002","title":"Provider credential or OAuth token theft","asset_ids":["ASSET-004"],"actor_ids":["ACTOR-005","ACTOR-006","ACTOR-007"],"entry_point":"ENTRY-005","abuse_case":"Secrets are exposed through source, logs, client bundles, support tooling or compromised runtime and then reused externally.","likelihood":"medium","impact":"critical","controls":["managed secret store/KMS","ephemeral credentials where supported","never log raw secrets","tenant-scoped secret references","rotation and revocation","no provider secrets in client bundles"],"verification_refs":["WU-010","WU-017","WU-021"],"residual_risk":"low_to_medium","status":"open_for_implementation_verification"},
+    {"id":"THREAT-003","title":"Unauthorized recording or meeting capture","asset_ids":["ASSET-001","ASSET-002","ASSET-005"],"actor_ids":["ACTOR-006"],"entry_point":"ENTRY-006","abuse_case":"A user records or joins a meeting without required authorization, participant notice or tenant policy.","likelihood":"medium","impact":"high","controls":["explicit capture policy","visible recording/bot state where platform permits","tenant/admin controls","consent event audit trail","revocable calendar/meeting permissions","region/legal review before production rollout"],"verification_refs":["WU-007","WU-017"],"residual_risk":"medium","status":"open_for_implementation_verification"},
+    {"id":"THREAT-004","title":"Voice impersonation, cloning or deepfake abuse","asset_ids":["ASSET-003"],"actor_ids":["ACTOR-005","ACTOR-006"],"entry_point":"ENTRY-001","abuse_case":"Voice personalization/accent/translation capabilities are used to impersonate another person or bypass voice-based trust controls.","likelihood":"medium","impact":"high","controls":["voice-profile consent and ownership checks","anti-impersonation policy","speaker verification/deepfake signals where supported","sensitive voice operations audited","revocation/deletion controls","high-risk features disabled until abuse controls verified"],"verification_refs":["WU-004","WU-012","WU-017"],"residual_risk":"medium","status":"open_for_implementation_verification"},
+    {"id":"THREAT-005","title":"Agentic action authorization bypass or prompt injection","asset_ids":["ASSET-006","ASSET-009"],"actor_ids":["ACTOR-005","ACTOR-006"],"entry_point":"ENTRY-007","abuse_case":"Malicious meeting/email/document content causes the assistant to send messages, update CRM records or create tasks outside the user's intended scope.","likelihood":"high","impact":"high","controls":["tool-level authorization","human approval for sensitive writes","scoped OAuth permissions","structured tool arguments","prompt-injection isolation","idempotency keys","auditable action receipts"],"verification_refs":["WU-021","WU-023","WU-024"],"residual_risk":"medium","status":"open_for_implementation_verification"},
+    {"id":"THREAT-006","title":"Malicious webhook replay or forged provider event","asset_ids":["ASSET-002","ASSET-006","ASSET-007","ASSET-009"],"actor_ids":["ACTOR-005"],"entry_point":"ENTRY-004","abuse_case":"An attacker forges or replays provider callbacks to create duplicate usage, meeting artifacts, billing state or external writes.","likelihood":"medium","impact":"high","controls":["provider signature verification","timestamp/replay windows","idempotency keys","deduplication ledger","event provenance","rate limits"],"verification_refs":["WU-007","WU-015","WU-021"],"residual_risk":"low","status":"open_for_implementation_verification"},
+    {"id":"THREAT-007","title":"Unsafe desktop/model update supply chain","asset_ids":["ASSET-008","ASSET-010"],"actor_ids":["ACTOR-007"],"entry_point":"ENTRY-008","abuse_case":"A compromised update/model package executes code, modifies the audio path or exfiltrates local voice data.","likelihood":"low_to_medium","impact":"critical","controls":["signed installers and model artifacts","digest verification","staged rollout","rollback","least-privilege updater","release provenance/SBOM where applicable","separate signing secrets"],"verification_refs":["WU-011","WU-018","WU-025"],"residual_risk":"low_to_medium","status":"open_for_implementation_verification"},
+    {"id":"THREAT-008","title":"Sensitive audio/transcript leakage through telemetry","asset_ids":["ASSET-001","ASSET-002","ASSET-003","ASSET-006"],"actor_ids":["ACTOR-003","ACTOR-007"],"entry_point":"ENTRY-009","abuse_case":"Raw customer content or voice identifiers are unintentionally emitted to logs, traces, crash reports or analytics systems.","likelihood":"medium","impact":"high","controls":["content-redaction by default","structured allowlisted telemetry","no raw audio in logs","PII/secret filters","restricted support access","sampling policies","test fixtures instead of production content"],"verification_refs":["WU-016","WU-017"],"residual_risk":"low_to_medium","status":"open_for_implementation_verification"},
+    {"id":"THREAT-009","title":"Realtime provider failure disrupts live call audio","asset_ids":["ASSET-001"],"actor_ids":["ACTOR-004","ACTOR-007"],"entry_point":"ENTRY-003","abuse_case":"Provider outage, latency spike or malformed stream causes call audio to freeze/drop instead of degrading safely.","likelihood":"high","impact":"high","controls":["local safe bypass","hard latency budgets","timeouts/circuit breakers","health-aware routing","backpressure limits","provider failover","audio-path isolation from analytics"],"verification_refs":["WU-002","WU-003","WU-004","WU-010","WU-018"],"residual_risk":"low_to_medium","status":"open_for_implementation_verification"},
+    {"id":"THREAT-010","title":"Training or evaluation uses customer content without approved rights","asset_ids":["ASSET-001","ASSET-002","ASSET-003","ASSET-008"],"actor_ids":["ACTOR-003"],"entry_point":"ENTRY-009","abuse_case":"Production customer audio/transcripts are copied into proprietary model datasets without explicit policy, provenance and rights.","likelihood":"low_to_medium","impact":"critical","controls":["training opt-in/rights gate","dataset provenance registry","no default customer-content training","separate research storage","approval for production-to-research transfer","deletion propagation and dataset lineage"],"verification_refs":["WU-011","WU-017"],"residual_risk":"low","status":"open_for_implementation_verification"}
+  ],
   "threat_template": {"id":"THREAT-001","title":"","asset_ids":[],"actor_ids":[],"entry_point":null,"abuse_case":"","likelihood":"unknown","impact":"unknown","controls":[],"verification_refs":[],"residual_risk":"unknown","status":"open"},
   "release_gate": {"critical_unresolved_blocks_release":true,"high_unresolved_requires_authorized_risk_acceptance_or_remediation":true,"risk_acceptance_must_reference_authenticated_consent":true},
-  "notes": "Child policy is active, but Voice AI-specific assets, actors, boundaries and threats must be populated during PHASE-000 before sensitive product data paths are implemented."
+  "notes": "PHASE-000 Voice AI threat baseline is defined. Threats remain open for implementation verification; defining controls does not prove those controls are implemented. Legal/regulatory applicability must be evaluated by deployment region and customer use case before production release."
 }
