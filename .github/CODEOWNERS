@@ -1,4 +1,4 @@
-# Template-source CODEOWNERS. Child repos regenerate repository-valid owners via scripts/bootstrap_instance.py.
+# Generated for Vertex-Systems-Network/vsn-voice-ai
 * @wpessential
 /.gitignore @wpessential
 /AGENTS.md @wpessential
