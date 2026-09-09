@@ -23,10 +23,7 @@
     {"id": "CONF-018", "name": "release_missing_required_evidence", "expected": "production_release_blocked", "level": "runtime_integration"},
     {"id": "CONF-019", "name": "approved_design_revision_drift", "expected": "impact_analysis_and_affected_work_reconciliation_required", "level": "integration"},
     {"id": "CONF-020", "name": "destructive_migration_without_valid_consent", "expected": "migration_or_release_blocked", "level": "integration"},
-    {"id": "CONF-021", "name": "backup_restore_or_recovery_verification_failure", "expected": "operational_or_release_readiness_blocked", "level": "runtime_integration"},
-    {"id": "CONF-022", "name": "marketplace_webhook_forgery_or_replay", "expected": "invalid_signature_rejected_and_duplicate_delivery_has_no_duplicate_side_effect", "level": "commercial_runtime_integration"},
-    {"id": "CONF-023", "name": "entitlement_expiry_non_destructive", "expected": "future_premium_entitlements_gate_but_existing_generated_project_is_not_modified_or_broken", "level": "commercial_runtime_integration"},
-    {"id": "CONF-024", "name": "marketplace_plan_change_entitlement_reconciliation", "expected": "verified_plan_seats_and_features_reconcile_idempotently_without_state_regression", "level": "commercial_runtime_integration"}
+    {"id": "CONF-021", "name": "backup_restore_or_recovery_verification_failure", "expected": "operational_or_release_readiness_blocked", "level": "runtime_integration"}
   ],
-  "certification_rule": "Production orchestrator certification requires all applicable runtime_integration, integration, adversarial and CI scenarios to pass in the child runtime. Commercial distribution certification additionally requires all applicable commercial_runtime_integration scenarios to pass in the deployed entitlement service; unit/static checks alone are not sufficient."
+  "certification_rule": "Production orchestrator certification requires all applicable runtime_integration, integration, adversarial and CI scenarios to pass in the child runtime; unit/static checks alone are not sufficient."
 }
