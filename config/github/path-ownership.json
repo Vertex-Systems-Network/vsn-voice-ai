@@ -28,8 +28,6 @@
     {"pattern": "/CONTROL-PLANE-SECURITY.md", "owner_roles": ["security", "supervisor"], "review_required": true, "independent_review_required": true},
     {"pattern": "/PRODUCTION-ASSURANCE.md", "owner_roles": ["supervisor", "security", "devops", "architecture"], "review_required": true},
     {"pattern": "/DESIGN-DATA-OPERATIONS.md", "owner_roles": ["supervisor", "architecture", "security", "qa"], "review_required": true},
-    {"pattern": "/COMMERCIAL-LICENSING.md", "owner_roles": ["supervisor", "security", "architecture", "devops"], "review_required": true, "independent_review_required": true},
-    {"pattern": "/commercial-service/**", "owner_roles": ["supervisor", "security", "architecture", "devops"], "review_required": true, "independent_review_required": true},
     {"pattern": "/config/ai/agent-catalog.json", "owner_roles": ["supervisor", "security"], "review_required": true},
     {"pattern": "/config/ai/memory-provenance.json", "owner_roles": ["supervisor", "security", "architecture"], "review_required": true},
     {"pattern": "/config/coordination/**", "owner_roles": ["supervisor"], "review_required": true},
@@ -47,11 +45,10 @@
     {"pattern": "/config/design/**", "owner_roles": ["supervisor", "qa", "architecture"], "review_required": true},
     {"pattern": "/config/testing/**", "owner_roles": ["supervisor", "qa", "security"], "review_required": true},
     {"pattern": "/config/traceability/**", "owner_roles": ["supervisor", "qa", "architecture"], "review_required": true},
-    {"pattern": "/config/licensing/**", "owner_roles": ["supervisor", "security", "architecture", "devops"], "review_required": true, "independent_review_required": true},
     {"pattern": "/schemas/**", "owner_roles": ["supervisor", "architecture", "security"], "review_required": true, "independent_review_required": true},
     {"pattern": "/scripts/**", "owner_roles": ["supervisor", "devops", "security"], "review_required": true, "independent_review_required": true},
     {"pattern": "/tests/**", "owner_roles": ["supervisor", "qa", "security"], "review_required": true},
     {"pattern": "/requirements-anpos.txt", "owner_roles": ["supervisor", "devops", "security"], "review_required": true}
   ],
-  "codeowners_policy": "Bootstrap must render repository-valid CODEOWNERS identities from authorized GitHub users/teams. Role names are policy identities, not literal GitHub handles. Control-plane, assurance, commercial licensing, and commercial service paths must not inherit ordinary Worker ownership."
+  "codeowners_policy": "Bootstrap must render repository-valid CODEOWNERS identities from authorized GitHub users/teams. Role names are policy identities, not literal GitHub handles. Control-plane and assurance paths must not inherit ordinary Worker ownership."
 }
