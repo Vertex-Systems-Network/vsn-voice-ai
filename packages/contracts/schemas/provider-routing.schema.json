@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vsn.internal/schemas/provider-routing.schema.json",
+  "title": "ProviderRoutingContracts",
+  "$defs": {
+    "RoutingRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["capability", "mode", "require_verified_access"],
+      "properties": {
+        "capability": {"type": "string", "minLength": 1},
+        "mode": {"enum": ["auto", "lowest_latency", "best_quality", "best_privacy", "lowest_cost"]},
+        "required_region": {"type": "string"},
+        "allowed_providers": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "denied_providers": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "max_latency_ms": {"type": "integer", "minimum": 0},
+        "min_quality_score": {"type": "integer", "minimum": 0, "maximum": 100},
+        "require_verified_access": {"type": "boolean"}
+      }
+    },
+    "RoutingDecision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["capability", "mode", "selected_provider", "fallback_providers", "reason"],
+      "properties": {
+        "capability": {"type": "string", "minLength": 1},
+        "mode": {"enum": ["auto", "lowest_latency", "best_quality", "best_privacy", "lowest_cost"]},
+        "selected_provider": {"type": "string", "minLength": 1},
+        "fallback_providers": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "reason": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}
