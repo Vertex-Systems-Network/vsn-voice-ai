@@ -191,10 +191,7 @@ mod tests {
         assert_eq!(controller.current(), Some(&id("mic-a")));
 
         let change = controller
-            .apply(DeviceEvent::Upserted(device(
-                "mic-b",
-                DeviceState::Active,
-            )))
+            .apply(DeviceEvent::Upserted(device("mic-b", DeviceState::Active)))
             .expect("apply event");
 
         assert!(change.changed);
