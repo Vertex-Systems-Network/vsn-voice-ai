@@ -12,10 +12,14 @@ pub struct AudioFormat {
 impl AudioFormat {
     pub fn samples_per_frame(self) -> Result<usize, AudioError> {
         if self.sample_rate_hz == 0 {
-            return Err(AudioError::InvalidFormat("sample rate must be greater than zero"));
+            return Err(AudioError::InvalidFormat(
+                "sample rate must be greater than zero",
+            ));
         }
         if self.channels == 0 {
-            return Err(AudioError::InvalidFormat("channel count must be greater than zero"));
+            return Err(AudioError::InvalidFormat(
+                "channel count must be greater than zero",
+            ));
         }
         if self.frame_duration_ms == 0 || self.frame_duration_ms > 100 {
             return Err(AudioError::InvalidFormat(
@@ -61,7 +65,11 @@ impl AudioFrame {
                 actual: samples.len(),
             });
         }
-        if let Some((index, _)) = samples.iter().enumerate().find(|(_, sample)| !sample.is_finite()) {
+        if let Some((index, _)) = samples
+            .iter()
+            .enumerate()
+            .find(|(_, sample)| !sample.is_finite())
+        {
             return Err(AudioError::NonFiniteSample { index });
         }
 
