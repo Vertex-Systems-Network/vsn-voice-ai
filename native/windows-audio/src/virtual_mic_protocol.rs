@@ -44,7 +44,9 @@ impl VirtualMicProtocolHeader {
             .map_err(|_| VirtualMicProtocolError::InvalidFormat("frame is too large".into()))?;
         let frame_duration_micros = u32::from(format.frame_duration_ms)
             .checked_mul(1_000)
-            .ok_or_else(|| VirtualMicProtocolError::InvalidFormat("frame duration overflow".into()))?;
+            .ok_or_else(|| {
+                VirtualMicProtocolError::InvalidFormat("frame duration overflow".into())
+            })?;
         let header_bytes = u16::try_from(size_of::<Self>())
             .map_err(|_| VirtualMicProtocolError::HeaderSizeOverflow)?;
 
@@ -99,8 +101,8 @@ impl VirtualMicProtocolHeader {
             ));
         }
 
-        let frame_duration_ms = u16::try_from(self.frame_duration_micros / 1_000)
-            .map_err(|_| {
+        let frame_duration_ms =
+            u16::try_from(self.frame_duration_micros / 1_000).map_err(|_| {
                 VirtualMicProtocolError::InvalidFrameDurationMicros(self.frame_duration_micros)
             })?;
         let format = AudioFormat {
@@ -120,9 +122,7 @@ impl VirtualMicProtocolHeader {
             });
         }
         if self.reserved != 0 {
-            return Err(VirtualMicProtocolError::ReservedFieldNonZero(
-                self.reserved,
-            ));
+            return Err(VirtualMicProtocolError::ReservedFieldNonZero(self.reserved));
         }
 
         Ok(format)
@@ -208,14 +208,18 @@ pub enum VirtualMicProtocolError {
 impl Display for VirtualMicProtocolError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::InvalidFormat(message) => write!(f, "invalid virtual microphone format: {message}"),
+            Self::InvalidFormat(message) => {
+                write!(f, "invalid virtual microphone format: {message}")
+            }
             Self::InvalidCapacity(capacity) => {
                 write!(f, "invalid virtual microphone ring capacity: {capacity}")
             }
             Self::InvalidSessionGeneration => {
                 f.write_str("virtual microphone session generation must be non-zero")
             }
-            Self::HeaderSizeOverflow => f.write_str("virtual microphone protocol header is too large"),
+            Self::HeaderSizeOverflow => {
+                f.write_str("virtual microphone protocol header is too large")
+            }
             Self::SlotIndexOverflow => f.write_str("virtual microphone ring slot index overflow"),
             Self::MagicMismatch { expected, actual } => write!(
                 f,
@@ -275,7 +279,10 @@ mod tests {
         assert_eq!(header.validate().expect("valid header"), FORMAT);
         assert_eq!(header.magic, VIRTUAL_MIC_PROTOCOL_MAGIC);
         assert_eq!(header.version, VIRTUAL_MIC_PROTOCOL_VERSION);
-        assert_eq!(usize::from(header.header_bytes), size_of::<VirtualMicProtocolHeader>());
+        assert_eq!(
+            usize::from(header.header_bytes),
+            size_of::<VirtualMicProtocolHeader>()
+        );
         assert_eq!(header.sample_format, VIRTUAL_MIC_SAMPLE_FORMAT_F32_LE);
         assert_eq!(header.frame_duration_micros, 10_000);
         assert_eq!(header.samples_per_frame, 480);
