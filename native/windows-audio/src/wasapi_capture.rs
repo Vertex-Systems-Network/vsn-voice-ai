@@ -5,6 +5,8 @@ use vsn_audio_core::device::{DeviceError, DeviceId};
 
 use crate::MixFormatSummary;
 use crate::capture_plan::{CapturePlanError, SharedCapturePlan};
+use crate::sample_decode::{NativeSampleEncoding, SampleDecodeError, SampleDecoder};
+use crate::wave_format::{WaveFormatError, WAVE_FORMAT_EXTENSIBLE_TAG};
 
 const BUFFERFLAG_DATA_DISCONTINUITY: u32 = 0x1;
 const BUFFERFLAG_SILENT: u32 = 0x2;
@@ -40,6 +42,7 @@ pub struct CapturedPacket {
 pub struct CaptureSessionSummary {
     pub endpoint_id: DeviceId,
     pub mix_format: MixFormatSummary,
+    pub sample_encoding: NativeSampleEncoding,
     pub plan: SharedCapturePlan,
     pub endpoint_buffer_frames: u32,
     pub stream_latency_100ns: i64,
@@ -108,6 +111,16 @@ impl EventCaptureSession {
         }
         self.inner.read_packet()
     }
+
+    pub fn decode_packet(&self, packet: &CapturedPacket) -> Result<Vec<f32>, WasapiCaptureError> {
+        let decoder = SampleDecoder::new(
+            self.summary.sample_encoding,
+            self.summary.mix_format.channels,
+        )?;
+        decoder
+            .decode_interleaved(&packet.bytes)
+            .map_err(WasapiCaptureError::from)
+    }
 }
 
 impl Drop for EventCaptureSession {
@@ -124,11 +137,14 @@ pub enum WasapiCaptureError {
     UnsupportedPlatform,
     SessionNotStarted,
     InvalidMixFormat(&'static str),
+    BlockAlignMismatch { declared: u16, expected: usize },
     PacketSizeOverflow { frames: u32, block_align: u16 },
     NullPacketData { frames: u32 },
     Backend(String),
     InvalidEndpoint(DeviceError),
     InvalidCapturePlan(CapturePlanError),
+    InvalidWaveFormat(WaveFormatError),
+    InvalidSampleDecode(SampleDecodeError),
 }
 
 impl Display for WasapiCaptureError {
@@ -137,6 +153,10 @@ impl Display for WasapiCaptureError {
             Self::UnsupportedPlatform => f.write_str("WASAPI capture requires Windows"),
             Self::SessionNotStarted => f.write_str("WASAPI capture session must be started"),
             Self::InvalidMixFormat(message) => write!(f, "invalid WASAPI mix format: {message}"),
+            Self::BlockAlignMismatch { declared, expected } => write!(
+                f,
+                "invalid WASAPI block alignment: declared {declared} bytes, expected {expected}"
+            ),
             Self::PacketSizeOverflow {
                 frames,
                 block_align,
@@ -153,6 +173,8 @@ impl Display for WasapiCaptureError {
             Self::Backend(message) => write!(f, "WASAPI capture error: {message}"),
             Self::InvalidEndpoint(error) => write!(f, "invalid capture endpoint: {error}"),
             Self::InvalidCapturePlan(error) => write!(f, "invalid capture plan: {error}"),
+            Self::InvalidWaveFormat(error) => write!(f, "unsupported WASAPI mix format: {error}"),
+            Self::InvalidSampleDecode(error) => write!(f, "invalid native audio samples: {error}"),
         }
     }
 }
@@ -168,6 +190,18 @@ impl From<DeviceError> for WasapiCaptureError {
 impl From<CapturePlanError> for WasapiCaptureError {
     fn from(value: CapturePlanError) -> Self {
         Self::InvalidCapturePlan(value)
+    }
+}
+
+impl From<WaveFormatError> for WasapiCaptureError {
+    fn from(value: WaveFormatError) -> Self {
+        Self::InvalidWaveFormat(value)
+    }
+}
+
+impl From<SampleDecodeError> for WasapiCaptureError {
+    fn from(value: SampleDecodeError) -> Self {
+        Self::InvalidSampleDecode(value)
     }
 }
 
@@ -209,7 +243,7 @@ mod platform {
 #[cfg(windows)]
 mod platform {
     use std::ffi::c_void;
-    use std::ptr::{NonNull, null_mut};
+    use std::ptr::{NonNull, null_mut, read_unaligned};
     use std::slice;
 
     use vsn_audio_core::AudioFormat;
@@ -219,7 +253,7 @@ mod platform {
     };
     use windows::Win32::Media::Audio::{
         AUDCLNT_STREAMFLAGS_EVENTCALLBACK, IAudioCaptureClient, IAudioClient3, IMMDeviceEnumerator,
-        MMDeviceEnumerator, WAVEFORMATEX, eCapture, eCommunications,
+        MMDeviceEnumerator, WAVEFORMATEX, WAVEFORMATEXTENSIBLE, eCapture, eCommunications,
     };
     use windows::Win32::System::Com::{
         CLSCTX_ALL, COINIT_APARTMENTTHREADED, CoCreateInstance, CoInitializeEx, CoTaskMemFree,
@@ -229,9 +263,10 @@ mod platform {
 
     use super::{
         CapturePacketFlags, CaptureSessionSummary, CapturedPacket, DeviceId, MixFormatSummary,
-        SharedCapturePlan, WasapiCaptureError,
+        SampleDecoder, SharedCapturePlan, WasapiCaptureError, WAVE_FORMAT_EXTENSIBLE_TAG,
     };
     use crate::engine_period::EnginePeriodRange;
+    use crate::wave_format::{ExtensibleWaveFormat, WaveFormatDescriptor};
 
     struct ComApartment;
 
@@ -362,6 +397,11 @@ mod platform {
             .map_err(backend_error)?;
 
             if frames == 0 {
+                unsafe {
+                    self.capture_client
+                        .ReleaseBuffer(0)
+                        .map_err(backend_error)?
+                };
                 return Ok(None);
             }
 
@@ -429,6 +469,16 @@ mod platform {
             ));
         }
 
+        let sample_encoding = wave_format_descriptor(mix_format.as_ptr(), wave)?
+            .native_sample_encoding()?;
+        let decoder = SampleDecoder::new(sample_encoding, wave.nChannels)?;
+        if decoder.frame_bytes() != usize::from(wave.nBlockAlign) {
+            return Err(WasapiCaptureError::BlockAlignMismatch {
+                declared: wave.nBlockAlign,
+                expected: decoder.frame_bytes(),
+            });
+        }
+
         let mut default_frames = 0;
         let mut fundamental_frames = 0;
         let mut min_frames = 0;
@@ -485,6 +535,7 @@ mod platform {
                 bits_per_sample: wave.wBitsPerSample,
                 block_align: wave.nBlockAlign,
             },
+            sample_encoding,
             plan,
             endpoint_buffer_frames,
             stream_latency_100ns,
@@ -498,6 +549,30 @@ mod platform {
         };
 
         Ok(Some((session, summary)))
+    }
+
+    fn wave_format_descriptor(
+        mix_format: *const WAVEFORMATEX,
+        wave: WAVEFORMATEX,
+    ) -> Result<WaveFormatDescriptor, WasapiCaptureError> {
+        let extensible = if wave.wFormatTag == WAVE_FORMAT_EXTENSIBLE_TAG
+            && wave.cbSize >= crate::wave_format::WAVE_FORMAT_EXTENSIBLE_EXTRA_BYTES
+        {
+            let format = unsafe { read_unaligned(mix_format.cast::<WAVEFORMATEXTENSIBLE>()) };
+            Some(ExtensibleWaveFormat {
+                valid_bits_per_sample: unsafe { format.Samples.wValidBitsPerSample },
+                sub_format_guid: format.SubFormat.to_u128(),
+            })
+        } else {
+            None
+        };
+
+        Ok(WaveFormatDescriptor {
+            format_tag: wave.wFormatTag,
+            bits_per_sample: wave.wBitsPerSample,
+            extra_size: wave.cbSize,
+            extensible,
+        })
     }
 
     fn device_id(
@@ -554,6 +629,9 @@ mod tests {
             assert!(summary.mix_format.sample_rate_hz > 0);
             assert!(summary.mix_format.channels > 0);
             assert!(summary.mix_format.block_align > 0);
+            let decoder = SampleDecoder::new(summary.sample_encoding, summary.mix_format.channels)
+                .expect("mix format should create native decoder");
+            assert_eq!(decoder.frame_bytes(), usize::from(summary.mix_format.block_align));
             assert!(summary.endpoint_buffer_frames > 0);
             assert!(summary.plan.engine_period_frames > 0);
             assert!(!session.is_started());
