@@ -95,7 +95,7 @@ impl VirtualMicProtocolHeader {
                 self.sample_format,
             ));
         }
-        if self.frame_duration_micros == 0 || self.frame_duration_micros % 1_000 != 0 {
+        if self.frame_duration_micros == 0 || !self.frame_duration_micros.is_multiple_of(1_000) {
             return Err(VirtualMicProtocolError::InvalidFrameDurationMicros(
                 self.frame_duration_micros,
             ));
