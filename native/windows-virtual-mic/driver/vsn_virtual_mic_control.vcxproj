@@ -32,6 +32,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <AdditionalIncludeDirectories>$(ProjectDir)..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>%(PreprocessorDefinitions);PC_IMPLEMENTATION</PreprocessorDefinitions>
       <WarningLevel>Level4</WarningLevel>
       <TreatWarningAsError>true</TreatWarningAsError>
       <DisableSpecificWarnings>4005;4083;4471;%(DisableSpecificWarnings)</DisableSpecificWarnings>
@@ -39,6 +40,9 @@
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <AdditionalOptions>/std:c++17 /Zc:strictStrings- %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
+    <Link>
+      <AdditionalDependencies>%(AdditionalDependencies);$(DDK_LIB_PATH)\portcls.lib;$(DDK_LIB_PATH)\stdunk.lib;$(DDK_LIB_PATH)\libcntpr.lib</AdditionalDependencies>
+    </Link>
     <DriverSign>
       <FileDigestAlgorithm>sha256</FileDigestAlgorithm>
     </DriverSign>
@@ -46,6 +50,7 @@
   <ItemGroup>
     <ClCompile Include="vsn_virtual_mic_control.cpp" />
     <ClCompile Include="vsn_virtual_mic_ring_contract.cpp" />
+    <ClCompile Include="vsn_virtual_mic_wavert_scaffold.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\vsn_virtual_mic_protocol.h" />
