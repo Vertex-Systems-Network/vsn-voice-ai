@@ -9,6 +9,7 @@ on:
       - "Cargo.lock"
       - "native/audio-core/**"
       - "native/windows-audio/**"
+      - "native/windows-virtual-mic/**"
       - ".github/workflows/windows-audio.yml"
   push:
     branches:
@@ -18,6 +19,7 @@ on:
       - "Cargo.lock"
       - "native/audio-core/**"
       - "native/windows-audio/**"
+      - "native/windows-virtual-mic/**"
       - ".github/workflows/windows-audio.yml"
   workflow_dispatch:
 
@@ -53,3 +55,27 @@ jobs:
       - name: Test Windows audio crate
         shell: pwsh
         run: cargo +1.98.1 test -p vsn-windows-audio
+
+      - name: Validate C++ virtual microphone ABI contract
+        shell: pwsh
+        run: |
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} "Microsoft Visual Studio\Installer\vswhere.exe"
+          if (-not (Test-Path $vswhere)) {
+            throw "vswhere.exe was not found on the Windows runner"
+          }
+
+          $installation = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $installation) {
+            throw "A Visual Studio installation with MSVC x64 tools was not found"
+          }
+
+          $devCmd = Join-Path $installation "Common7\Tools\VsDevCmd.bat"
+          if (-not (Test-Path $devCmd)) {
+            throw "VsDevCmd.bat was not found at $devCmd"
+          }
+
+          $compileAndRun = "`"$devCmd`" -no_logo -arch=x64 && cl.exe /nologo /std:c++17 /permissive- /W4 /WX /EHsc /I native\windows-virtual-mic\include native\windows-virtual-mic\tests\protocol_abi_test.cpp /Fe:virtual_mic_protocol_abi_test.exe && virtual_mic_protocol_abi_test.exe"
+          & cmd.exe /d /c $compileAndRun
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
