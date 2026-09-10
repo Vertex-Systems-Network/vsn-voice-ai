@@ -10,6 +10,9 @@
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 #include <Windows.h>
 #include <sddl.h>
 
@@ -160,7 +163,8 @@ public:
         }
         if (layout_status != SharedRegionStatus::kOk ||
             layout.total_bytes > max_region_bytes ||
-            layout.total_bytes > static_cast<uint64_t>(std::numeric_limits<SIZE_T>::max())) {
+            layout.total_bytes >
+                static_cast<uint64_t>((std::numeric_limits<SIZE_T>::max)())) {
             return SharedSectionStatus::kRegionTooLarge;
         }
 
