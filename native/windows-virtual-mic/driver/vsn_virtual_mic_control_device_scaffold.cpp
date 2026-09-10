@@ -10,7 +10,7 @@ void VsnControlDeviceFailClosedIoctl(
     WDFREQUEST request,
     size_t output_buffer_length,
     size_t input_buffer_length,
-    ULONG io_control_code) noexcept {
+    ULONG io_control_code) {
     UNREFERENCED_PARAMETER(queue);
     UNREFERENCED_PARAMETER(output_buffer_length);
     UNREFERENCED_PARAMETER(input_buffer_length);
