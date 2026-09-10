@@ -145,7 +145,10 @@ impl Display for WasapiCaptureError {
                 "WASAPI packet size overflow for {frames} frames at block alignment {block_align}"
             ),
             Self::NullPacketData { frames } => {
-                write!(f, "WASAPI returned null packet data for {frames} non-silent frames")
+                write!(
+                    f,
+                    "WASAPI returned null packet data for {frames} non-silent frames"
+                )
             }
             Self::Backend(message) => write!(f, "WASAPI capture error: {message}"),
             Self::InvalidEndpoint(error) => write!(f, "invalid capture endpoint: {error}"),
@@ -170,7 +173,7 @@ impl From<CapturePlanError> for WasapiCaptureError {
 
 #[cfg(not(windows))]
 mod platform {
-    use super::{CapturedPacket, CaptureSessionSummary, WasapiCaptureError};
+    use super::{CaptureSessionSummary, CapturedPacket, WasapiCaptureError};
 
     pub struct Session;
 
@@ -211,7 +214,8 @@ mod platform {
 
     use vsn_audio_core::AudioFormat;
     use windows::Win32::Foundation::{
-        CloseHandle, ERROR_NOT_FOUND, GetLastError, HANDLE, WAIT_FAILED, WAIT_OBJECT_0, WAIT_TIMEOUT,
+        CloseHandle, ERROR_NOT_FOUND, GetLastError, HANDLE, WAIT_FAILED, WAIT_OBJECT_0,
+        WAIT_TIMEOUT,
     };
     use windows::Win32::Media::Audio::{
         AUDCLNT_STREAMFLAGS_EVENTCALLBACK, IAudioCaptureClient, IAudioClient3, IMMDeviceEnumerator,
@@ -374,8 +378,8 @@ mod platform {
                 let bytes = if flags.silent {
                     vec![0; byte_len]
                 } else {
-                    let pointer = NonNull::new(data)
-                        .ok_or(WasapiCaptureError::NullPacketData { frames })?;
+                    let pointer =
+                        NonNull::new(data).ok_or(WasapiCaptureError::NullPacketData { frames })?;
                     unsafe { slice::from_raw_parts(pointer.as_ptr(), byte_len) }.to_vec()
                 };
 
@@ -388,7 +392,11 @@ mod platform {
                 })
             });
 
-            unsafe { self.capture_client.ReleaseBuffer(frames).map_err(backend_error)? };
+            unsafe {
+                self.capture_client
+                    .ReleaseBuffer(frames)
+                    .map_err(backend_error)?
+            };
             packet.map(Some)
         }
     }
@@ -520,7 +528,10 @@ mod tests {
         assert!(flags.silent);
         assert!(flags.data_discontinuity);
         assert!(flags.timestamp_error);
-        assert_eq!(CapturePacketFlags::from_raw(0), CapturePacketFlags::default());
+        assert_eq!(
+            CapturePacketFlags::from_raw(0),
+            CapturePacketFlags::default()
+        );
     }
 
     #[cfg(not(windows))]
