@@ -174,6 +174,24 @@ int main() {
         return 1;
     }
 
+    runtime.linear_position_bytes = 0u;
+    runtime.cyclic_position_bytes = 0u;
+    runtime.notification_accumulator_bytes = 1'916u;
+    runtime.notifications_due_total = UINT64_MAX;
+    const uint64_t accumulator_before = runtime.notification_accumulator_bytes;
+    if (Require(
+            AdvanceWaveRtCapturePosition(&runtime, 4u) ==
+                WaveRtStreamStatus::kPositionOverflow,
+            "notification total overflow was accepted") ||
+        Require(runtime.linear_position_bytes == 0u, "notification overflow mutated linear position") ||
+        Require(runtime.cyclic_position_bytes == 0u, "notification overflow mutated cyclic position") ||
+        Require(
+            runtime.notification_accumulator_bytes == accumulator_before,
+            "notification overflow mutated accumulator") ||
+        Require(runtime.notifications_due_total == UINT64_MAX, "notification overflow mutated total")) {
+        return 1;
+    }
+
     if (Require(
             InitializeWaveRtStreamRuntime(nullptr, 7'680u, 4u, 1'920u) ==
                 WaveRtStreamStatus::kNullState,
