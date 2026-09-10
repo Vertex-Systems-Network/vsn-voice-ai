@@ -22,9 +22,9 @@ namespace vsn::virtual_mic {
 // CursorSnapshot doubles as the shared cursor block for the initial x64 transport
 // contract. Each mutable 64-bit field is accessed through Windows Interlocked
 // operations so publication carries a full memory barrier. The transport remains
-// single-producer/single-consumer: user mode owns producer_sequence, the future
-// driver owns consumer_sequence, and session reset must occur only after both
-// endpoints are quiesced.
+// single-producer/single-consumer: user mode owns producer_sequence, the driver
+// owns consumer_sequence, and session reset must occur only after both endpoints
+// are quiesced.
 static_assert(alignof(CursorSnapshot) >= 8u, "shared cursor block must remain 64-bit aligned");
 static_assert(offsetof(CursorSnapshot, producer_sequence) % 8u == 0u, "producer cursor must remain 64-bit aligned");
 static_assert(offsetof(CursorSnapshot, consumer_sequence) % 8u == 0u, "consumer cursor must remain 64-bit aligned");
@@ -42,6 +42,7 @@ enum class CursorSyncStatus : uint32_t {
     kProducerSequenceRegression,
     kConsumerSequenceRegression,
     kConsumerAheadOfProducer,
+    kFrameSequenceOverflow,
     kSnapshotUnstable,
 };
 
@@ -66,6 +67,16 @@ inline void AtomicStore64(uint64_t* value, uint64_t next) noexcept {
 inline uint64_t AtomicIncrement64(uint64_t* value) noexcept {
     const LONG64 next = InterlockedIncrement64(InterlockedAddress(value));
     return static_cast<uint64_t>(next);
+}
+
+inline uint64_t AtomicAdd64(uint64_t* value, uint64_t amount) noexcept {
+    if (amount == 0u) {
+        return AtomicLoad64(value);
+    }
+    const LONG64 previous = InterlockedExchangeAdd64(
+        InterlockedAddress(value),
+        static_cast<LONG64>(amount));
+    return static_cast<uint64_t>(previous) + amount;
 }
 
 inline CursorSyncStatus ReadStableCursorSnapshot(
@@ -139,6 +150,9 @@ inline CursorSyncStatus PublishProducerSequence(
     if (expected_generation == 0u) {
         return CursorSyncStatus::kInvalidSessionGeneration;
     }
+    if (next_sequence > kMaxFrameSequence + 1u) {
+        return CursorSyncStatus::kFrameSequenceOverflow;
+    }
     if (AtomicLoad64(&shared->session_generation) != expected_generation) {
         return CursorSyncStatus::kSessionGenerationMismatch;
     }
@@ -152,8 +166,9 @@ inline CursorSyncStatus PublishProducerSequence(
         return CursorSyncStatus::kConsumerAheadOfProducer;
     }
 
-    // User mode must write the complete PCM slot before publishing this cursor.
-    // InterlockedExchange64 provides the publication barrier on Windows.
+    // User mode must commit the per-slot stable stamp only after the complete
+    // PCM slot write, then publish this global cursor. AtomicStore64 is the
+    // publication barrier on Windows.
     AtomicStore64(&shared->producer_sequence, next_sequence);
     return CursorSyncStatus::kOk;
 }
@@ -168,6 +183,9 @@ inline CursorSyncStatus PublishConsumerSequence(
     if (expected_generation == 0u) {
         return CursorSyncStatus::kInvalidSessionGeneration;
     }
+    if (next_sequence > kMaxFrameSequence + 1u) {
+        return CursorSyncStatus::kFrameSequenceOverflow;
+    }
     if (AtomicLoad64(&shared->session_generation) != expected_generation) {
         return CursorSyncStatus::kSessionGenerationMismatch;
     }
@@ -181,18 +199,25 @@ inline CursorSyncStatus PublishConsumerSequence(
         return CursorSyncStatus::kConsumerAheadOfProducer;
     }
 
-    // The consumer must finish reading the PCM slot before publishing this
-    // cursor. The full barrier prevents slot reuse from racing ahead of reads.
+    // The consumer must finish validating/copying the PCM slot before
+    // publishing this cursor. The full barrier prevents slot reuse from racing
+    // ahead of completed reads.
     AtomicStore64(&shared->consumer_sequence, next_sequence);
     return CursorSyncStatus::kOk;
 }
 
-inline CursorSyncStatus RecordOverrunDrop(CursorSnapshot* shared) noexcept {
+inline CursorSyncStatus RecordOverrunDrops(
+    CursorSnapshot* shared,
+    uint64_t dropped_frames) noexcept {
     if (shared == nullptr) {
         return CursorSyncStatus::kNullSharedState;
     }
-    (void)AtomicIncrement64(&shared->overrun_drops);
+    (void)AtomicAdd64(&shared->overrun_drops, dropped_frames);
     return CursorSyncStatus::kOk;
+}
+
+inline CursorSyncStatus RecordOverrunDrop(CursorSnapshot* shared) noexcept {
+    return RecordOverrunDrops(shared, 1u);
 }
 
 inline CursorSyncStatus RecordUnderrun(CursorSnapshot* shared) noexcept {
