@@ -7,54 +7,37 @@
 **Canonical module count:** **25**  
 **Machine execution plan:** **10 phases / 25 Level-1 work units**
 
-> Development is active. **PHASE-000 is complete and PHASE-001 is in progress.** The first product implementation is `MOD-002 / WU-002` (Desktop Audio Core & Virtual Devices). Paid third-party consumption, proprietary model training, production credentials/cloud spend and production deployment remain subject to their applicable provider/data/compute/release gates.
+> Development is active. **PHASE-000 is complete and PHASE-001 is in progress.** The current product implementation is `MOD-002 / WU-002` (Desktop Audio Core & Virtual Devices). Paid third-party consumption, proprietary model training, production credentials/cloud spend and production deployment remain subject to their applicable provider/data/compute/release gates.
 
 ## Product Direction — Confirmed
 
 The owner-approved product direction is:
 
 1. Build a **hybrid AI platform**, not a single-vendor wrapper.
-2. Integrate every relevant provider that actually exposes a usable and approved API/SDK when it improves capability coverage, quality, latency, privacy, resilience or economics.
+2. Integrate relevant providers only when access, licensing, privacy, region, quota/cost and implementation are verified.
 3. Add **VSN-owned AI models/runtime as first-class providers** behind the same internal contracts.
-4. Build a directly usable realtime calls/meetings product covering noise cancellation, background-voice removal, echo/de-reverb, VAD, accent conversion, voice preservation, realtime translation, transcription, captions, diarization, meeting capture, notes, summaries, decisions, action items, highlights, Q&A, communication coaching, conversation intelligence, cross-app search, authorized AI actions, mobile/browser/in-person capture, integrations, telephony/contact-center, SaaS subscriptions, enterprise controls and later public APIs/SDKs.
+4. Build a directly usable realtime calls/meetings product covering audio enhancement, accent conversion, voice preservation, translation, transcription, meeting intelligence, coaching, search, authorized actions, multi-platform capture, integrations, telephony/contact-center, SaaS subscriptions, enterprise controls and later public APIs/SDKs.
 
 ## Current Repository State
 
 - Child project: `active_project`; bootstrap complete.
-- Development and technology stack approvals are recorded.
 - **PHASE-000 — Initialization & Architecture Gates: complete.**
 - **PHASE-001 — Realtime Audio Commercial Core: in progress.**
 - `WU-001` governance/bootstrap/consent: **complete**.
-- `WU-010` provider-gateway foundation: **complete**; broader `MOD-010` provider work remains cross-cutting/in progress.
-- `WU-017` PHASE-000 privacy/security/data-governance baseline: **complete**; broader `MOD-017` security work remains cross-cutting/in progress.
+- `WU-010` provider-gateway foundation: **complete**; broader `MOD-010` work remains cross-cutting/in progress.
+- `WU-017` PHASE-000 privacy/security/data-governance baseline: **complete**; broader `MOD-017` work remains cross-cutting/in progress.
 - `WU-002` desktop audio core and virtual devices: **in progress** since **2026-09-10 03:43 PKT**.
 - Rust native workspace contains `vsn-audio-core` and `vsn-windows-audio`.
-- Verified audio-core slice includes `AudioFormat`, `AudioFrame`, bounded queues and safe processing bypass.
-- Verified device-lifecycle slice includes stable device IDs, capture/render roles, preferred/default selection, active fallback and lifecycle-state handling.
-- Verified device/stream control slices include deterministic device reselection, processing bypass, bounded invalidation recovery and exponential reopen backoff.
-- `vsn-windows-audio` provides a snapshot-to-core-catalog boundary and explicit unsupported-platform behavior off Windows.
-- Verified WASAPI planning slice validates `IAudioClient3`-style default/fundamental/min/max period grids, chooses the nearest supported fundamental multiple and converts sample-rate/duration targets to frame counts (`48 kHz × 10 ms = 480` frames).
-- Verified `SharedCapturePlan` separates WASAPI audio-frame cadence from interleaved pipeline sample count and marks exact vs accumulator-required capture cadence without assuming one callback equals one pipeline frame.
-- Dedicated `.github/workflows/windows-audio.yml` compiles, lints and tests `vsn-windows-audio` on a hosted Windows runner.
-- Windows COM initialization, `IMMDeviceEnumerator`, active endpoint/default-role snapshot logic and core-catalog mapping have executed successfully in hosted Windows CI.
-- The default-capture `IAudioClient3` probe compiles/tests on Windows, activates the communications endpoint when one is available, reads its mix format and validates shared-mode engine-period constraints; the probe safely returns no result when the hosted environment exposes no communications capture endpoint.
-- Event-driven WASAPI capture, native sample decoding, bounded packet draining and packet-to-`AudioFrame` assembly are implemented and CI-verified.
-- Documented WASAPI device/resource/audio-service lifecycle failures are classified into structured retryable capture failures where appropriate.
-- `CaptureRuntime` provides externally scheduled bounded reopen recovery with sequence continuity and no internal unbounded retry/sleep loop.
-- `IMMNotificationClient` registration/unregistration is implemented on a dedicated Windows MTA thread with a bounded non-blocking event queue and dropped-event accounting.
-- Owner-thread notification bridging filters active capture-route changes and collapses a notification batch into at most one recovery transition.
-- `VirtualMicStagingBuffer` provides a fixed-format bounded user-mode output queue; overflow drops the oldest frame, underrun emits fresh silence, and accepted/drop/underrun counters are explicit.
-- `VirtualMicOutputBridge` routes both successfully processed frames and `AudioPipeline` safe-bypass originals through the same user-mode staging path, so an optional processing failure does not itself silence the output staging boundary.
-- `virtual_mic_protocol` defines a versioned C-compatible driver-facing header/cursor contract with session generations, fixed audio geometry, monotonic producer/consumer sequences and deterministic cyclic-ring overrun normalization.
-- `native/windows-virtual-mic` provides an MSVC x64-verified C++ mirror of that wire ABI: 40-byte header/cursor structures, 8-byte alignment, exact field offsets, matching validation and matching cyclic-ring/session/cursor behavior.
-- `vsn_virtual_mic_cursor_sync.h` provides CI-verified aligned Windows `Interlocked*64` cursor publication, bounded stable snapshots, session-generation fencing, monotonic producer/consumer checks and atomic underrun/overrun counters.
-- `vsn_virtual_mic_region_layout.h` provides deterministic 64-byte-aligned header/cursor/PCM-ring geometry with overflow-safe mapping-size calculation; the four-frame reference contract is 7,808 bytes total with audio starting at offset 128.
-- `vsn_virtual_mic_shared_section.h` now creates a real unnamed page-backed Windows mapping with `CreateFileMappingW`/`MapViewOfFile`, a configurable 16 MiB default cap, non-inheritable handle and protected DACL restricted to LocalSystem plus the current process user; Windows CI verifies a second mapped view sees shared protocol/audio/cursor changes.
-- `vsn_virtual_mic_device_control.h` defines versioned access-restricted `CONNECT` / `DISCONNECT` / `QUERY_STATUS` IOCTL ABI contracts with fixed structure layout and validation for session generation, shared-section handle/size, expected protocol identity and runtime cursor/status fields.
+- Windows-native capture, recovery and virtual-mic transport contracts are CI verified through the current KMDF control-driver boundary.
+- `native/windows-virtual-mic/driver/vsn_virtual_mic_control.vcxproj` is an x64 KMDF Desktop-driver project built with pinned Microsoft WDK/SDK NuGet `10.0.28000.2526`.
+- The KMDF control driver implements access-restricted `CONNECT` / `DISCONNECT` / `QUERY_STATUS` dispatch, requestor PID/file ownership checks, driver-created shared-section lifecycle, retained kernel object reference, system-space mapping, protocol/cursor initialization and bounded teardown.
+- The development control interface is intentionally restricted to LocalSystem and built-in Administrators; least-privilege non-admin runtime policy remains pending.
+- The secure v2 CONNECT contract does **not** accept a caller-supplied section handle. The driver creates the section in requestor context and returns a user handle only after initialization while retaining its own independent section-object reference.
+- Windows CI restores the pinned WDK packages, builds `vsn_virtual_mic_control.sys` with WDK validation enabled, and then runs the C++ protocol/cursor/layout/shared-section/device-control regression executables.
 - Windows implementation contract is documented in `docs/architecture/WINDOWS-AUDIO-IMPLEMENTATION.md`.
-- **Physical-device hotplug/default-device recovery on controlled hardware, a kernel-side shared-section consumer, an OS-visible production virtual microphone, calling-app routing and hardware latency/jitter evidence are not yet claimed operational.**
+- **A WaveRT/PortCls audio miniport, installed OS-visible microphone endpoint, calling-app route and controlled-hardware performance evidence are not yet claimed operational.**
 
-**Latest verified green implementation CI:** AI Native Quality Gates run `34536677479` and Windows Audio Validation run `34536677410` both passed on implementation head `8a14b010d0c6b3e097e67d4488194734c2c0142e`, including MSVC x64 compile-and-run validation of the device-control ABI against a real `SharedSection` handle. The preceding shared-section mapping slice passed AI Native run `34536268804` and Windows run `34536269060` on head `f38dab24018d1c3b04008675c5ddc36e7520c07b` and merged to main as `9f24e8b56c56505df3b736e3fcf3d88ac236c465`; the device-control ABI merged as `a5a372ac819d2fe2e76f6cbedc54e62bc05d4ec6`.
+**Latest verified green implementation CI:** AI Native Quality Gates run `34539554036` and Windows Audio Validation run `34539554115` both passed on implementation head `6bb193f96ecec505f341600b5577b18e4046a89c`. The Windows run passed Rust compile/Clippy/tests, restored the pinned WDK packages, built the KMDF control-driver `.sys`, passed WDK post-build validation under the Desktop target classification, and passed the native C++ transport-contract tests. This implementation merged to `main` as `b2761ad400d92c1d810751fabcf4b071a40dfb9c`. The preceding secure driver-owned CONNECT-v2 correction passed AI Native run `34537871677` and Windows run `34537871806` and merged as `3953069f468c46d744f30625b3696e5b12f03a77`.
 
 ## README Reconciliation Rule — Mandatory
 
@@ -113,60 +96,39 @@ Progress scale: `░░░░░░░░░░ 0%` → `███████�
 
 Implemented and CI-verified:
 
-- Rust `vsn-audio-core` workspace/crate;
-- explicit sample-rate/channel/frame-duration validation;
-- finite-sample and frame-size validation;
-- bounded realtime frame queue;
-- safe bypass returns the original frame after optional processing-stage failure;
-- platform-neutral capture/render device model;
-- communications/default/preferred device selection policy;
-- deterministic fallback when preferred/default devices are unavailable;
-- lifecycle state handling for disabled, not-present and unplugged devices;
-- deterministic device-event/reselection controller;
-- bounded stream invalidation recovery with retry cap and exponential backoff;
-- processing-failure bypass/recovery stream state transitions;
-- `vsn-windows-audio` workspace crate;
-- `EndpointSnapshot` to core `DeviceCatalog` validation/mapping;
-- explicit `UnsupportedPlatform` behavior outside Windows;
-- `IAudioClient3`-compatible engine-period range validation for default/fundamental/min/max frame counts;
-- deterministic nearest-supported fundamental-multiple period selection, preferring the lower period on exact ties;
-- checked sample-rate/duration to frame-count conversion (`48 kHz / 10 ms = 480` frames);
-- shared-mode capture cadence planning that keeps WASAPI audio frames separate from interleaved sample counts and explicitly identifies when buffering/accumulation is required;
-- dedicated Windows-native compile/Clippy/test workflow;
-- Windows COM apartment initialization and `IMMDeviceEnumerator` creation;
-- hosted-Windows execution of active capture/render endpoint enumeration, default-role lookup and snapshot-to-core-catalog validation;
-- Windows-compiled/tested `IAudioClient3` activation, mix-format and shared-mode engine-period probe path, with a safe no-default-endpoint result;
-- event-driven WASAPI capture session using event callbacks and `IAudioCaptureClient` packet reads;
-- native sample decoding and packet-to-validated-`AudioFrame` assembly, including cadence accumulation/reframing where required;
-- bounded capture-pump packet draining so event bursts cannot create an unbounded drain loop;
-- structured retryable classification for documented WASAPI device/resource/audio-service lifecycle failures;
-- externally scheduled bounded `CaptureRuntime` reopen recovery with sequence continuity;
-- MMDevice `IMMNotificationClient` registration/unregistration on a dedicated Windows MTA thread;
-- bounded non-blocking endpoint notification delivery with drop accounting;
-- owner-thread active-route notification filtering and at-most-one recovery transition per drained notification batch;
-- fixed-format bounded `VirtualMicStagingBuffer` with oldest-frame overflow drop, fresh-silence underrun and explicit accepted/drop/underrun counters;
-- `VirtualMicOutputBridge` that stages both processed output and the original safe-bypass frame after an optional processing failure through the same output path;
-- versioned C-compatible `VirtualMicProtocolHeader` / `VirtualMicCursorSnapshot` contract with magic/version/header-size validation, session generation, fixed audio geometry and monotonic ring cursors;
-- deterministic cyclic-ring slot planning with oldest-frame overrun normalization;
-- MSVC x64 C++ driver-facing ABI mirror in `native/windows-virtual-mic`, with 40-byte `ProtocolHeader` / `CursorSnapshot`, 8-byte alignment, exact static field offsets, matching validation and matching ring/session/cursor semantics;
-- aligned Windows `Interlocked*64` shared cursor publication with bounded stable snapshots, session-generation fencing, producer/consumer monotonicity checks and atomic overrun/underrun counters;
-- deterministic 64-byte-aligned shared-region planning for header/cursors/PCM ring with checked arithmetic; the 48 kHz mono F32 10 ms four-frame reference maps to 7,808 bytes total;
-- real unnamed page-backed `SharedSection` creation/mapping with validated layout-derived size, configurable 16 MiB default cap, non-inheritable handle, protected LocalSystem/current-user DACL and initialized protocol/cursor state;
-- second mapped-view verification proving shared protocol/audio bytes and interlocked producer-cursor publication propagate through the actual Windows section;
-- versioned `CONNECT` / `DISCONNECT` / `QUERY_STATUS` `METHOD_BUFFERED` IOCTL ABI with read+write access requirement, fixed structure layouts and malformed-input/status rejection;
-- real `SharedSection` handle metadata exercised through the CONNECT ABI validator;
-- AI Native Quality Gates run `34536677479` and Windows Audio Validation run `34536677410` on implementation head `8a14b010d0c6b3e097e67d4488194734c2c0142e`; the preceding shared-section slice passed runs `34536268804` / `34536269060` on `f38dab24018d1c3b04008675c5ddc36e7520c07b`.
+- validated `AudioFormat` / `AudioFrame` contracts, bounded realtime queues and safe processing bypass;
+- platform-neutral capture/render device catalog, preferred/default/fallback selection and lifecycle state handling;
+- deterministic device reselection plus bounded stream invalidation recovery and exponential reopen backoff;
+- `vsn-windows-audio` MMDevice enumeration/default-role mapping and hosted-Windows runtime smoke coverage;
+- `IAudioClient3` engine-period validation and shared capture cadence planning;
+- event-driven WASAPI capture, sample decode/reframing, bounded packet draining and `CaptureRuntime` recovery;
+- `IMMNotificationClient` registration on a dedicated Windows MTA thread, bounded non-blocking notification delivery and owner-thread recovery filtering;
+- bounded `VirtualMicStagingBuffer` and `VirtualMicOutputBridge` for processed and safe-bypass frames;
+- versioned Rust/C++ virtual-mic protocol with fixed geometry, session generation and deterministic cyclic-ring semantics;
+- MSVC x64 ABI mirror with locked 40-byte protocol/cursor layouts and exact offsets;
+- aligned Windows `Interlocked*64` cursor publication, bounded stable snapshots and explicit overrun/underrun accounting;
+- deterministic 64-byte-aligned shared-region geometry; the 48 kHz mono F32 10 ms four-frame reference is 7,808 bytes total;
+- real unnamed user-mode `SharedSection` mapping with a configurable 16 MiB cap, non-inheritable handle, protected current-user/LocalSystem DACL and two-view propagation/security tests;
+- secure device-control ABI v2 using `METHOD_BUFFERED` and `FILE_READ_ACCESS | FILE_WRITE_ACCESS`; CONNECT now carries validated protocol geometry and no caller-supplied shared-section handle;
+- driver-created shared section in requestor process context, immediate independent kernel object reference, system-space mapping, header/cursor initialization and response handle return after successful initialization;
+- requestor PID + file-object ownership fencing for disconnect/status operations;
+- bounded section/view/object cleanup on disconnect, owning file cleanup and device cleanup;
+- development device interface restricted to LocalSystem and built-in Administrators;
+- x64 KMDF Desktop-driver project with KMDF 1.21 and pinned Microsoft WDK/SDK NuGet `10.0.28000.2526`;
+- Windows CI build of `vsn_virtual_mic_control.sys` with WDK validation enabled;
+- latest AI Native run `34539554036` and Windows Audio Validation run `34539554115` green on implementation head `6bb193f96ecec505f341600b5577b18e4046a89c`, merged as `b2761ad400d92c1d810751fabcf4b071a40dfb9c`.
 
 Not yet verified and therefore **not claimed complete**:
 
-- confirmed `GetSharedModeEnginePeriod` values from a physical communications microphone on a controlled test machine when hosted CI exposes no capture endpoint;
-- actual unplug/replug, Bluetooth/headset disconnect and default-device recovery firing successfully on controlled Windows hardware;
-- sleep/wake and audio-service interruption recovery on representative hardware;
-- WDK-buildable kernel-side virtual microphone endpoint/topology and secure VSN device interface;
-- real IOCTL dispatch with caller authorization, section-handle referencing/mapping, kernel-side cursor/ring consumer lifecycle and process/device teardown cleanup;
-- processed/bypass audio reaching Zoom/Teams/Meet/dialers/browser apps through an OS-visible endpoint;
+- confirmed physical-microphone `IAudioClient3` values and real unplug/replug, Bluetooth/headset, default-device, sleep/wake and audio-service recovery on controlled Windows hardware;
+- minimal WaveRT/PortCls virtual microphone miniport/topology and actual audio endpoint registration;
+- kernel ring-consumer timing, underrun/silence behavior, WaveRT position semantics and audio delivery from the retained shared region;
+- INF/package creation, controlled-machine installation/test signing and runtime `DeviceIoControl` handshake against the installed driver;
+- endpoint enumeration as an OS-visible microphone and processed/bypass audio reaching it;
+- Zoom/Teams/Meet/dialer/browser compatibility through the actual endpoint;
 - CPU/callback deadline, discontinuity, end-to-end latency and jitter evidence under controlled hardware load;
-- driver signing/install/update/uninstall/rollback and supported-Windows compatibility evidence.
+- least-privilege non-admin broker/interface ACL policy for production runtime;
+- production driver signing, supported-Windows matrix, install/update/uninstall/rollback and reboot/sleep lifecycle evidence.
 
 ## Hybrid Provider Model
 
