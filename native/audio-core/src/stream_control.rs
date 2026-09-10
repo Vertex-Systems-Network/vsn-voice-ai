@@ -66,6 +66,7 @@ pub enum StreamEvent {
     OpenSucceeded,
     OpenFailed { fault: StreamFault, retryable: bool },
     DeviceInvalidated,
+    StreamFailed { fault: StreamFault, retryable: bool },
     RetryTimerElapsed,
     ProcessingFailed(String),
     ProcessingRecovered,
@@ -157,6 +158,23 @@ impl StreamController {
                 StreamAction::ScheduleRetry {
                     delay_ms: self.policy.initial_backoff_ms,
                 }
+            }
+            StreamEvent::StreamFailed { retryable: true, .. }
+                if matches!(self.state, StreamState::Running | StreamState::Bypassed) =>
+            {
+                self.reopen_failures = 0;
+                self.state = StreamState::Recovering;
+                StreamAction::ScheduleRetry {
+                    delay_ms: self.policy.initial_backoff_ms,
+                }
+            }
+            StreamEvent::StreamFailed {
+                fault,
+                retryable: false,
+            } if matches!(self.state, StreamState::Running | StreamState::Bypassed) => {
+                self.reopen_failures = 0;
+                self.state = StreamState::Failed;
+                StreamAction::SurfaceFailure { fault }
             }
             StreamEvent::RetryTimerElapsed if self.state == StreamState::Recovering => {
                 self.state = StreamState::Opening;
@@ -262,6 +280,41 @@ mod tests {
         let retry = controller.apply(StreamEvent::RetryTimerElapsed);
         assert_eq!(retry.current, StreamState::Opening);
         assert_eq!(retry.action, StreamAction::OpenDevice);
+    }
+
+    #[test]
+    fn retryable_runtime_stream_failure_schedules_reopen() {
+        let mut controller = running_controller();
+
+        let transition = controller.apply(StreamEvent::StreamFailed {
+            fault: StreamFault::DeviceUnavailable,
+            retryable: true,
+        });
+
+        assert_eq!(transition.current, StreamState::Recovering);
+        assert_eq!(
+            transition.action,
+            StreamAction::ScheduleRetry { delay_ms: 25 }
+        );
+        assert_eq!(transition.reopen_failures, 0);
+    }
+
+    #[test]
+    fn non_retryable_runtime_stream_failure_surfaces_immediately() {
+        let mut controller = running_controller();
+
+        let transition = controller.apply(StreamEvent::StreamFailed {
+            fault: StreamFault::Backend("malformed capture packet".into()),
+            retryable: false,
+        });
+
+        assert_eq!(transition.current, StreamState::Failed);
+        assert_eq!(
+            transition.action,
+            StreamAction::SurfaceFailure {
+                fault: StreamFault::Backend("malformed capture packet".into())
+            }
+        );
     }
 
     #[test]
