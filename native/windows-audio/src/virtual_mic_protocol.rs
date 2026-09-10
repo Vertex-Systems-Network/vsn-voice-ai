@@ -4,7 +4,7 @@ use std::mem::size_of;
 
 use vsn_audio_core::AudioFormat;
 
-pub const VIRTUAL_MIC_PROTOCOL_MAGIC: u32 = 0x564D_534E;
+pub const VIRTUAL_MIC_PROTOCOL_MAGIC: u32 = u32::from_le_bytes(*b"VSNM");
 pub const VIRTUAL_MIC_PROTOCOL_VERSION: u16 = 1;
 pub const VIRTUAL_MIC_SAMPLE_FORMAT_F32_LE: u16 = 1;
 
