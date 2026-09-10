@@ -38,7 +38,10 @@ impl VirtualMicOutputBridge {
         let processing_state = result.state;
         let stages_completed = result.stages_completed;
         let bypass_reason = result.bypass_reason;
-        let dropped_sequence = self.transport.push(result.frame)?.map(|frame| frame.sequence);
+        let dropped_sequence = self
+            .transport
+            .push(result.frame)?
+            .map(|frame| frame.sequence);
 
         Ok(VirtualMicSubmission {
             processing_state,
@@ -139,7 +142,10 @@ mod tests {
 
         assert_eq!(submission.processing_state, ProcessingState::Bypassed);
         assert_eq!(submission.stages_completed, 0);
-        assert_eq!(submission.bypass_reason.as_deref(), Some("provider: provider unavailable"));
+        assert_eq!(
+            submission.bypass_reason.as_deref(),
+            Some("provider: provider unavailable")
+        );
         assert!(submission.dropped_sequence.is_none());
         assert_eq!(read.source, VirtualMicFrameSource::Buffered);
         assert_eq!(read.frame, original);
@@ -154,9 +160,9 @@ mod tests {
 
         assert!(matches!(
             VirtualMicOutputBridge::new(invalid, 4),
-            Err(VirtualMicTransportError::Audio(
-                AudioError::InvalidFormat(_)
-            ))
+            Err(VirtualMicTransportError::Audio(AudioError::InvalidFormat(
+                _
+            )))
         ));
     }
 }
