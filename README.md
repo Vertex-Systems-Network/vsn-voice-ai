@@ -28,13 +28,16 @@ The owner-approved product direction is:
 - `WU-010` provider-gateway foundation: **complete**; broader `MOD-010` provider work remains cross-cutting/in progress.
 - `WU-017` PHASE-000 privacy/security/data-governance baseline: **complete**; broader `MOD-017` security work remains cross-cutting/in progress.
 - `WU-002` desktop audio core and virtual devices: **in progress** since **2026-09-10 03:43 PKT**.
-- Rust native workspace and `vsn-audio-core` exist.
+- Rust native workspace contains `vsn-audio-core` and `vsn-windows-audio`.
 - Verified audio-core slice includes `AudioFormat`, `AudioFrame`, bounded queues and safe processing bypass.
 - Verified device-lifecycle slice includes stable device IDs, capture/render roles, preferred/default selection, active fallback and lifecycle-state handling.
+- Verified device/stream control slices include deterministic device reselection, processing bypass, bounded invalidation recovery and exponential reopen backoff.
+- `vsn-windows-audio` provides a CI-tested snapshot-to-core-catalog boundary and explicit unsupported-platform behavior off Windows.
+- Windows-only MMDevice active endpoint enumeration and Console/Multimedia/Communications default-role code now exists behind `cfg(windows)`.
 - Windows implementation contract is documented in `docs/architecture/WINDOWS-AUDIO-IMPLEMENTATION.md`.
-- **Windows WASAPI capture and the production virtual microphone are not yet claimed operational.** They require platform-specific implementation and verification.
+- **The Windows-only MMDevice branch has not yet been compiled/run on a Windows CI runner or hardware, and WASAPI capture plus the production virtual microphone are not claimed operational.**
 
-**Latest verified green implementation CI:** GitHub Actions run `34416070554` — ANPOS validation, Go provider-gateway tests, Rust formatting, Clippy, Rust unit tests, product JSON Schemas, YAML and whitespace gates all passed.
+**Latest verified green implementation CI:** GitHub Actions run `34420328611` — ANPOS validation, Go provider-gateway tests, Rust formatting, Clippy, workspace Rust unit tests, product JSON Schemas, YAML and whitespace gates all passed on Ubuntu.
 
 ## README Reconciliation Rule — Mandatory
 
@@ -102,11 +105,26 @@ Implemented and CI-verified:
 - communications/default/preferred device selection policy;
 - deterministic fallback when preferred/default devices are unavailable;
 - lifecycle state handling for disabled, not-present and unplugged devices;
-- Rust `rustfmt`, Clippy `-D warnings` and unit-test gates in CI.
+- deterministic device-event/reselection controller;
+- bounded stream invalidation recovery with retry cap and exponential backoff;
+- processing-failure bypass/recovery stream state transitions;
+- `vsn-windows-audio` workspace crate;
+- `EndpointSnapshot` to core `DeviceCatalog` validation/mapping;
+- explicit `UnsupportedPlatform` behavior outside Windows;
+- Rust `rustfmt`, Clippy `-D warnings` and workspace unit-test gates in CI.
+
+Implemented in source but **not yet Windows-platform verified**:
+
+- Windows COM apartment initialization for endpoint discovery;
+- `IMMDeviceEnumerator` creation;
+- active capture/render endpoint enumeration;
+- Console/Multimedia/Communications default endpoint lookup;
+- endpoint-ID mapping into core device descriptors.
 
 Not yet verified and therefore **not claimed complete**:
 
-- real Windows MMDevice endpoint enumeration;
+- compilation of the Windows-only MMDevice path on a Windows CI runner;
+- real Windows MMDevice endpoint enumeration on a Windows machine;
 - event-driven WASAPI microphone capture;
 - `IAudioClient3` engine-period negotiation;
 - actual hotplug/default-device recovery on Windows;
