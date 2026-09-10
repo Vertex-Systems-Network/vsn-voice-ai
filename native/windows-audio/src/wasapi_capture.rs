@@ -6,7 +6,7 @@ use vsn_audio_core::device::{DeviceError, DeviceId};
 use crate::MixFormatSummary;
 use crate::capture_plan::{CapturePlanError, SharedCapturePlan};
 use crate::sample_decode::{NativeSampleEncoding, SampleDecodeError, SampleDecoder};
-use crate::wave_format::{WaveFormatError, WAVE_FORMAT_EXTENSIBLE_TAG};
+use crate::wave_format::{WAVE_FORMAT_EXTENSIBLE_TAG, WaveFormatError};
 
 const BUFFERFLAG_DATA_DISCONTINUITY: u32 = 0x1;
 const BUFFERFLAG_SILENT: u32 = 0x2;
@@ -264,7 +264,7 @@ mod platform {
 
     use super::{
         CapturePacketFlags, CaptureSessionSummary, CapturedPacket, DeviceId, MixFormatSummary,
-        SampleDecoder, SharedCapturePlan, WasapiCaptureError, WAVE_FORMAT_EXTENSIBLE_TAG,
+        SampleDecoder, SharedCapturePlan, WAVE_FORMAT_EXTENSIBLE_TAG, WasapiCaptureError,
     };
     use crate::engine_period::EnginePeriodRange;
     use crate::wave_format::{ExtensibleWaveFormat, WaveFormatDescriptor};
@@ -470,8 +470,8 @@ mod platform {
             ));
         }
 
-        let sample_encoding = wave_format_descriptor(mix_format.as_ptr(), wave)?
-            .native_sample_encoding()?;
+        let sample_encoding =
+            wave_format_descriptor(mix_format.as_ptr(), wave)?.native_sample_encoding()?;
         let decoder = SampleDecoder::new(sample_encoding, wave.nChannels)?;
         if decoder.frame_bytes() != usize::from(wave.nBlockAlign) {
             return Err(WasapiCaptureError::BlockAlignMismatch {
@@ -634,7 +634,10 @@ mod tests {
             assert!(summary.mix_format.block_align > 0);
             let decoder = SampleDecoder::new(summary.sample_encoding, summary.mix_format.channels)
                 .expect("mix format should create native decoder");
-            assert_eq!(decoder.frame_bytes(), usize::from(summary.mix_format.block_align));
+            assert_eq!(
+                decoder.frame_bytes(),
+                usize::from(summary.mix_format.block_align)
+            );
             assert!(summary.endpoint_buffer_frames > 0);
             assert!(summary.plan.engine_period_frames > 0);
             assert!(!session.is_started());
