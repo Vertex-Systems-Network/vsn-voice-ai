@@ -26,6 +26,9 @@ struct SharedRegionLayout final {
     uint64_t header_bytes;
     uint64_t cursor_offset;
     uint64_t cursor_bytes;
+    uint64_t slot_stamps_offset;
+    uint64_t slot_stamp_bytes;
+    uint64_t slot_stamps_bytes;
     uint64_t audio_offset;
     uint64_t frame_bytes;
     uint64_t ring_bytes;
@@ -69,8 +72,23 @@ constexpr SharedRegionStatus PlanSharedRegionLayout(
     }
     const uint64_t cursor_end = cursor_offset + sizeof(CursorSnapshot);
 
+    uint64_t slot_stamps_offset = 0u;
+    if (!CheckedAlignUp(cursor_end, kSharedRegionAlignment, &slot_stamps_offset)) {
+        return SharedRegionStatus::kSizeOverflow;
+    }
+
+    const uint64_t capacity_frames = header.capacity_frames;
+    if (capacity_frames > UINT64_MAX / sizeof(FrameSlotStamp)) {
+        return SharedRegionStatus::kSizeOverflow;
+    }
+    const uint64_t slot_stamps_bytes = capacity_frames * sizeof(FrameSlotStamp);
+    if (slot_stamps_offset > UINT64_MAX - slot_stamps_bytes) {
+        return SharedRegionStatus::kSizeOverflow;
+    }
+    const uint64_t slot_stamps_end = slot_stamps_offset + slot_stamps_bytes;
+
     uint64_t audio_offset = 0u;
-    if (!CheckedAlignUp(cursor_end, kSharedRegionAlignment, &audio_offset)) {
+    if (!CheckedAlignUp(slot_stamps_end, kSharedRegionAlignment, &audio_offset)) {
         return SharedRegionStatus::kSizeOverflow;
     }
 
@@ -80,7 +98,6 @@ constexpr SharedRegionStatus PlanSharedRegionLayout(
     }
     const uint64_t frame_bytes = samples_per_frame * kF32SampleBytes;
 
-    const uint64_t capacity_frames = header.capacity_frames;
     if (frame_bytes != 0u && capacity_frames > UINT64_MAX / frame_bytes) {
         return SharedRegionStatus::kSizeOverflow;
     }
@@ -94,6 +111,9 @@ constexpr SharedRegionStatus PlanSharedRegionLayout(
     output->header_bytes = sizeof(ProtocolHeader);
     output->cursor_offset = cursor_offset;
     output->cursor_bytes = sizeof(CursorSnapshot);
+    output->slot_stamps_offset = slot_stamps_offset;
+    output->slot_stamp_bytes = sizeof(FrameSlotStamp);
+    output->slot_stamps_bytes = slot_stamps_bytes;
     output->audio_offset = audio_offset;
     output->frame_bytes = frame_bytes;
     output->ring_bytes = ring_bytes;
