@@ -10,7 +10,7 @@ Provide a low-latency Windows audio path that captures a selected physical micro
 
 ## Platform APIs
 
-The Windows implementation will use the native Windows Core Audio stack rather than a generic high-level audio wrapper for the critical realtime path.
+The Windows implementation uses the native Windows Core Audio stack rather than a generic high-level audio wrapper for the critical realtime path.
 
 - **MMDevice API / `IMMDeviceEnumerator`** for capture/render endpoint discovery and default endpoint resolution.
 - **`IMMNotificationClient`** for device add/remove/state/default-device notifications.
@@ -64,6 +64,8 @@ Required recovery cases:
 - application audio-service interruption where recoverable.
 
 Recovery must not create an unbounded reopen loop. Repeated identical failures require bounded backoff and a visible degraded/bypassed state.
+
+The current implementation separates MMDevice callback delivery from recovery execution. `IMMNotificationClient` publishes relevant endpoint events into a bounded non-blocking queue; owner-thread runtime code drains and evaluates the batch, then requests at most one capture invalidation/recovery transition for a relevant active capture-route change. Recovery itself remains externally scheduled through `CaptureRuntime`, preserving sequence continuity and bounded retry policy.
 
 ## Realtime failure isolation
 
@@ -121,30 +123,39 @@ Before production release:
 
 ## Verification plan
 
-### CI-verifiable now
+### CI-verified implementation foundation
 
 - platform-neutral device selection and lifecycle state tests;
-- bounded frame queue behavior;
-- safe-bypass behavior;
-- format validation;
-- Rust formatting, Clippy and unit tests.
+- bounded frame queue and safe-bypass behavior;
+- format and engine-period validation;
+- shared capture cadence planning and packet-to-frame assembly;
+- event-driven WASAPI capture session and bounded packet draining;
+- native capture sample decoding into validated pipeline frames;
+- structured classification of documented WASAPI device/resource/audio-service lifecycle failures;
+- bounded externally scheduled capture reopen recovery with sequence continuity;
+- `IMMNotificationClient` registration/unregistration on a dedicated Windows MTA thread;
+- bounded non-blocking MMDevice notification queue with drop accounting;
+- owner-thread notification-to-recovery filtering/deduplication;
+- Ubuntu repository-integrity checks plus Windows-native compile, Clippy and unit/smoke tests.
 
-### Windows runner / hardware verification
+Latest verified notification/recovery boundary passed Ubuntu repository-integrity run `34509104650` and Windows Audio Validation run `34509104681` on implementation head `c5d2984d587a344b36ae1ae753af8e26500b7e78`.
 
-- endpoint enumeration;
-- communications-default tracking;
-- event-driven WASAPI capture;
-- `IAudioClient3` period negotiation/fallback;
-- invalidated-device recovery;
-- hotplug/default-device changes;
+### Controlled Windows hardware verification still required
+
+- capture from a physical communications microphone with confirmed `IAudioClient3` period values;
+- physical unplug/replug event delivery and successful reopen;
+- real default communications-device switch and successful route recovery;
+- Bluetooth/headset disconnect/reconnect;
+- sleep/wake and audio-service interruption recovery where supported;
 - CPU usage and callback deadline misses;
-- capture discontinuity detection;
-- end-to-end latency measurement.
+- capture discontinuity detection under real hardware load;
+- end-to-end capture latency and jitter measurement.
 
-### Driver/test-machine verification
+### Driver/test-machine verification still required
 
 - virtual endpoint appears as a microphone to target calling applications;
 - processed and bypass audio both reach the endpoint;
+- Zoom/Teams/Meet/dialer/browser compatibility;
 - install/update/uninstall/rollback;
 - sleep/wake and reboot persistence;
 - device-loss recovery;
@@ -152,4 +163,6 @@ Before production release:
 
 ## Current implementation boundary
 
-As of the start of WU-002, the repository has the platform-neutral frame/pipeline/queue core and device-selection catalog. This is not yet evidence that Windows WASAPI capture or the virtual microphone driver works. Those claims require Windows-specific implementation and verification evidence.
+WU-002 now has code-level and hosted-CI evidence for the Windows event-driven WASAPI capture path, packet decoding/reframing, bounded runtime recovery, MMDevice notification registration and notification-to-recovery bridging. Hosted Windows CI also executes registration/unregistration smoke coverage, while Ubuntu CI verifies the wider repository integrity and platform-neutral logic.
+
+This evidence does **not** yet prove physical-device hotplug/default-device recovery on controlled Windows hardware, production virtual microphone routing, calling-application compatibility, hardware latency/jitter targets, or signed driver lifecycle behavior. Those remain required before MOD-002 / WU-002 can be treated as complete.
