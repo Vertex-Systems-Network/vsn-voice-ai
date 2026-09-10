@@ -3,29 +3,13 @@
 #include <portcls.h>
 #include <ksmedia.h>
 
+#include "../include/vsn_virtual_mic_wavert_contract.h"
+
 namespace {
 
-constexpr ULONG kVsnSampleRateHz = 48'000u;
-constexpr USHORT kVsnChannels = 1u;
-constexpr USHORT kVsnBitsPerSample = 32u;
-constexpr USHORT kVsnBlockAlign =
-    static_cast<USHORT>((kVsnChannels * kVsnBitsPerSample) / 8u);
-constexpr ULONG kVsnAverageBytesPerSecond =
-    kVsnSampleRateHz * static_cast<ULONG>(kVsnBlockAlign);
-constexpr ULONG kVsnMaxCaptureStreams = 1u;
+using namespace vsn::virtual_mic;
 
-enum : ULONG {
-    kWaveBridgePin = 0u,
-    kWaveCapturePin = 1u,
-    kWaveAdcNode = 0u,
-    kTopologyMicPin = 0u,
-    kTopologyBridgePin = 1u,
-};
-
-static_assert(kVsnChannels == 1u, "initial VSN WaveRT scaffold must remain mono");
-static_assert(kVsnSampleRateHz == 48'000u, "initial VSN WaveRT scaffold must remain 48 kHz");
-static_assert(kVsnBlockAlign == sizeof(float), "WaveRT F32 frame width drifted");
-static_assert(kVsnAverageBytesPerSecond == 192'000u, "WaveRT average byte rate drifted");
+static_assert(kWaveRtBlockAlign == sizeof(float), "WaveRT F32 frame width drifted");
 
 // The shared ring is F32, so the initial endpoint scaffold advertises exactly
 // one matching raw format instead of hiding a conversion inside the miniport.
@@ -44,14 +28,14 @@ KSDATAFORMAT_WAVEFORMATEXTENSIBLE gVsnCaptureFormat = {
     {
         {
             WAVE_FORMAT_EXTENSIBLE,
-            kVsnChannels,
-            kVsnSampleRateHz,
-            kVsnAverageBytesPerSecond,
-            kVsnBlockAlign,
-            kVsnBitsPerSample,
+            kWaveRtChannels,
+            kWaveRtSampleRateHz,
+            kWaveRtAverageBytesPerSecond,
+            kWaveRtBlockAlign,
+            kWaveRtBitsPerSample,
             sizeof(WAVEFORMATEXTENSIBLE) - sizeof(WAVEFORMATEX),
         },
-        kVsnBitsPerSample,
+        kWaveRtBitsPerSample,
         KSAUDIO_SPEAKER_MONO,
         STATICGUIDOF(KSDATAFORMAT_SUBTYPE_IEEE_FLOAT),
     },
@@ -67,11 +51,11 @@ KSDATARANGE_AUDIO gVsnCaptureDataRange = {
         STATICGUIDOF(KSDATAFORMAT_SUBTYPE_IEEE_FLOAT),
         STATICGUIDOF(KSDATAFORMAT_SPECIFIER_WAVEFORMATEX),
     },
-    kVsnChannels,
-    kVsnBitsPerSample,
-    kVsnBitsPerSample,
-    kVsnSampleRateHz,
-    kVsnSampleRateHz,
+    kWaveRtChannels,
+    kWaveRtBitsPerSample,
+    kWaveRtBitsPerSample,
+    kWaveRtSampleRateHz,
+    kWaveRtSampleRateHz,
 };
 
 KSDATARANGE gVsnBridgeDataRange = {
@@ -115,8 +99,8 @@ PCPIN_DESCRIPTOR gVsnWavePins[] = {
     },
     // Host capture pin exposes exactly one initial stream.
     {
-        kVsnMaxCaptureStreams,
-        kVsnMaxCaptureStreams,
+        kWaveRtMaxCaptureStreams,
+        kWaveRtMaxCaptureStreams,
         0u,
         nullptr,
         {
@@ -145,8 +129,8 @@ PCNODE_DESCRIPTOR gVsnWaveNodes[] = {
 };
 
 PCCONNECTION_DESCRIPTOR gVsnWaveConnections[] = {
-    {PCFILTER_NODE, kWaveBridgePin, kWaveAdcNode, 1u},
-    {kWaveAdcNode, 0u, PCFILTER_NODE, kWaveCapturePin},
+    {PCFILTER_NODE, kWaveRtWaveBridgePin, kWaveRtWaveAdcNode, 1u},
+    {kWaveRtWaveAdcNode, 0u, PCFILTER_NODE, kWaveRtWaveCapturePin},
 };
 
 PCFILTER_DESCRIPTOR gVsnWaveFilter = {
@@ -209,7 +193,7 @@ PCPIN_DESCRIPTOR gVsnTopologyPins[] = {
 };
 
 PCCONNECTION_DESCRIPTOR gVsnTopologyConnections[] = {
-    {PCFILTER_NODE, kTopologyMicPin, PCFILTER_NODE, kTopologyBridgePin},
+    {PCFILTER_NODE, kWaveRtTopologyMicPin, PCFILTER_NODE, kWaveRtTopologyBridgePin},
 };
 
 PCFILTER_DESCRIPTOR gVsnTopologyFilter = {
