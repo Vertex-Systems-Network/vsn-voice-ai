@@ -56,7 +56,7 @@ jobs:
         shell: pwsh
         run: cargo +1.98.1 test -p vsn-windows-audio
 
-      - name: Validate C++ virtual microphone ABI and cursor synchronization
+      - name: Validate C++ virtual microphone transport contracts
         shell: pwsh
         run: |
           $vswhere = Join-Path ${env:ProgramFiles(x86)} "Microsoft Visual Studio\Installer\vswhere.exe"
@@ -74,7 +74,7 @@ jobs:
             throw "VsDevCmd.bat was not found at $devCmd"
           }
 
-          $compileAndRun = "`"$devCmd`" -no_logo -arch=x64 && cl.exe /nologo /std:c++17 /permissive- /W4 /WX /EHsc /I native\windows-virtual-mic\include native\windows-virtual-mic\tests\protocol_abi_test.cpp /Fe:virtual_mic_protocol_abi_test.exe && virtual_mic_protocol_abi_test.exe && cl.exe /nologo /std:c++17 /permissive- /W4 /WX /EHsc /I native\windows-virtual-mic\include native\windows-virtual-mic\tests\cursor_sync_test.cpp /Fe:virtual_mic_cursor_sync_test.exe && virtual_mic_cursor_sync_test.exe"
+          $compileAndRun = "`"$devCmd`" -no_logo -arch=x64 && cl.exe /nologo /std:c++17 /permissive- /W4 /WX /EHsc /I native\windows-virtual-mic\include native\windows-virtual-mic\tests\protocol_abi_test.cpp /Fe:virtual_mic_protocol_abi_test.exe && virtual_mic_protocol_abi_test.exe && cl.exe /nologo /std:c++17 /permissive- /W4 /WX /EHsc /I native\windows-virtual-mic\include native\windows-virtual-mic\tests\cursor_sync_test.cpp /Fe:virtual_mic_cursor_sync_test.exe && virtual_mic_cursor_sync_test.exe && cl.exe /nologo /std:c++17 /permissive- /W4 /WX /EHsc /I native\windows-virtual-mic\include native\windows-virtual-mic\tests\shared_section_test.cpp /Fe:virtual_mic_shared_section_test.exe && virtual_mic_shared_section_test.exe"
           & cmd.exe /d /c $compileAndRun
           if ($LASTEXITCODE -ne 0) {
             exit $LASTEXITCODE
