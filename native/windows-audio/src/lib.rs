@@ -309,4 +309,13 @@ mod tests {
             Err(WindowsAudioError::UnsupportedPlatform)
         );
     }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_mmdevice_snapshot_runtime_smoke() {
+        let snapshot = snapshot_endpoints().expect("MMDevice endpoint snapshot should initialize");
+        snapshot
+            .into_catalog()
+            .expect("runtime MMDevice snapshot should satisfy core catalog invariants");
+    }
 }
