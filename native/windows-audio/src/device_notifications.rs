@@ -7,6 +7,9 @@ use std::sync::mpsc::{Receiver, TryRecvError};
 use std::sync::mpsc::{SyncSender, TrySendError, sync_channel};
 
 use vsn_audio_core::device::{DeviceFlow, DeviceId, DeviceRole, DeviceState};
+use vsn_audio_core::stream_control::StreamState;
+
+use crate::capture_runtime::{CapturePumpOpener, CaptureRuntime, CaptureRuntimeUpdate};
 
 pub const DEFAULT_NOTIFICATION_QUEUE_CAPACITY: usize = 64;
 
@@ -124,6 +127,28 @@ pub fn requires_capture_reopen(
             _ => true,
         },
         _ => false,
+    }
+}
+
+pub fn apply_capture_notifications<O>(
+    runtime: &mut CaptureRuntime<O>,
+    active_endpoint: Option<&DeviceId>,
+    events: &[EndpointNotification],
+) -> Option<CaptureRuntimeUpdate>
+where
+    O: CapturePumpOpener,
+{
+    if !matches!(runtime.state(), StreamState::Running | StreamState::Bypassed) {
+        return None;
+    }
+
+    if events
+        .iter()
+        .any(|event| requires_capture_reopen(event, active_endpoint))
+    {
+        Some(runtime.notify_device_invalidated())
+    } else {
+        None
     }
 }
 
@@ -381,9 +406,67 @@ mod platform {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::capture_pump::{CaptureDrain, CapturePumpError};
+    use crate::capture_runtime::{CaptureRuntimeConfig, CaptureRuntimePump};
+    use vsn_audio_core::stream_control::{RecoveryPolicy, StreamAction};
 
     fn id(value: &str) -> DeviceId {
         DeviceId::new(value).expect("valid test device id")
+    }
+
+    struct FakePump {
+        next_sequence: u64,
+    }
+
+    impl CaptureRuntimePump for FakePump {
+        fn start(&mut self) -> Result<(), CapturePumpError> {
+            Ok(())
+        }
+
+        fn stop(&mut self) -> Result<(), CapturePumpError> {
+            Ok(())
+        }
+
+        fn wait_and_drain(&mut self, _timeout_ms: u32) -> Result<CaptureDrain, CapturePumpError> {
+            Ok(CaptureDrain {
+                event_signaled: false,
+                packets_consumed: 0,
+                frames: Vec::new(),
+                queue_drained: true,
+                hit_packet_budget: false,
+            })
+        }
+
+        fn next_sequence(&self) -> u64 {
+            self.next_sequence
+        }
+    }
+
+    struct FakeOpener {
+        pump: Option<FakePump>,
+    }
+
+    impl CapturePumpOpener for FakeOpener {
+        type Pump = FakePump;
+
+        fn open(
+            &mut self,
+            _config: CaptureRuntimeConfig,
+            _initial_sequence: u64,
+        ) -> Result<Option<Self::Pump>, CapturePumpError> {
+            Ok(self.pump.take())
+        }
+    }
+
+    fn running_runtime(next_sequence: u64) -> CaptureRuntime<FakeOpener> {
+        let config = CaptureRuntimeConfig::new(10, 8).expect("valid runtime config");
+        let policy = RecoveryPolicy::new(3, 25, 100).expect("valid recovery policy");
+        let opener = FakeOpener {
+            pump: Some(FakePump { next_sequence }),
+        };
+        let mut runtime = CaptureRuntime::new(config, policy, opener, 3);
+        runtime.start();
+        runtime
     }
 
     #[test]
@@ -467,6 +550,57 @@ mod tests {
             },
             Some(&active)
         ));
+    }
+
+    #[test]
+    fn relevant_notification_batch_triggers_one_recovery_and_preserves_sequence() {
+        let active = id("mic-a");
+        let mut runtime = running_runtime(11);
+        let events = vec![
+            EndpointNotification::DeviceStateChanged {
+                endpoint_id: "mic-a".into(),
+                state: DeviceState::Unplugged,
+            },
+            EndpointNotification::DefaultDeviceChanged {
+                flow: DeviceFlow::Capture,
+                role: DeviceRole::Communications,
+                endpoint_id: Some("mic-b".into()),
+            },
+        ];
+
+        let update = apply_capture_notifications(&mut runtime, Some(&active), &events)
+            .expect("relevant batch should trigger recovery");
+
+        assert_eq!(runtime.state(), StreamState::Recovering);
+        assert!(!runtime.has_active_pump());
+        assert_eq!(runtime.next_sequence(), 11);
+        assert_eq!(update.transitions.len(), 1);
+        assert_eq!(
+            update.transitions[0].action,
+            StreamAction::ScheduleRetry { delay_ms: 25 }
+        );
+        assert!(apply_capture_notifications(&mut runtime, Some(&active), &events).is_none());
+    }
+
+    #[test]
+    fn irrelevant_notification_batch_does_not_interrupt_running_capture() {
+        let active = id("mic-a");
+        let mut runtime = running_runtime(7);
+        let events = vec![
+            EndpointNotification::DeviceStateChanged {
+                endpoint_id: "speaker-a".into(),
+                state: DeviceState::Disabled,
+            },
+            EndpointNotification::DefaultDeviceChanged {
+                flow: DeviceFlow::Capture,
+                role: DeviceRole::Communications,
+                endpoint_id: Some("mic-a".into()),
+            },
+        ];
+
+        assert!(apply_capture_notifications(&mut runtime, Some(&active), &events).is_none());
+        assert_eq!(runtime.state(), StreamState::Running);
+        assert!(runtime.has_active_pump());
     }
 
     #[cfg(not(windows))]
