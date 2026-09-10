@@ -1,5 +1,6 @@
 pub mod capture_plan;
 pub mod engine_period;
+pub mod packet_reframer;
 pub mod wasapi_capture;
 
 use std::error::Error;
