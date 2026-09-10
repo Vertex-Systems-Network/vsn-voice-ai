@@ -6,7 +6,7 @@ use vsn_audio_core::device::{DeviceError, DeviceId};
 use crate::MixFormatSummary;
 use crate::capture_plan::{CapturePlanError, SharedCapturePlan};
 use crate::sample_decode::{NativeSampleEncoding, SampleDecodeError, SampleDecoder};
-use crate::wave_format::{WAVE_FORMAT_EXTENSIBLE_TAG, WaveFormatError};
+use crate::wave_format::WaveFormatError;
 
 const BUFFERFLAG_DATA_DISCONTINUITY: u32 = 0x1;
 const BUFFERFLAG_SILENT: u32 = 0x2;
@@ -264,10 +264,10 @@ mod platform {
 
     use super::{
         CapturePacketFlags, CaptureSessionSummary, CapturedPacket, DeviceId, MixFormatSummary,
-        SampleDecoder, SharedCapturePlan, WAVE_FORMAT_EXTENSIBLE_TAG, WasapiCaptureError,
+        SampleDecoder, SharedCapturePlan, WasapiCaptureError,
     };
     use crate::engine_period::EnginePeriodRange;
-    use crate::wave_format::{ExtensibleWaveFormat, WaveFormatDescriptor};
+    use crate::wave_format::{WAVE_FORMAT_EXTENSIBLE_TAG, ExtensibleWaveFormat, WaveFormatDescriptor};
 
     struct ComApartment;
 
