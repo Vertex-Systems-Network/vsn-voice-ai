@@ -65,7 +65,10 @@ impl VirtualMicStagingBuffer {
         self.stats
     }
 
-    pub fn push(&mut self, frame: AudioFrame) -> Result<Option<AudioFrame>, VirtualMicTransportError> {
+    pub fn push(
+        &mut self,
+        frame: AudioFrame,
+    ) -> Result<Option<AudioFrame>, VirtualMicTransportError> {
         if frame.format != self.format {
             return Err(VirtualMicTransportError::FormatMismatch {
                 expected: self.format,
