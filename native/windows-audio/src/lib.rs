@@ -8,6 +8,8 @@ use vsn_audio_core::device::{
     DeviceCatalog, DeviceDescriptor, DeviceError, DeviceFlow, DeviceId, DeviceRole,
 };
 
+use crate::engine_period::{EnginePeriodError, EnginePeriodRange};
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DefaultEndpoint {
     pub flow: DeviceFlow,
@@ -34,11 +36,27 @@ impl EndpointSnapshot {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct MixFormatSummary {
+    pub sample_rate_hz: u32,
+    pub channels: u16,
+    pub bits_per_sample: u16,
+    pub block_align: u16,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DefaultCapturePeriodProbe {
+    pub endpoint_id: DeviceId,
+    pub mix_format: MixFormatSummary,
+    pub engine_periods: EnginePeriodRange,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum WindowsAudioError {
     UnsupportedPlatform,
     Backend(String),
     InvalidEndpoint(DeviceError),
+    InvalidEnginePeriod(EnginePeriodError),
 }
 
 impl Display for WindowsAudioError {
@@ -47,6 +65,7 @@ impl Display for WindowsAudioError {
             Self::UnsupportedPlatform => f.write_str("Windows audio backend requires Windows"),
             Self::Backend(message) => write!(f, "Windows audio backend error: {message}"),
             Self::InvalidEndpoint(error) => write!(f, "invalid Windows audio endpoint: {error}"),
+            Self::InvalidEnginePeriod(error) => write!(f, "invalid Windows engine period: {error}"),
         }
     }
 }
@@ -59,15 +78,31 @@ impl From<DeviceError> for WindowsAudioError {
     }
 }
 
+impl From<EnginePeriodError> for WindowsAudioError {
+    fn from(value: EnginePeriodError) -> Self {
+        Self::InvalidEnginePeriod(value)
+    }
+}
+
 pub fn snapshot_endpoints() -> Result<EndpointSnapshot, WindowsAudioError> {
     platform::snapshot_endpoints()
 }
 
+pub fn probe_default_capture_periods() -> Result<Option<DefaultCapturePeriodProbe>, WindowsAudioError>
+{
+    platform::probe_default_capture_periods()
+}
+
 #[cfg(not(windows))]
 mod platform {
-    use super::{EndpointSnapshot, WindowsAudioError};
+    use super::{DefaultCapturePeriodProbe, EndpointSnapshot, WindowsAudioError};
 
     pub fn snapshot_endpoints() -> Result<EndpointSnapshot, WindowsAudioError> {
+        Err(WindowsAudioError::UnsupportedPlatform)
+    }
+
+    pub fn probe_default_capture_periods(
+    ) -> Result<Option<DefaultCapturePeriodProbe>, WindowsAudioError> {
         Err(WindowsAudioError::UnsupportedPlatform)
     }
 }
@@ -75,11 +110,12 @@ mod platform {
 #[cfg(windows)]
 mod platform {
     use std::ffi::c_void;
+    use std::ptr::NonNull;
 
     use vsn_audio_core::device::DeviceState;
     use windows::Win32::Media::Audio::{
-        DEVICE_STATE_ACTIVE, IMMDevice, IMMDeviceEnumerator, MMDeviceEnumerator, eCapture,
-        eCommunications, eConsole, eMultimedia, eRender,
+        DEVICE_STATE_ACTIVE, IAudioClient3, IMMDevice, IMMDeviceEnumerator, MMDeviceEnumerator,
+        WAVEFORMATEX, eCapture, eCommunications, eConsole, eMultimedia, eRender,
     };
     use windows::Win32::System::Com::{
         CLSCTX_ALL, COINIT_MULTITHREADED, CoCreateInstance, CoInitializeEx, CoTaskMemFree,
@@ -87,9 +123,10 @@ mod platform {
     };
 
     use super::{
-        DefaultEndpoint, DeviceDescriptor, DeviceFlow, DeviceId, DeviceRole, EndpointSnapshot,
-        WindowsAudioError,
+        DefaultCapturePeriodProbe, DefaultEndpoint, DeviceDescriptor, DeviceFlow, DeviceId,
+        DeviceRole, EndpointSnapshot, MixFormatSummary, WindowsAudioError,
     };
+    use crate::engine_period::EnginePeriodRange;
 
     struct ComApartment;
 
@@ -108,11 +145,33 @@ mod platform {
         }
     }
 
+    struct CoTaskMem<T>(NonNull<T>);
+
+    impl<T> CoTaskMem<T> {
+        fn new(pointer: *mut T, operation: &str) -> Result<Self, WindowsAudioError> {
+            NonNull::new(pointer)
+                .map(Self)
+                .ok_or_else(|| WindowsAudioError::Backend(format!("{operation} returned null")))
+        }
+
+        fn as_ptr(&self) -> *const T {
+            self.0.as_ptr()
+        }
+    }
+
+    impl<T> Drop for CoTaskMem<T> {
+        fn drop(&mut self) {
+            unsafe { CoTaskMemFree(Some(self.0.as_ptr().cast::<c_void>())) };
+        }
+    }
+
+    fn create_enumerator() -> Result<IMMDeviceEnumerator, WindowsAudioError> {
+        unsafe { CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL).map_err(backend_error) }
+    }
+
     pub fn snapshot_endpoints() -> Result<EndpointSnapshot, WindowsAudioError> {
         let _com = ComApartment::initialize()?;
-        let enumerator: IMMDeviceEnumerator = unsafe {
-            CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL).map_err(backend_error)?
-        };
+        let enumerator = create_enumerator()?;
 
         let mut devices = Vec::new();
         collect_active_devices(&enumerator, DeviceFlow::Capture, &mut devices)?;
@@ -157,6 +216,58 @@ mod platform {
         )?;
 
         Ok(EndpointSnapshot { devices, defaults })
+    }
+
+    pub fn probe_default_capture_periods(
+    ) -> Result<Option<DefaultCapturePeriodProbe>, WindowsAudioError> {
+        let _com = ComApartment::initialize()?;
+        let enumerator = create_enumerator()?;
+        let device = match unsafe {
+            enumerator.GetDefaultAudioEndpoint(eCapture, eCommunications)
+        } {
+            Ok(device) => device,
+            Err(_) => return Ok(None),
+        };
+
+        let endpoint_id = DeviceId::new(device_id(&device)?)?;
+        let audio_client: IAudioClient3 =
+            unsafe { device.Activate(CLSCTX_ALL, None).map_err(backend_error)? };
+        let mix_format = CoTaskMem::new(
+            unsafe { audio_client.GetMixFormat().map_err(backend_error)? },
+            "IAudioClient3::GetMixFormat",
+        )?;
+        let wave: WAVEFORMATEX = unsafe { *mix_format.as_ptr() };
+
+        let mut default_frames = 0;
+        let mut fundamental_frames = 0;
+        let mut min_frames = 0;
+        let mut max_frames = 0;
+        unsafe {
+            audio_client.GetSharedModeEnginePeriod(
+                mix_format.as_ptr(),
+                &mut default_frames,
+                &mut fundamental_frames,
+                &mut min_frames,
+                &mut max_frames,
+            )
+        }
+        .map_err(backend_error)?;
+
+        Ok(Some(DefaultCapturePeriodProbe {
+            endpoint_id,
+            mix_format: MixFormatSummary {
+                sample_rate_hz: wave.nSamplesPerSec,
+                channels: wave.nChannels,
+                bits_per_sample: wave.wBitsPerSample,
+                block_align: wave.nBlockAlign,
+            },
+            engine_periods: EnginePeriodRange::new(
+                default_frames,
+                fundamental_frames,
+                min_frames,
+                max_frames,
+            )?,
+        }))
     }
 
     fn collect_active_devices(
@@ -308,6 +419,10 @@ mod tests {
             snapshot_endpoints(),
             Err(WindowsAudioError::UnsupportedPlatform)
         );
+        assert_eq!(
+            probe_default_capture_periods(),
+            Err(WindowsAudioError::UnsupportedPlatform)
+        );
     }
 
     #[cfg(windows)]
@@ -317,5 +432,26 @@ mod tests {
         snapshot
             .into_catalog()
             .expect("runtime MMDevice snapshot should satisfy core catalog invariants");
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn windows_default_capture_period_probe_runtime_smoke() {
+        let snapshot = snapshot_endpoints().expect("MMDevice endpoint snapshot should initialize");
+        let has_communications_capture = snapshot.defaults.iter().any(|default| {
+            default.flow == DeviceFlow::Capture && default.role == DeviceRole::Communications
+        });
+        let probe = probe_default_capture_periods().expect("IAudioClient3 period probe should run");
+
+        assert_eq!(probe.is_some(), has_communications_capture);
+        if let Some(probe) = probe {
+            assert!(probe.mix_format.sample_rate_hz > 0);
+            assert!(probe.mix_format.channels > 0);
+            assert!(
+                probe
+                    .engine_periods
+                    .is_supported(probe.engine_periods.default_frames)
+            );
+        }
     }
 }
