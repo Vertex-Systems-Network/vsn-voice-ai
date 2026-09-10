@@ -105,7 +105,7 @@ Physical microphone
 
 ### Current user-mode staging boundary
 
-The repository now contains a CI-verified user-mode staging/output contract before the future driver boundary:
+The repository contains a CI-verified user-mode staging/output contract before the future driver boundary:
 
 - `VirtualMicStagingBuffer` accepts one fixed `AudioFormat` and uses a bounded frame queue;
 - overflow drops the oldest queued frame rather than allowing latency to grow without bound;
@@ -114,9 +114,20 @@ The repository now contains a CI-verified user-mode staging/output contract befo
 - format mismatches are rejected;
 - `VirtualMicOutputBridge` sends both successfully processed `AudioPipeline` output and the original safe-bypass frame produced after an optional processing-stage failure into the same staging path.
 
-This is a user-mode contract only. It does not create an OS-visible microphone, kernel transport, WaveRT cyclic buffer, signed driver package or calling-application route.
+### Driver-facing protocol contract
 
-Kernel/user-mode transport, driver packaging and endpoint topology will be documented separately before driver code is treated as release-capable.
+The repository also contains a CI-verified, versioned driver-facing metadata/ring contract in `virtual_mic_protocol`:
+
+- `VirtualMicProtocolHeader` and `VirtualMicCursorSnapshot` use `#[repr(C)]` so their field layout is intentionally compatible with a future native C/C++ binding boundary;
+- the header carries a protocol magic/version, header size, non-zero session generation, sample rate, channels, sample format, frame duration, ring capacity and samples per frame;
+- protocol validation rejects incompatible magic/version/header size, invalid audio geometry, unsupported sample format, stale session generation and non-zero reserved fields;
+- producer and consumer sequences are monotonic within a session generation;
+- `plan_ring_window` maps those sequences to deterministic cyclic-buffer slots;
+- if producer distance exceeds ring capacity, the plan advances the logical consumer boundary and discards the oldest frames rather than allowing unbounded latency.
+
+This contract defines the intended handoff semantics only. It does **not** implement or prove shared-memory atomics, memory ordering, synchronization primitives, IOCTL/device interfaces, security descriptors/ACLs, section mapping, IRQL/DPC behavior, WaveRT position registers, kernel buffering, endpoint topology or an installed Windows audio driver. Those details must be implemented and verified in the actual C++/WDK driver boundary.
+
+The staging/output boundary plus this protocol contract do not create an OS-visible microphone or calling-application route.
 
 ## Driver security and release requirements
 
@@ -151,9 +162,12 @@ Before production release:
 - owner-thread notification-to-recovery filtering/deduplication;
 - fixed-format bounded user-mode virtual-mic staging with oldest-drop overflow behavior and fresh-silence underrun behavior;
 - processed-frame and safe-bypass-frame routing through the same user-mode virtual-mic staging boundary;
+- versioned C-compatible virtual-mic protocol header and cursor contract;
+- session-generation and fixed-audio-geometry validation;
+- deterministic cyclic ring-slot planning and oldest-frame overrun normalization;
 - Ubuntu repository-integrity checks plus Windows-native compile, Clippy and unit/smoke tests.
 
-The latest exact implementation head for this boundary is `6d5d0b9ac29db97d0c475dbdde6827187989c38f`, which passed Ubuntu repository-integrity run `34522943083` and Windows Audio Validation run `34522943093`. The underlying staging-only boundary also passed Ubuntu run `34522446261` and Windows run `34522445865`.
+The latest exact implementation head for this boundary is `aa0792b81746a11d99b3b3451c3086e363714ee8`, which passed Ubuntu repository-integrity run `34525486454` and Windows Audio Validation run `34525486333`. The preceding staging/output bridge boundary passed Ubuntu run `34522943083` and Windows run `34522943093`.
 
 ### Controlled Windows hardware verification still required
 
@@ -168,6 +182,7 @@ The latest exact implementation head for this boundary is `6d5d0b9ac29db97d0c475
 
 ### Driver/test-machine verification still required
 
+- C++/WDK transport binding implements the protocol with correct synchronization and security boundaries;
 - virtual endpoint appears as a microphone to target calling applications;
 - processed and bypass audio both reach the endpoint through the actual driver transport;
 - Zoom/Teams/Meet/dialer/browser compatibility;
@@ -178,6 +193,6 @@ The latest exact implementation head for this boundary is `6d5d0b9ac29db97d0c475
 
 ## Current implementation boundary
 
-WU-002 has code-level and hosted-CI evidence for the Windows event-driven WASAPI capture path, packet decoding/reframing, bounded runtime recovery, MMDevice notification registration and notification-to-recovery bridging. It now also has CI evidence for a bounded user-mode virtual-microphone staging layer and for routing both processed output and safe-bypass originals through that same staging path. Hosted Windows CI executes the native compilation/tests and registration/unregistration smoke coverage, while Ubuntu CI verifies the wider repository integrity and platform-neutral logic.
+WU-002 has code-level and hosted-CI evidence for the Windows event-driven WASAPI capture path, packet decoding/reframing, bounded runtime recovery, MMDevice notification registration and notification-to-recovery bridging. It also has CI evidence for a bounded user-mode virtual-microphone staging/output layer and a versioned C-compatible ring/cursor protocol contract for the planned driver handoff. Hosted Windows CI executes the native compilation/tests and registration/unregistration smoke coverage, while Ubuntu CI verifies the wider repository integrity and platform-neutral logic.
 
-This evidence does **not** yet prove physical-device hotplug/default-device recovery on controlled Windows hardware, an OS-visible production virtual microphone, the kernel/user-mode driver transport, calling-application compatibility, hardware latency/jitter targets, or signed driver lifecycle behavior. Those remain required before MOD-002 / WU-002 can be treated as complete.
+This evidence does **not** yet prove physical-device hotplug/default-device recovery on controlled Windows hardware, an OS-visible production virtual microphone, actual shared kernel/user transport, calling-application compatibility, hardware latency/jitter targets, or signed driver lifecycle behavior. Those remain required before MOD-002 / WU-002 can be treated as complete.
