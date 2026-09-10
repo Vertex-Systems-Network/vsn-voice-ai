@@ -153,18 +153,25 @@ inline WaveRtStreamStatus AdvanceWaveRtCapturePosition(
         return WaveRtStreamStatus::kPositionOverflow;
     }
 
-    runtime->linear_position_bytes += advance_bytes;
-    runtime->cyclic_position_bytes =
-        (runtime->cyclic_position_bytes + advance_bytes) % runtime->buffer_bytes;
-    runtime->notification_accumulator_bytes += advance_bytes;
-
-    const uint64_t due =
-        runtime->notification_accumulator_bytes / runtime->notification_bytes;
-    runtime->notification_accumulator_bytes %= runtime->notification_bytes;
+    const uint64_t next_accumulator =
+        runtime->notification_accumulator_bytes + advance_bytes;
+    const uint64_t due = next_accumulator / runtime->notification_bytes;
     if (UINT64_MAX - runtime->notifications_due_total < due) {
         return WaveRtStreamStatus::kPositionOverflow;
     }
-    runtime->notifications_due_total += due;
+
+    const uint64_t next_linear = runtime->linear_position_bytes + advance_bytes;
+    const uint64_t next_cyclic =
+        (runtime->cyclic_position_bytes + advance_bytes) % runtime->buffer_bytes;
+    const uint64_t next_notification_accumulator =
+        next_accumulator % runtime->notification_bytes;
+    const uint64_t next_notifications_total =
+        runtime->notifications_due_total + due;
+
+    runtime->linear_position_bytes = next_linear;
+    runtime->cyclic_position_bytes = next_cyclic;
+    runtime->notification_accumulator_bytes = next_notification_accumulator;
+    runtime->notifications_due_total = next_notifications_total;
     if (notifications_due_now != nullptr) {
         *notifications_due_now = due;
     }
