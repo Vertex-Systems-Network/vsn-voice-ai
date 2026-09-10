@@ -173,7 +173,8 @@ mod tests {
             bytes,
             flags,
             device_position_frames,
-            qpc_position_100ns: device_position_frames * 10_000_000 / u64::from(FORMAT.sample_rate_hz),
+            qpc_position_100ns: device_position_frames * 10_000_000
+                / u64::from(FORMAT.sample_rate_hz),
         }
     }
 
@@ -193,12 +194,18 @@ mod tests {
     #[test]
     fn aggregates_native_packets_into_valid_audio_frame() {
         let mut assembler = assembler(7);
-        assert!(assembler
-            .push(pcm16_packet(&[0, 16_384], CapturePacketFlags::default(), 0))
-            .expect("first packet accepted")
-            .is_empty());
+        assert!(
+            assembler
+                .push(pcm16_packet(&[0, 16_384], CapturePacketFlags::default(), 0))
+                .expect("first packet accepted")
+                .is_empty()
+        );
         let output = assembler
-            .push(pcm16_packet(&[-16_384, 32_767], CapturePacketFlags::default(), 2))
+            .push(pcm16_packet(
+                &[-16_384, 32_767],
+                CapturePacketFlags::default(),
+                2,
+            ))
             .expect("second packet accepted");
 
         assert_eq!(output.len(), 1);
@@ -300,7 +307,11 @@ mod tests {
     fn sequence_overflow_fails_without_advancing_sequence() {
         let mut assembler = assembler(u64::MAX);
         let error = assembler
-            .push(pcm16_packet(&[0, 0, 0, 0], CapturePacketFlags::default(), 0))
+            .push(pcm16_packet(
+                &[0, 0, 0, 0],
+                CapturePacketFlags::default(),
+                0,
+            ))
             .expect_err("sequence overflow should fail");
 
         assert_eq!(error, CaptureFrameAssemblyError::SequenceOverflow);
