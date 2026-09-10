@@ -1,12 +1,10 @@
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 
-use vsn_audio_core::AudioFormat;
 use vsn_audio_core::device::{DeviceError, DeviceId};
 
 use crate::MixFormatSummary;
 use crate::capture_plan::{CapturePlanError, SharedCapturePlan};
-use crate::engine_period::EnginePeriodRange;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CaptureSessionSummary {
@@ -139,6 +137,7 @@ mod platform {
     use std::ffi::c_void;
     use std::ptr::NonNull;
 
+    use vsn_audio_core::AudioFormat;
     use windows::Win32::Foundation::{CloseHandle, ERROR_NOT_FOUND, HANDLE};
     use windows::Win32::Media::Audio::{
         AUDCLNT_STREAMFLAGS_EVENTCALLBACK, IAudioCaptureClient, IAudioClient3, IMMDeviceEnumerator,
@@ -151,9 +150,9 @@ mod platform {
     use windows::Win32::System::Threading::CreateEventW;
 
     use super::{
-        AudioFormat, CaptureSessionSummary, DeviceId, EnginePeriodRange, MixFormatSummary,
-        SharedCapturePlan, WasapiCaptureError,
+        CaptureSessionSummary, DeviceId, MixFormatSummary, SharedCapturePlan, WasapiCaptureError,
     };
+    use crate::engine_period::EnginePeriodRange;
 
     struct ComApartment;
 
