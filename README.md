@@ -43,10 +43,12 @@ The owner-approved product direction is:
 - `CaptureRuntime` provides externally scheduled bounded reopen recovery with sequence continuity and no internal unbounded retry/sleep loop.
 - `IMMNotificationClient` registration/unregistration is implemented on a dedicated Windows MTA thread with a bounded non-blocking event queue and dropped-event accounting.
 - Owner-thread notification bridging filters active capture-route changes and collapses a notification batch into at most one recovery transition.
+- `VirtualMicStagingBuffer` provides a fixed-format bounded user-mode output queue; overflow drops the oldest frame, underrun emits fresh silence, and accepted/drop/underrun counters are explicit.
+- `VirtualMicOutputBridge` routes both successfully processed frames and `AudioPipeline` safe-bypass originals through the same user-mode staging path, so an optional processing failure does not itself silence the output staging boundary.
 - Windows implementation contract is documented in `docs/architecture/WINDOWS-AUDIO-IMPLEMENTATION.md`.
-- **Physical-device hotplug/default-device recovery on controlled hardware, production virtual microphone routing and hardware latency/jitter evidence are not yet claimed operational.**
+- **Physical-device hotplug/default-device recovery on controlled hardware, an OS-visible production virtual microphone, actual driver transport/calling-app routing and hardware latency/jitter evidence are not yet claimed operational.**
 
-**Latest verified green implementation CI:** Ubuntu repository-integrity run `34509104650` and Windows Audio Validation run `34509104681` both passed on implementation head `c5d2984d587a344b36ae1ae753af8e26500b7e78` — including ANPOS/Go/Rust/schema/YAML gates on Ubuntu and Windows-native compile, Clippy, unit/smoke tests, MMDevice notification registration/unregistration, and capture-recovery bridge coverage.
+**Latest verified green implementation CI:** Ubuntu repository-integrity run `34522943083` and Windows Audio Validation run `34522943093` both passed on implementation head `6d5d0b9ac29db97d0c475dbdde6827187989c38f` — including the existing WASAPI/recovery/MMDevice coverage plus bounded virtual-mic staging and processed/safe-bypass output-bridge tests.
 
 ## README Reconciliation Rule — Mandatory
 
@@ -136,15 +138,17 @@ Implemented and CI-verified:
 - MMDevice `IMMNotificationClient` registration/unregistration on a dedicated Windows MTA thread;
 - bounded non-blocking endpoint notification delivery with drop accounting;
 - owner-thread active-route notification filtering and at-most-one recovery transition per drained notification batch;
-- Ubuntu repository-integrity run `34509104650` and Windows Audio Validation run `34509104681` on implementation head `c5d2984d587a344b36ae1ae753af8e26500b7e78`.
+- fixed-format bounded `VirtualMicStagingBuffer` with oldest-frame overflow drop, fresh-silence underrun and explicit accepted/drop/underrun counters;
+- `VirtualMicOutputBridge` that stages both processed output and the original safe-bypass frame after an optional processing failure through the same output path;
+- Ubuntu repository-integrity run `34522943083` and Windows Audio Validation run `34522943093` on implementation head `6d5d0b9ac29db97d0c475dbdde6827187989c38f`.
 
 Not yet verified and therefore **not claimed complete**:
 
 - confirmed `GetSharedModeEnginePeriod` values from a physical communications microphone on a controlled test machine when hosted CI exposes no capture endpoint;
 - actual unplug/replug, Bluetooth/headset disconnect and default-device recovery firing successfully on controlled Windows hardware;
 - sleep/wake and audio-service interruption recovery on representative hardware;
-- Windows virtual microphone endpoint/driver and user-mode transport;
-- processed/bypass audio reaching Zoom/Teams/Meet/dialers/browser apps through that endpoint;
+- OS-visible Windows virtual microphone endpoint/driver and actual kernel/user-mode transport;
+- processed/bypass audio reaching Zoom/Teams/Meet/dialers/browser apps through that real endpoint;
 - CPU/callback deadline, discontinuity, end-to-end latency and jitter evidence under controlled hardware load;
 - driver signing/install/update/uninstall/rollback and supported-Windows compatibility evidence.
 
