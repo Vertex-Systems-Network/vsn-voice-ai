@@ -47,10 +47,9 @@ impl WaveFormatDescriptor {
             .ok_or(WaveFormatError::MissingExtensibleDescriptor)?;
 
         match extensible.sub_format_guid {
-            PCM_SUBFORMAT_GUID => validated_pcm(
-                self.bits_per_sample,
-                extensible.valid_bits_per_sample,
-            ),
+            PCM_SUBFORMAT_GUID => {
+                validated_pcm(self.bits_per_sample, extensible.valid_bits_per_sample)
+            }
             IEEE_FLOAT_SUBFORMAT_GUID => validated_float(self.bits_per_sample),
             guid => Err(WaveFormatError::UnsupportedSubFormat(guid)),
         }
@@ -81,7 +80,10 @@ impl Display for WaveFormatError {
                 f.write_str("WAVE_FORMAT_EXTENSIBLE requires an extensible descriptor")
             }
             Self::UnsupportedSubFormat(guid) => {
-                write!(f, "unsupported WAVEFORMATEXTENSIBLE subformat GUID: {guid:032x}")
+                write!(
+                    f,
+                    "unsupported WAVEFORMATEXTENSIBLE subformat GUID: {guid:032x}"
+                )
             }
             Self::UnsupportedFloatBits(bits) => {
                 write!(f, "unsupported IEEE float sample width: {bits} bits")
