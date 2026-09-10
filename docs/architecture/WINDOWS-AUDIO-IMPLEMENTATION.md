@@ -8,7 +8,7 @@
 
 Provide a low-latency Windows audio path that captures a selected physical microphone, runs VSN realtime processing, and exposes processed or safely bypassed audio to calling applications through an OS-visible VSN virtual microphone.
 
-The verified implementation currently reaches a WDK-buildable KMDF control driver, a race-safe kernel/user shared-ring consumer, and compile-verified PortCls/WaveRT capture/topology descriptors. It does **not** yet register a PortCls audio miniport, create a WaveRT stream object, or provide an installed OS-visible microphone endpoint.
+The verified implementation currently reaches a WDK-buildable KMDF control driver, a race-safe kernel/user shared-ring consumer, compile-verified PortCls/WaveRT capture/topology descriptors, fail-closed PortCls adapter lifecycle linkage and a bounded WaveRT stream state/position contract. It does **not** yet switch the live driver entry point to PortCls, register real audio miniports, create an `IMiniportWaveRT` stream object, or provide an installed OS-visible microphone endpoint.
 
 ## Platform APIs
 
@@ -21,7 +21,8 @@ The critical Windows realtime path uses native Windows audio/device APIs:
 - event-driven buffering for normal realtime capture;
 - WDF/KMDF for the current virtual-mic control/shared-memory boundary;
 - PortCls/WaveRT and Kernel Streaming descriptors for the virtual microphone endpoint contract;
-- planned PortCls adapter/miniport registration and WaveRT stream lifecycle for the OS-visible endpoint.
+- compile-linked `PcInitializeAdapterDriver` / `PcAddAdapterDevice` lifecycle functions for the upcoming PortCls-primary driver architecture;
+- planned PortCls wave/topology miniports and `IMiniportWaveRT` capture stream for the OS-visible endpoint.
 
 Microsoft architectural references include WASAPI/Core Audio, WDF, WaveRT, SysVAD and the Simple Audio Sample. The production VSN driver must use only the minimum required endpoint/transport surface rather than shipping an unchanged sample implementation.
 
@@ -74,7 +75,7 @@ Physical microphone
     -> optional realtime AI pipeline
     -> safe bypass/fallback selector
     -> user-mode virtual-mic producer
-    -> verified protocol-v2 shared region / KMDF control plane
+    -> verified protocol-v2 shared region / secure control device
     -> guarded kernel ring consumer
     -> PortCls/WaveRT capture miniport + stream
     -> OS-visible VSN microphone endpoint
@@ -174,7 +175,7 @@ The original user-supplied-handle assumption was removed before KMDF implementat
 
 ## KMDF control-driver boundary
 
-`native/windows-virtual-mic/driver/vsn_virtual_mic_control.cpp` implements the current WDK control plane.
+`native/windows-virtual-mic/driver/vsn_virtual_mic_control.cpp` implements the current live WDK control plane.
 
 Build contract:
 
@@ -187,7 +188,7 @@ Build contract:
 
 Development device security:
 
-- device interface is restricted to LocalSystem and built-in Administrators;
+- current device interface is restricted to LocalSystem and built-in Administrators;
 - runtime non-admin broker/interface policy is not yet finalized and must not be inferred from this development ACL;
 - requestor mode is checked for the IOCTL path;
 - connection ownership is fenced by requestor process ID plus WDF file object;
@@ -209,6 +210,8 @@ CONNECT lifecycle:
 The kernel does not rely on user-written mapped header bytes as authoritative configuration after CONNECT; driver context holds the validated geometry.
 
 QUERY_STATUS reads a stable cursor snapshot through the retained system-space mapping. DISCONNECT and cleanup release the system-space view and section-object reference. File cleanup handles owner-close teardown; device cleanup also performs bounded teardown. The WDF wait-lock lifetime is driver-parented so it remains valid through device cleanup.
+
+The current `DriverEntry` remains a normal KMDF PnP control-driver entry point. That must be refactored before live PortCls ownership because PortCls needs control of the audio PnP dispatch path.
 
 ## Guarded kernel/user ring-consumer boundary
 
@@ -262,16 +265,41 @@ The minimal topology descriptor contains:
 
 The WDK target links `portcls.lib`, `stdunk.lib` and `libcntpr.lib`, defines `PC_IMPLEMENTATION`, compiles the KS/PortCls descriptors into `vsn_virtual_mic_control.sys`, and preserves WDK post-build validation. `wavert_contract_test.cpp` independently locks the initial format and descriptor indices.
 
-This scaffold is **not** PortCls registration. It does not call `PcInitializeAdapterDriver`, create/install wave/topology miniports, implement an `IMiniportWaveRT` stream, expose position/notification behavior, or create an OS-visible endpoint.
+## Fail-closed PortCls lifecycle boundary
+
+`native/windows-virtual-mic/driver/vsn_virtual_mic_portcls_lifecycle.cpp` now references the real PortCls adapter APIs in the WDK target:
+
+- `VsnPortClsInitializeAdapterScaffold` calls `PcInitializeAdapterDriver`;
+- `VsnPortClsAddDeviceScaffold` calls `PcAddAdapterDevice` with room for exactly two subdevices (wave + topology);
+- the associated `StartDevice` callback validates its inputs and deliberately returns `STATUS_NOT_SUPPORTED`.
+
+This is a compile/link proof, not live registration. `VsnPortClsInitializeAdapterScaffold` is intentionally **not** the current `DriverEntry`. Switching the live driver to PortCls before the secure IOCTL surface is moved from a framework-owned PnP FDO to a compatible WDF control device would create competing ownership of the PnP dispatch path.
+
+## WaveRT stream state / position contract
+
+`vsn_virtual_mic_wavert_stream_contract.h` defines a bounded, platform-neutral runtime contract for the upcoming capture stream. `vsn_virtual_mic_wavert_stream_contract.cpp` compiles that contract inside the WDK target and statically verifies the state values against `KSSTATE_STOP`, `KSSTATE_ACQUIRE`, `KSSTATE_PAUSE` and `KSSTATE_RUN`.
+
+The contract provides:
+
+- adjacent `STOP ↔ ACQUIRE ↔ PAUSE ↔ RUN` transitions only, while allowing an idempotent same-state request;
+- aligned non-zero DMA-buffer geometry and aligned notification interval validation;
+- position advancement only while RUN;
+- cyclic byte position modulo the allocated WaveRT buffer;
+- monotonic linear byte position;
+- notification-byte accumulation and total due-notification accounting;
+- STOP reset of cyclic/linear positions and notification counters;
+- transactional overflow rejection so failed advances do not partially mutate position or notification state.
+
+The current reference test uses a `7,680` byte cyclic buffer, `4` byte block alignment and `1,920` byte notification interval, matching one 10 ms 48 kHz mono F32 frame per notification. This is a stream-state contract only: there is still no concrete `IMiniportWaveRTStream` object or audio-engine timer/DPC path.
 
 ## Current CI evidence
 
-Latest implementation head: `c3fc7b77593ebd99c98dfbf71cf32532c2645742`.
+Latest implementation head: `54da66c1aa78f913d98ac98faaa9a8d56e4dcdf7`.
 
 Verified green runs:
 
-- AI Native Quality Gates: `34542011551`;
-- Windows Audio Validation: `34542011553`.
+- AI Native Quality Gates: `34543128712`;
+- Windows Audio Validation: `34543128651`.
 
 The Windows run verifies, in order:
 
@@ -280,11 +308,11 @@ The Windows run verifies, in order:
 - Clippy with warnings denied;
 - Windows Rust tests including protocol-v2 stamp semantics;
 - pinned WDK/SDK package restore;
-- KMDF `vsn_virtual_mic_control.sys` build with guarded ring-consumer and PortCls/WaveRT descriptor translation units linked in;
+- KMDF `vsn_virtual_mic_control.sys` build with guarded ring consumer, PortCls descriptors, PortCls lifecycle linkage and WaveRT stream state compile probe linked in;
 - WDK post-build validation;
-- native C++ protocol/cursor/layout/shared-section/device-control/ring-consumer/WaveRT-contract compile/run regression tests.
+- native C++ protocol/cursor/layout/shared-section/device-control/ring-consumer/WaveRT-descriptor/WaveRT-stream compile/run regression tests.
 
-The descriptor scaffold merged to main as `da1b0543bcbfe63ff6a342690cab3b250057bbe2`. The guarded ring-consumer implementation immediately preceding it merged as `9c57207482bdc20ca5dc70a06cbb43c0cfa86741`.
+The PortCls lifecycle/WaveRT stream-contract slice merged to main as `78ef04bf86bf02b25b9da25ef401dc84f73f0f2b`. The descriptor scaffold immediately preceding it merged as `da1b0543bcbfe63ff6a342690cab3b250057bbe2`; the guarded ring consumer merged as `9c57207482bdc20ca5dc70a06cbb43c0cfa86741`.
 
 ## What this evidence proves
 
@@ -304,17 +332,20 @@ The repository now has code-level and hosted-Windows-CI evidence for:
 - before/after slot-stamp validation that rejects concurrent slot reuse/torn PCM;
 - successful compilation/linkage of that same consumer helper in the real WDK driver target;
 - build-valid PortCls/KS wave and topology descriptors for the initial 48 kHz mono IEEE-float capture contract;
-- successful WDK linkage against the PortCls libraries required for the upcoming miniport boundary.
+- successful WDK linkage against `PcInitializeAdapterDriver` / `PcAddAdapterDevice` through a fail-closed lifecycle scaffold;
+- WDK-locked WaveRT state values plus bounded cyclic/linear position and notification accounting contracts.
 
 ## What is still not proven
 
 This evidence does **not** yet prove:
 
-- PortCls adapter initialization or wave/topology miniport registration;
+- a PortCls-primary live `DriverEntry`;
+- a PortCls-compatible WDF control device carrying the secure IOCTL surface;
+- live PortCls adapter initialization or wave/topology miniport registration;
 - an `IMiniportWaveRT` capture-stream implementation;
-- an OS-visible VSN microphone endpoint;
 - audio-engine scheduling that invokes the guarded consumer;
-- WaveRT position/notification behavior;
+- live WaveRT position/notification delivery;
+- an OS-visible VSN microphone endpoint;
 - INF/package installation or test signing;
 - runtime `DeviceIoControl` against an installed VSN device;
 - endpoint enumeration through Windows Core Audio;
@@ -327,10 +358,10 @@ This evidence does **not** yet prove:
 
 The next authorized implementation slice remains inside `WU-002`:
 
-1. implement the minimal PortCls adapter/miniport registration path around the verified wave/topology descriptors;
-2. introduce the WaveRT capture-stream lifecycle and restrict format negotiation to the verified initial 48 kHz mono F32 contract;
-3. bind the stream-copy/scheduling boundary to the verified guarded ring consumer while preserving immutable CONNECT-time geometry and generation fencing;
-4. implement bounded position/notification state and fresh-silence underrun behavior with compile/static contract checks in hosted Windows CI;
+1. refactor the current secure IOCTL surface from a WDF PnP FDO into a named, access-restricted WDF control device while preserving driver-owned section creation, requestor PID/file ownership, cleanup and passive-level queue semantics;
+2. create the WDF driver in miniport/no-dispatch-override mode so PortCls can own the audio PnP dispatch path;
+3. switch live `DriverEntry` to call `PcInitializeAdapterDriver` only after the control-device creation path is build-valid; keep `StartDevice` fail-closed until real miniports exist;
+4. then implement/register the minimal wave/topology miniports and concrete `IMiniportWaveRT` capture stream, binding stream-copy scheduling to `ConsumeOneRingFrame` and the verified position/notification contract;
 5. then add an INF/test package and controlled Windows-machine install/enumeration/runtime handshake evidence;
 6. only after endpoint enumeration and real audio flow should calling-app compatibility testing begin.
 
