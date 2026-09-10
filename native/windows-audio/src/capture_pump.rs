@@ -155,7 +155,10 @@ where
         self.drain_available(true)
     }
 
-    pub fn drain_available(&mut self, event_signaled: bool) -> Result<CaptureDrain, CapturePumpError> {
+    pub fn drain_available(
+        &mut self,
+        event_signaled: bool,
+    ) -> Result<CaptureDrain, CapturePumpError> {
         let mut packets_consumed = 0usize;
         let mut frames = Vec::new();
 
@@ -223,7 +226,9 @@ pub enum CapturePumpError {
 impl Display for CapturePumpError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::PacketBudgetZero => f.write_str("capture pump packet budget must be greater than zero"),
+            Self::PacketBudgetZero => {
+                f.write_str("capture pump packet budget must be greater than zero")
+            }
             Self::Capture(error) => write!(f, "capture pump source failed: {error}"),
             Self::Assembly(error) => write!(f, "capture pump frame assembly failed: {error}"),
         }
@@ -428,11 +433,7 @@ mod tests {
     #[test]
     fn packet_budget_bounds_one_drain_and_reports_backlog() {
         let source = FakeSource::new(
-            vec![
-                packet(&[1, 2], 0),
-                packet(&[3, 4], 2),
-                packet(&[5, 6], 4),
-            ],
+            vec![packet(&[1, 2], 0), packet(&[3, 4], 2), packet(&[5, 6], 4)],
             true,
         );
         let mut pump = CapturePump::new(source, 0, 2).expect("valid pump");
