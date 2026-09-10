@@ -139,7 +139,7 @@ The C++ binding verifies:
 
 ### Shared cursor synchronization and region layout
 
-The next two transport-boundary slices are now CI verified on MSVC x64:
+The synchronization/layout transport slices are CI verified on MSVC x64:
 
 - `vsn_virtual_mic_cursor_sync.h` accesses the aligned 64-bit cursor fields with Windows `Interlocked*64` primitives, uses bounded stable-snapshot reads, rejects producer/consumer regressions and stale session generations, and atomically tracks overrun/underrun counters;
 - producer publication occurs only after the PCM slot is fully written, and consumer publication occurs only after the slot is fully read; the interlocked publication operations provide the user-mode Windows memory barrier for this contract;
@@ -148,9 +148,36 @@ The next two transport-boundary slices are now CI verified on MSVC x64:
 - for the 48 kHz, mono, F32, 10 ms, four-frame reference contract, the header is at offset `0` (40 bytes), cursors at offset `64` (40 bytes), audio at offset `128`, each frame is `1,920` bytes, the ring is `7,680` bytes and total mapping size is `7,808` bytes;
 - mapping-size arithmetic is checked and rejects overflow before allocation/mapping is attempted.
 
-These are real native user-mode synchronization/layout contracts, but they are still **not** a WDK audio endpoint or an actual mapped kernel/user transport. The repository does not yet provide the kernel-side counterpart, section creation/mapping lifecycle, IOCTL/device interface, security descriptors/ACLs, IRQL/DPC behavior, WaveRT position registers, kernel buffering, endpoint topology, INF packaging or an installed Windows audio driver.
+### Real user-mode shared-section boundary
 
-The staging/output boundary plus the Rust/C++ protocol, cursor synchronization and region-layout contracts do not create an OS-visible microphone or calling-application route.
+`vsn_virtual_mic_shared_section.h` now turns the verified layout into an actual user-mode Windows shared section:
+
+- the section is created with `CreateFileMappingW(INVALID_HANDLE_VALUE, ...)` and mapped with `MapViewOfFile`;
+- the mapping is intentionally unnamed, avoiding a globally discoverable/pre-creatable mapping name at this boundary;
+- the mapping size comes from the validated region layout and is rejected above a configurable hard limit (16 MiB by default);
+- the handle is non-inheritable;
+- the security descriptor uses a protected DACL containing only LocalSystem full control and the current authenticated process user read/write access;
+- the mapped region is zero-initialized, receives the validated protocol header and initializes the generation-fenced cursor block;
+- Windows CI maps a second independent view of the same section and verifies protocol bytes, PCM bytes and producer-cursor publication are visible across both views;
+- Windows CI also inspects the handle flags and DACL rather than treating the intended security policy as documentation-only.
+
+This proves real user-mode Windows section creation/mapping and same-process multi-view sharing. It does **not** prove kernel-side section referencing or mapping, cross-process broker handoff, device-interface authorization, or a WaveRT endpoint.
+
+### Device-control ABI for future kernel binding
+
+`vsn_virtual_mic_device_control.h` defines the versioned control contract that a future VSN WDK device will consume:
+
+- `CONNECT`, `DISCONNECT` and `QUERY_STATUS` IOCTLs use `METHOD_BUFFERED`;
+- each IOCTL requires both `FILE_READ_ACCESS` and `FILE_WRITE_ACCESS` on the device handle;
+- request/response structures have locked x64 size, alignment and field offsets;
+- `CONNECT` carries non-zero session generation, the caller's shared-section handle value, exact section byte size and expected virtual-mic protocol magic/version;
+- validation rejects null/invalid handle values, zero/oversized mappings, stale/zero generations, mismatched protocol identity, unsupported flags and non-zero reserved fields;
+- status validation rejects unknown runtime states and consumer cursors ahead of the producer;
+- Windows CI constructs a valid `CONNECT` request from a real `SharedSection` handle and validates the complete request/response contract.
+
+The control ABI is intentionally not evidence of a functioning device. No `DeviceIoControl` call is issued against VSN hardware because no VSN WDK device/interface has been implemented or installed yet. The future kernel handler must independently authorize the caller, reference the supplied section handle in the issuing process context, validate the section object and mapped protocol/size, and own a bounded disconnect/cleanup lifecycle.
+
+The staging/output boundary plus the Rust/C++ protocol, cursor synchronization, region layout, real user-mode mapping and device-control ABI still do not create an OS-visible microphone or calling-application route.
 
 ## Driver security and release requirements
 
@@ -191,9 +218,12 @@ Before production release:
 - MSVC x64 C++ ABI mirror with locked structure sizes/alignment/field offsets and matching semantic validation;
 - aligned Windows interlocked 64-bit cursor publication, bounded stable snapshots, monotonicity/session checks and atomic underrun/overrun counters;
 - deterministic 64-byte-aligned header/cursor/PCM shared-region layout with overflow-safe size calculation;
-- Ubuntu repository-integrity checks plus Windows-native Rust compile/Clippy/tests and C++ ABI/synchronization/layout compile/run tests.
+- real unnamed user-mode Windows section creation/mapping with bounded size, non-inheritable handle and protected current-user/LocalSystem DACL;
+- two-view mapped protocol/audio/cursor propagation and security-descriptor inspection;
+- versioned access-restricted CONNECT/DISCONNECT/QUERY_STATUS device-control ABI with fixed layouts and malformed-input rejection;
+- Ubuntu repository-integrity checks plus Windows-native Rust compile/Clippy/tests and C++ protocol/synchronization/layout/shared-section/device-control compile/run tests.
 
-The latest exact implementation head for this boundary is `fafd5100d430d0880fe1dfe0671edf7537683fcf`, which passed Ubuntu repository-integrity run `34531204947` and Windows Audio Validation run `34531204951`. The cursor-synchronization implementation head `29df8cf88878f14ec319e249562f3d25aa2efe30` passed Ubuntu run `34530771449` and Windows run `34530771628`. The earlier C++ ABI implementation head `93c166709e3fad6aecd924a0378316761a9e318f` passed Ubuntu run `34528681411` and Windows run `34528681382`.
+The latest exact implementation head is `8a14b010d0c6b3e097e67d4488194734c2c0142e`, which passed Ubuntu repository-integrity run `34536677479` and Windows Audio Validation run `34536677410`, including the device-control ABI test. The preceding shared-section implementation head `f38dab24018d1c3b04008675c5ddc36e7520c07b` passed Ubuntu run `34536268804` and Windows run `34536269060`; it was merged to main as `9f24e8b56c56505df3b736e3fcf3d88ac236c465`. The device-control ABI was merged to main as `a5a372ac819d2fe2e76f6cbedc54e62bc05d4ec6`.
 
 ### Controlled Windows hardware verification still required
 
@@ -208,9 +238,10 @@ The latest exact implementation head for this boundary is `fafd5100d430d0880fe1d
 
 ### Driver/test-machine verification still required
 
-- WDK WaveRT endpoint implementation;
-- actual Windows section creation/mapping plus the kernel-side synchronization/lifecycle counterpart using the verified layout/publication contract;
-- IOCTL/device-interface and least-privilege ACL/security-descriptor boundaries;
+- WDK-buildable WaveRT endpoint and topology implementation;
+- secure VSN device interface with least-privilege ACL and real IOCTL dispatch;
+- kernel-side CONNECT handler that authorizes the caller, references/validates the supplied section handle, maps or otherwise safely accesses the section and owns cleanup on disconnect/process/device teardown;
+- kernel-side synchronization/consumer behavior matching the verified generation/cursor publication contract;
 - virtual endpoint appears as a microphone to target calling applications;
 - processed and bypass audio both reach the endpoint through the actual driver transport;
 - Zoom/Teams/Meet/dialer/browser compatibility;
@@ -221,6 +252,6 @@ The latest exact implementation head for this boundary is `fafd5100d430d0880fe1d
 
 ## Current implementation boundary
 
-WU-002 has code-level and hosted-CI evidence for the Windows event-driven WASAPI capture path, packet decoding/reframing, bounded runtime recovery, MMDevice notification registration and notification-to-recovery bridging. It also has CI evidence for a bounded user-mode virtual-microphone staging/output layer, a versioned Rust ring/cursor protocol contract, an MSVC-verified C++ ABI mirror, aligned interlocked cursor publication/stable snapshots, and deterministic overflow-safe shared-region geometry for the future driver handoff. Hosted Windows CI executes the native Rust compilation/tests, registration/unregistration smoke coverage and the C++ ABI/synchronization/layout executables; Ubuntu CI verifies the wider repository integrity and platform-neutral logic.
+WU-002 has code-level and hosted-CI evidence for the Windows event-driven WASAPI capture path, packet decoding/reframing, bounded runtime recovery, MMDevice notification registration and notification-to-recovery bridging. It also has CI evidence for a bounded user-mode virtual-microphone staging/output layer, a versioned Rust ring/cursor protocol contract, an MSVC-verified C++ ABI mirror, aligned interlocked cursor publication/stable snapshots, deterministic overflow-safe shared-region geometry, an actual securely configured unnamed user-mode Windows file mapping with verified two-view sharing, and a versioned access-restricted user-to-driver device-control ABI. Hosted Windows CI executes the native Rust compilation/tests plus the C++ protocol/synchronization/layout/shared-section/device-control executables; Ubuntu CI verifies the wider repository integrity and platform-neutral logic.
 
-This evidence does **not** yet prove physical-device hotplug/default-device recovery on controlled Windows hardware, an OS-visible production virtual microphone, actual mapped shared kernel/user transport, calling-application compatibility, hardware latency/jitter targets, or signed driver lifecycle behavior. Those remain required before MOD-002 / WU-002 can be treated as complete.
+This evidence does **not** yet prove kernel-side section consumption, a WDK WaveRT endpoint, an OS-visible production virtual microphone, calling-application compatibility, physical-device hotplug/default-device recovery on controlled hardware, hardware latency/jitter targets, or signed driver lifecycle behavior. Those remain required before MOD-002 / WU-002 can be treated as complete.
