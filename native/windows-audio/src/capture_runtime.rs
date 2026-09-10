@@ -239,10 +239,7 @@ where
         update
     }
 
-    pub fn poll(
-        &mut self,
-        timeout_ms: u32,
-    ) -> Result<CaptureRuntimeUpdate, CaptureRuntimeError> {
+    pub fn poll(&mut self, timeout_ms: u32) -> Result<CaptureRuntimeUpdate, CaptureRuntimeError> {
         if !matches!(self.state(), StreamState::Running | StreamState::Bypassed) {
             return Err(CaptureRuntimeError::NotRunning(self.state()));
         }
@@ -265,10 +262,12 @@ where
             Err(error) => {
                 self.discard_pump();
                 let disposition = classify_capture_error(&error);
-                update.transitions.push(self.controller.apply(StreamEvent::StreamFailed {
-                    fault: disposition.fault,
-                    retryable: disposition.retryable,
-                }));
+                update
+                    .transitions
+                    .push(self.controller.apply(StreamEvent::StreamFailed {
+                        fault: disposition.fault,
+                        retryable: disposition.retryable,
+                    }));
                 update.error = Some(error);
             }
         }
@@ -373,7 +372,9 @@ pub enum CaptureRuntimeError {
 impl Display for CaptureRuntimeError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::NotRunning(state) => write!(f, "capture runtime cannot poll while in {state:?} state"),
+            Self::NotRunning(state) => {
+                write!(f, "capture runtime cannot poll while in {state:?} state")
+            }
             Self::MissingActivePump => {
                 f.write_str("capture runtime is running without an active capture pump")
             }
@@ -604,7 +605,10 @@ mod tests {
         assert_eq!(runtime.state(), StreamState::Running);
         assert!(runtime.has_active_pump());
         assert_eq!(runtime.opener().requested_sequences, vec![10, 14]);
-        assert_eq!(reopened.transitions.last().expect("reopened").current, StreamState::Running);
+        assert_eq!(
+            reopened.transitions.last().expect("reopened").current,
+            StreamState::Running
+        );
     }
 
     #[test]
@@ -618,7 +622,9 @@ mod tests {
         let mut runtime = CaptureRuntime::new(config(), policy(), opener, 0);
         runtime.start();
 
-        let update = runtime.poll(50).expect("failure is represented as runtime update");
+        let update = runtime
+            .poll(50)
+            .expect("failure is represented as runtime update");
 
         assert_eq!(update.error, Some(failure));
         assert_eq!(runtime.state(), StreamState::Failed);
