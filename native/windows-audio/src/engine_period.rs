@@ -36,7 +36,9 @@ impl EnginePeriodRange {
         if !range.is_supported(default_frames) {
             return Err(EnginePeriodError::InvalidDefault);
         }
-        if min_frames % fundamental_frames != 0 || max_frames % fundamental_frames != 0 {
+        if !min_frames.is_multiple_of(fundamental_frames)
+            || !max_frames.is_multiple_of(fundamental_frames)
+        {
             return Err(EnginePeriodError::RangeNotAlignedToFundamental);
         }
 
@@ -46,7 +48,7 @@ impl EnginePeriodRange {
     pub fn is_supported(self, frames: u32) -> bool {
         frames >= self.min_frames
             && frames <= self.max_frames
-            && frames % self.fundamental_frames == 0
+            && frames.is_multiple_of(self.fundamental_frames)
     }
 
     pub fn nearest_supported(self, target_frames: u32) -> u32 {
@@ -98,7 +100,7 @@ pub fn frames_for_duration(
     let product = u64::from(sample_rate_hz)
         .checked_mul(u64::from(duration_ms))
         .ok_or(EnginePeriodError::FrameCountOverflow)?;
-    if product % 1_000 != 0 {
+    if !product.is_multiple_of(1_000) {
         return Err(EnginePeriodError::NonIntegralFrameCount);
     }
 
