@@ -418,10 +418,10 @@ NTSTATUS VsnEvtDeviceAdd(WDFDRIVER driver, PWDFDEVICE_INIT device_init) {
     auto* context = VsnGetDeviceContext(device);
     RtlZeroMemory(context, sizeof(*context));
 
-    WDF_OBJECT_ATTRIBUTES lock_attributes{};
-    WDF_OBJECT_ATTRIBUTES_INIT(&lock_attributes);
-    lock_attributes.ParentObject = device;
-    status = WdfWaitLockCreate(&lock_attributes, &context->state_lock);
+    // Keep the wait lock parented to the WDF driver (its documented default),
+    // not the device. Child cleanup runs before parent cleanup, so a device-
+    // parented lock could already be gone when VsnEvtDeviceCleanup executes.
+    status = WdfWaitLockCreate(WDF_NO_OBJECT_ATTRIBUTES, &context->state_lock);
     if (!NT_SUCCESS(status)) {
         return status;
     }
@@ -431,6 +431,8 @@ NTSTATUS VsnEvtDeviceAdd(WDFDRIVER driver, PWDFDEVICE_INIT device_init) {
         &GUID_DEVINTERFACE_VSN_VIRTUAL_MIC_CONTROL,
         nullptr);
     if (!NT_SUCCESS(status)) {
+        WdfObjectDelete(context->state_lock);
+        context->state_lock = nullptr;
         return status;
     }
 
@@ -442,11 +444,16 @@ NTSTATUS VsnEvtDeviceAdd(WDFDRIVER driver, PWDFDEVICE_INIT device_init) {
     WDF_OBJECT_ATTRIBUTES_INIT(&queue_attributes);
     queue_attributes.ExecutionLevel = WdfExecutionLevelPassive;
 
-    return WdfIoQueueCreate(
+    status = WdfIoQueueCreate(
         device,
         &queue_config,
         &queue_attributes,
         WDF_NO_HANDLE);
+    if (!NT_SUCCESS(status)) {
+        WdfObjectDelete(context->state_lock);
+        context->state_lock = nullptr;
+    }
+    return status;
 }
 
 void VsnEvtIoDeviceControl(
@@ -482,6 +489,10 @@ void VsnEvtIoDeviceControl(
 
 void VsnEvtFileCleanup(WDFFILEOBJECT file_object) {
     auto* context = VsnGetDeviceContext(WdfFileObjectGetDevice(file_object));
+    if (context->state_lock == nullptr) {
+        return;
+    }
+
     WdfWaitLockAcquire(context->state_lock, nullptr);
     if (context->connected != FALSE && context->owner_file == file_object) {
         ResetConnectionLocked(context);
@@ -491,13 +502,17 @@ void VsnEvtFileCleanup(WDFFILEOBJECT file_object) {
 
 void VsnEvtDeviceCleanup(WDFOBJECT device_object) {
     auto* context = VsnGetDeviceContext(reinterpret_cast<WDFDEVICE>(device_object));
-    if (context->state_lock == nullptr) {
+    WDFWAITLOCK lock = context->state_lock;
+    if (lock == nullptr) {
         return;
     }
 
-    WdfWaitLockAcquire(context->state_lock, nullptr);
+    WdfWaitLockAcquire(lock, nullptr);
     ResetConnectionLocked(context);
-    WdfWaitLockRelease(context->state_lock);
+    WdfWaitLockRelease(lock);
+
+    context->state_lock = nullptr;
+    WdfObjectDelete(lock);
 }
 
 } // namespace
