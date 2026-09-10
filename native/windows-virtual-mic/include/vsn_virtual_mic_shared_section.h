@@ -94,10 +94,6 @@ inline SharedSectionStatus BuildSharedSectionSecurityDescriptor(
         return SharedSectionStatus::kSidConversionFailed;
     }
 
-    // Protected DACL: LocalSystem has full control for the future driver/service
-    // boundary; the authenticated current process user has read/write access.
-    // The mapping itself is intentionally unnamed, so no global object name can
-    // be pre-created or opened by an unrelated process.
     const std::wstring sddl =
         L"D:P(A;;GA;;;SY)(A;;GRGW;;;" + std::wstring(user_sid_string) + L")";
     LocalFree(user_sid_string);
@@ -210,6 +206,9 @@ public:
             return SharedSectionStatus::kMapViewFailed;
         }
 
+        // Zero initialization is part of protocol v2: before producer_sequence
+        // advances, all per-slot stamps are stable sequence zero values. A slot
+        // is never consumed while the global producer cursor remains empty.
         std::memset(view, 0, static_cast<size_t>(layout.total_bytes));
         auto* bytes = static_cast<uint8_t*>(view);
         std::memcpy(bytes + layout.header_offset, &header, sizeof(header));
@@ -258,6 +257,14 @@ public:
         }
         return reinterpret_cast<CursorSnapshot*>(
             static_cast<uint8_t*>(view_) + layout_.cursor_offset);
+    }
+
+    FrameSlotStamp* slot_stamps() const noexcept {
+        if (!valid()) {
+            return nullptr;
+        }
+        return reinterpret_cast<FrameSlotStamp*>(
+            static_cast<uint8_t*>(view_) + layout_.slot_stamps_offset);
     }
 
     uint8_t* audio_data() const noexcept {
