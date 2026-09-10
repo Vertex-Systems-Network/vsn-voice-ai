@@ -3,6 +3,7 @@ pub mod engine_period;
 pub mod packet_reframer;
 pub mod sample_decode;
 pub mod wasapi_capture;
+pub mod wave_format;
 
 use std::error::Error;
 use std::fmt::{Display, Formatter};
