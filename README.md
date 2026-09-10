@@ -28,16 +28,19 @@ The owner-approved product direction is:
 - `WU-017` PHASE-000 privacy/security/data-governance baseline: **complete**; broader `MOD-017` work remains cross-cutting/in progress.
 - `WU-002` desktop audio core and virtual devices: **in progress** since **2026-09-10 03:43 PKT**.
 - Rust native workspace contains `vsn-audio-core` and `vsn-windows-audio`.
-- Windows-native capture, recovery and virtual-mic transport contracts are CI verified through the current KMDF control-driver boundary.
+- Windows-native capture, recovery and virtual-mic transport contracts are CI verified through the current **KMDF control-driver + guarded protocol-v2 ring-consumer** boundary.
 - `native/windows-virtual-mic/driver/vsn_virtual_mic_control.vcxproj` is an x64 KMDF Desktop-driver project built with pinned Microsoft WDK/SDK NuGet `10.0.28000.2526`.
-- The KMDF control driver implements access-restricted `CONNECT` / `DISCONNECT` / `QUERY_STATUS` dispatch, requestor PID/file ownership checks, driver-created shared-section lifecycle, retained kernel object reference, system-space mapping, protocol/cursor initialization and bounded teardown.
+- The KMDF control driver implements access-restricted `CONNECT` / `DISCONNECT` / `QUERY_STATUS`, requestor PID/file ownership checks, driver-created shared-section lifecycle, retained kernel object reference, system-space mapping and bounded teardown.
+- The secure control-v2 CONNECT contract does **not** accept a caller-supplied section handle. The driver creates the section in requestor context and returns a user handle only after initialization while retaining its own independent section-object reference.
+- Transport protocol **v2** adds one aligned 64-bit seqlock-style stamp per PCM ring slot and bounds frame-sequence encoding.
+- The guarded consumer normalizes overruns with exact drop accounting, produces fresh silence on underrun, validates the target slot before and after PCM copy, and rejects concurrent slot reuse without advancing the consumer cursor.
+- The 48 kHz mono F32, 10 ms, four-frame protocol-v2 reference region is **7,872 bytes**: header `0`, cursor `64`, slot stamps `128`, audio `192`.
+- The same guarded ring-consumer helper compiles and links inside the real WDK/KMDF `.sys` target.
 - The development control interface is intentionally restricted to LocalSystem and built-in Administrators; least-privilege non-admin runtime policy remains pending.
-- The secure v2 CONNECT contract does **not** accept a caller-supplied section handle. The driver creates the section in requestor context and returns a user handle only after initialization while retaining its own independent section-object reference.
-- Windows CI restores the pinned WDK packages, builds `vsn_virtual_mic_control.sys` with WDK validation enabled, and then runs the C++ protocol/cursor/layout/shared-section/device-control regression executables.
 - Windows implementation contract is documented in `docs/architecture/WINDOWS-AUDIO-IMPLEMENTATION.md`.
 - **A WaveRT/PortCls audio miniport, installed OS-visible microphone endpoint, calling-app route and controlled-hardware performance evidence are not yet claimed operational.**
 
-**Latest verified green implementation CI:** AI Native Quality Gates run `34539554036` and Windows Audio Validation run `34539554115` both passed on implementation head `6bb193f96ecec505f341600b5577b18e4046a89c`. The Windows run passed Rust compile/Clippy/tests, restored the pinned WDK packages, built the KMDF control-driver `.sys`, passed WDK post-build validation under the Desktop target classification, and passed the native C++ transport-contract tests. This implementation merged to `main` as `b2761ad400d92c1d810751fabcf4b071a40dfb9c`. The preceding secure driver-owned CONNECT-v2 correction passed AI Native run `34537871677` and Windows run `34537871806` and merged as `3953069f468c46d744f30625b3696e5b12f03a77`.
+**Latest verified green implementation CI:** AI Native Quality Gates run `34541120876` and Windows Audio Validation run `34541120903` both passed on implementation head `7948c1dc31a05fc5688d9d2b7f0da8d00605037d`. The Windows run passed Rust compile/Clippy/tests, restored the pinned WDK packages, built and WDK-validated `vsn_virtual_mic_control.sys` with the guarded ring-consumer compile probe linked in, and passed the native C++ protocol/cursor/shared-section/device-control/ring-consumer suite including a deliberate concurrent-slot-reuse race. This implementation merged to `main` as `9c57207482bdc20ca5dc70a06cbb43c0cfa86741`. The preceding KMDF control-driver boundary merged as `b2761ad400d92c1d810751fabcf4b071a40dfb9c`; the secure driver-owned CONNECT-v2 correction merged as `3953069f468c46d744f30625b3696e5b12f03a77`.
 
 ## README Reconciliation Rule — Mandatory
 
@@ -104,25 +107,26 @@ Implemented and CI-verified:
 - event-driven WASAPI capture, sample decode/reframing, bounded packet draining and `CaptureRuntime` recovery;
 - `IMMNotificationClient` registration on a dedicated Windows MTA thread, bounded non-blocking notification delivery and owner-thread recovery filtering;
 - bounded `VirtualMicStagingBuffer` and `VirtualMicOutputBridge` for processed and safe-bypass frames;
-- versioned Rust/C++ virtual-mic protocol with fixed geometry, session generation and deterministic cyclic-ring semantics;
+- Rust/C++ transport protocol v2 with fixed audio geometry, session generation, deterministic cyclic-ring semantics and an aligned 8-byte per-slot write stamp;
 - MSVC x64 ABI mirror with locked 40-byte protocol/cursor layouts and exact offsets;
-- aligned Windows `Interlocked*64` cursor publication, bounded stable snapshots and explicit overrun/underrun accounting;
-- deterministic 64-byte-aligned shared-region geometry; the 48 kHz mono F32 10 ms four-frame reference is 7,808 bytes total;
-- real unnamed user-mode `SharedSection` mapping with a configurable 16 MiB cap, non-inheritable handle, protected current-user/LocalSystem DACL and two-view propagation/security tests;
-- secure device-control ABI v2 using `METHOD_BUFFERED` and `FILE_READ_ACCESS | FILE_WRITE_ACCESS`; CONNECT now carries validated protocol geometry and no caller-supplied shared-section handle;
-- driver-created shared section in requestor process context, immediate independent kernel object reference, system-space mapping, header/cursor initialization and response handle return after successful initialization;
+- aligned Windows `Interlocked*64` cursor/stamp publication, bounded stable snapshots and explicit overrun/underrun accounting;
+- deterministic 64-byte-aligned shared-region geometry; the protocol-v2 48 kHz mono F32 10 ms four-frame reference is **7,872 bytes** total;
+- real unnamed user-mode `SharedSection` mapping with a configurable 16 MiB cap, non-inheritable handle, protected current-user/LocalSystem DACL and two-view protocol/audio/cursor/slot-stamp propagation tests;
+- secure device-control ABI v2 using `METHOD_BUFFERED` and `FILE_READ_ACCESS | FILE_WRITE_ACCESS`; CONNECT carries validated protocol geometry and no caller-supplied shared-section handle;
+- driver-created shared section in requestor process context, immediate independent kernel object reference, system-space mapping, protocol/cursor initialization and response handle return after successful initialization;
 - requestor PID + file-object ownership fencing for disconnect/status operations;
 - bounded section/view/object cleanup on disconnect, owning file cleanup and device cleanup;
 - development device interface restricted to LocalSystem and built-in Administrators;
 - x64 KMDF Desktop-driver project with KMDF 1.21 and pinned Microsoft WDK/SDK NuGet `10.0.28000.2526`;
-- Windows CI build of `vsn_virtual_mic_control.sys` with WDK validation enabled;
-- latest AI Native run `34539554036` and Windows Audio Validation run `34539554115` green on implementation head `6bb193f96ecec505f341600b5577b18e4046a89c`, merged as `b2761ad400d92c1d810751fabcf4b071a40dfb9c`.
+- guarded `ConsumeOneRingFrame` contract that uses immutable CONNECT-time geometry, normalizes overruns with exact drop accounting, emits fresh silence on underrun, checks the exact stable slot stamp before and after PCM copy, rejects concurrent slot reuse/torn frames, and publishes the consumer cursor only after a stable copy;
+- the guarded consumer compiles/links inside the real WDK driver target and is exercised in user-mode C++ regression tests, including a deliberate slot-reuse race;
+- latest AI Native run `34541120876` and Windows Audio Validation run `34541120903` green on implementation head `7948c1dc31a05fc5688d9d2b7f0da8d00605037d`, merged as `9c57207482bdc20ca5dc70a06cbb43c0cfa86741`.
 
 Not yet verified and therefore **not claimed complete**:
 
 - confirmed physical-microphone `IAudioClient3` values and real unplug/replug, Bluetooth/headset, default-device, sleep/wake and audio-service recovery on controlled Windows hardware;
 - minimal WaveRT/PortCls virtual microphone miniport/topology and actual audio endpoint registration;
-- kernel ring-consumer timing, underrun/silence behavior, WaveRT position semantics and audio delivery from the retained shared region;
+- audio-engine scheduling/position/notification behavior that invokes the guarded ring consumer;
 - INF/package creation, controlled-machine installation/test signing and runtime `DeviceIoControl` handshake against the installed driver;
 - endpoint enumeration as an OS-visible microphone and processed/bypass audio reaching it;
 - Zoom/Teams/Meet/dialer/browser compatibility through the actual endpoint;
