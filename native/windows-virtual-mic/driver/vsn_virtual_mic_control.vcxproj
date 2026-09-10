@@ -59,6 +59,7 @@
     <ClInclude Include="..\include\vsn_virtual_mic_region_layout.h" />
     <ClInclude Include="..\include\vsn_virtual_mic_ring_consumer.h" />
     <ClInclude Include="..\include\vsn_virtual_mic_device_control.h" />
+    <ClInclude Include="..\include\vsn_virtual_mic_wavert_contract.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>
