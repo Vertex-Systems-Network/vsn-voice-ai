@@ -1,5 +1,6 @@
 pub mod capture_plan;
 pub mod engine_period;
+pub mod frame_assembler;
 pub mod packet_reframer;
 pub mod sample_decode;
 pub mod wasapi_capture;
