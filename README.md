@@ -47,12 +47,14 @@ The owner-approved product direction is:
 - `VirtualMicOutputBridge` routes both successfully processed frames and `AudioPipeline` safe-bypass originals through the same user-mode staging path, so an optional processing failure does not itself silence the output staging boundary.
 - `virtual_mic_protocol` defines a versioned C-compatible driver-facing header/cursor contract with session generations, fixed audio geometry, monotonic producer/consumer sequences and deterministic cyclic-ring overrun normalization.
 - `native/windows-virtual-mic` provides an MSVC x64-verified C++ mirror of that wire ABI: 40-byte header/cursor structures, 8-byte alignment, exact field offsets, matching validation and matching cyclic-ring/session/cursor behavior.
-- `vsn_virtual_mic_cursor_sync.h` adds CI-verified aligned Windows `Interlocked*64` cursor publication, bounded stable snapshots, session-generation fencing, monotonic producer/consumer checks and atomic underrun/overrun counters.
-- `vsn_virtual_mic_region_layout.h` adds a deterministic 64-byte-aligned header/cursor/PCM-ring geometry with overflow-safe mapping-size calculation; the four-frame reference contract is 7,808 bytes total with audio starting at offset 128.
+- `vsn_virtual_mic_cursor_sync.h` provides CI-verified aligned Windows `Interlocked*64` cursor publication, bounded stable snapshots, session-generation fencing, monotonic producer/consumer checks and atomic underrun/overrun counters.
+- `vsn_virtual_mic_region_layout.h` provides deterministic 64-byte-aligned header/cursor/PCM-ring geometry with overflow-safe mapping-size calculation; the four-frame reference contract is 7,808 bytes total with audio starting at offset 128.
+- `vsn_virtual_mic_shared_section.h` now creates a real unnamed page-backed Windows mapping with `CreateFileMappingW`/`MapViewOfFile`, a configurable 16 MiB default cap, non-inheritable handle and protected DACL restricted to LocalSystem plus the current process user; Windows CI verifies a second mapped view sees shared protocol/audio/cursor changes.
+- `vsn_virtual_mic_device_control.h` defines versioned access-restricted `CONNECT` / `DISCONNECT` / `QUERY_STATUS` IOCTL ABI contracts with fixed structure layout and validation for session generation, shared-section handle/size, expected protocol identity and runtime cursor/status fields.
 - Windows implementation contract is documented in `docs/architecture/WINDOWS-AUDIO-IMPLEMENTATION.md`.
-- **Physical-device hotplug/default-device recovery on controlled hardware, an OS-visible production virtual microphone, an actually mapped shared kernel/user transport, calling-app routing and hardware latency/jitter evidence are not yet claimed operational.**
+- **Physical-device hotplug/default-device recovery on controlled hardware, a kernel-side shared-section consumer, an OS-visible production virtual microphone, calling-app routing and hardware latency/jitter evidence are not yet claimed operational.**
 
-**Latest verified green implementation CI:** Ubuntu repository-integrity run `34531204947` and Windows Audio Validation run `34531204951` both passed on implementation head `fafd5100d430d0880fe1dfe0671edf7537683fcf` — including the existing Rust/Windows audio coverage plus MSVC x64 compile-and-run validation of the C++ ABI, shared cursor synchronization and shared-region layout contracts. The cursor synchronization slice also passed Ubuntu run `34530771449` and Windows run `34530771628` on head `29df8cf88878f14ec319e249562f3d25aa2efe30`.
+**Latest verified green implementation CI:** AI Native Quality Gates run `34536677479` and Windows Audio Validation run `34536677410` both passed on implementation head `8a14b010d0c6b3e097e67d4488194734c2c0142e`, including MSVC x64 compile-and-run validation of the device-control ABI against a real `SharedSection` handle. The preceding shared-section mapping slice passed AI Native run `34536268804` and Windows run `34536269060` on head `f38dab24018d1c3b04008675c5ddc36e7520c07b` and merged to main as `9f24e8b56c56505df3b736e3fcf3d88ac236c465`; the device-control ABI merged as `a5a372ac819d2fe2e76f6cbedc54e62bc05d4ec6`.
 
 ## README Reconciliation Rule — Mandatory
 
@@ -81,7 +83,7 @@ Progress scale: `░░░░░░░░░░ 0%` → `███████�
 | MOD-006 | Live Transcription, Captions & Diarization | Streaming/final STT, captions, speakers, timestamps, vocabulary, PII controls | Not started | — | `░░░░░░░░░░ 0%` | TBD | 3–5 weeks |
 | MOD-007 | Meeting Capture & Platform Connectors | Zoom/Teams/Meet/Webex, bot/botless/native capture, calendar, participant/chat/events | Not started | — | `░░░░░░░░░░ 0%` | TBD | 4–7 weeks initial platforms |
 | MOD-008 | Meeting Intelligence & Knowledge | Notes, summaries, decisions, action items, topics, highlights, clips, meeting Q&A | Not started | — | `░░░░░░░░░░ 0%` | TBD | 4–7 weeks initial feature set |
-| MOD-009 | Live AI Assistant & Communication Coach | Live suggestions, clarity/pace/interruption coaching, contextual Q&A | Not started | — | `░░░░░░░░░░ 0%` | TBD | 4–7 weeks |
+| MOD-009 | Live AI Assistant & Communication Coach | Live suggestions, clarity/pace/interruption cues, contextual Q&A | Not started | — | `░░░░░░░░░░ 0%` | TBD | 4–7 weeks |
 | MOD-010 | Hybrid AI Provider Gateway & Orchestration | Provider registry, adapters, routing, fallback, health, quality/latency/privacy/cost policy | 2026-09-10 02:31 PKT | — | `░░░░░░░░░░ 0% — in progress` | TBD | Foundation verified; adapters continuous |
 | MOD-011 | Proprietary VSN AI Runtime & Model Registry | Datasets/evaluation, model registry, training, inference, versioning, rollout/rollback | Not started | — | `░░░░░░░░░░ 0%` | TBD — data/compute authorization required before training | 6–12+ weeks runtime foundation; model R&D may take months |
 | MOD-012 | Voice Personalization, Identity Safety & Voice Security | Voice profiles, verification, deepfake/spoof detection, speaker-change/agent verification | Not started | — | `░░░░░░░░░░ 0%` | TBD | 4–7 weeks initial controls/security path |
@@ -149,16 +151,20 @@ Implemented and CI-verified:
 - MSVC x64 C++ driver-facing ABI mirror in `native/windows-virtual-mic`, with 40-byte `ProtocolHeader` / `CursorSnapshot`, 8-byte alignment, exact static field offsets, matching validation and matching ring/session/cursor semantics;
 - aligned Windows `Interlocked*64` shared cursor publication with bounded stable snapshots, session-generation fencing, producer/consumer monotonicity checks and atomic overrun/underrun counters;
 - deterministic 64-byte-aligned shared-region planning for header/cursors/PCM ring with checked arithmetic; the 48 kHz mono F32 10 ms four-frame reference maps to 7,808 bytes total;
-- Ubuntu repository-integrity run `34531204947` and Windows Audio Validation run `34531204951` on implementation head `fafd5100d430d0880fe1dfe0671edf7537683fcf`, including MSVC `/W4 /WX` compile-and-run validation of ABI, cursor synchronization and region-layout behavior.
+- real unnamed page-backed `SharedSection` creation/mapping with validated layout-derived size, configurable 16 MiB default cap, non-inheritable handle, protected LocalSystem/current-user DACL and initialized protocol/cursor state;
+- second mapped-view verification proving shared protocol/audio bytes and interlocked producer-cursor publication propagate through the actual Windows section;
+- versioned `CONNECT` / `DISCONNECT` / `QUERY_STATUS` `METHOD_BUFFERED` IOCTL ABI with read+write access requirement, fixed structure layouts and malformed-input/status rejection;
+- real `SharedSection` handle metadata exercised through the CONNECT ABI validator;
+- AI Native Quality Gates run `34536677479` and Windows Audio Validation run `34536677410` on implementation head `8a14b010d0c6b3e097e67d4488194734c2c0142e`; the preceding shared-section slice passed runs `34536268804` / `34536269060` on `f38dab24018d1c3b04008675c5ddc36e7520c07b`.
 
 Not yet verified and therefore **not claimed complete**:
 
 - confirmed `GetSharedModeEnginePeriod` values from a physical communications microphone on a controlled test machine when hosted CI exposes no capture endpoint;
 - actual unplug/replug, Bluetooth/headset disconnect and default-device recovery firing successfully on controlled Windows hardware;
 - sleep/wake and audio-service interruption recovery on representative hardware;
-- OS-visible Windows virtual microphone endpoint/driver and actual mapped shared kernel/user-mode transport;
-- Windows section creation/mapping lifecycle, kernel-side synchronization integration, IOCTL/device-interface, security ACL/security-descriptor and WaveRT driver mechanics on a real WDK implementation;
-- processed/bypass audio reaching Zoom/Teams/Meet/dialers/browser apps through that real endpoint;
+- WDK-buildable kernel-side virtual microphone endpoint/topology and secure VSN device interface;
+- real IOCTL dispatch with caller authorization, section-handle referencing/mapping, kernel-side cursor/ring consumer lifecycle and process/device teardown cleanup;
+- processed/bypass audio reaching Zoom/Teams/Meet/dialers/browser apps through an OS-visible endpoint;
 - CPU/callback deadline, discontinuity, end-to-end latency and jitter evidence under controlled hardware load;
 - driver signing/install/update/uninstall/rollback and supported-Windows compatibility evidence.
 
