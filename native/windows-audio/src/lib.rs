@@ -290,7 +290,9 @@ mod tests {
 
         assert!(matches!(
             snapshot.into_catalog(),
-            Err(WindowsAudioError::InvalidEndpoint(DeviceError::FlowMismatch { .. }))
+            Err(WindowsAudioError::InvalidEndpoint(
+                DeviceError::FlowMismatch { .. }
+            ))
         ));
     }
 
