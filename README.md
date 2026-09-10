@@ -34,11 +34,12 @@ The owner-approved product direction is:
 - Verified device/stream control slices include deterministic device reselection, processing bypass, bounded invalidation recovery and exponential reopen backoff.
 - `vsn-windows-audio` provides a CI-tested snapshot-to-core-catalog boundary and explicit unsupported-platform behavior off Windows.
 - Verified WASAPI planning slice validates `IAudioClient3`-style default/fundamental/min/max period grids, chooses the nearest supported fundamental multiple and converts sample-rate/duration targets to frame counts (`48 kHz × 10 ms = 480` frames).
+- Verified `SharedCapturePlan` separates WASAPI audio-frame cadence from interleaved pipeline sample count and marks exact vs accumulator-required capture cadence without assuming one callback equals one pipeline frame.
 - Windows-only MMDevice active endpoint enumeration and Console/Multimedia/Communications default-role code now exists behind `cfg(windows)`.
 - Windows implementation contract is documented in `docs/architecture/WINDOWS-AUDIO-IMPLEMENTATION.md`.
 - **The Windows-only MMDevice branch has not yet been compiled/run on a Windows CI runner or hardware, and WASAPI capture plus the production virtual microphone are not claimed operational.**
 
-**Latest verified green implementation CI:** GitHub Actions run `34420942799` — ANPOS validation, Go provider-gateway tests, Rust formatting, Clippy, workspace Rust unit tests, product JSON Schemas, YAML and whitespace gates all passed on Ubuntu.
+**Latest verified green implementation CI:** GitHub Actions run `34421431894` — ANPOS validation, Go provider-gateway tests, Rust formatting, Clippy, workspace Rust unit tests, product JSON Schemas, YAML and whitespace gates all passed on Ubuntu.
 
 ## README Reconciliation Rule — Mandatory
 
@@ -115,6 +116,7 @@ Implemented and CI-verified:
 - `IAudioClient3`-compatible engine-period range validation for default/fundamental/min/max frame counts;
 - deterministic nearest-supported fundamental-multiple period selection, preferring the lower period on exact ties;
 - checked sample-rate/duration to frame-count conversion (`48 kHz / 10 ms = 480` frames);
+- shared-mode capture cadence planning that keeps WASAPI audio frames separate from interleaved sample counts and explicitly identifies when buffering/accumulation is required;
 - Rust `rustfmt`, Clippy `-D warnings` and workspace unit-test gates in CI.
 
 Implemented in source but **not yet Windows-platform verified**:
@@ -131,6 +133,7 @@ Not yet verified and therefore **not claimed complete**:
 - real Windows MMDevice endpoint enumeration on a Windows machine;
 - event-driven WASAPI microphone capture;
 - actual `IAudioClient3::GetSharedModeEnginePeriod` / `InitializeSharedAudioStream` negotiation against a Windows audio endpoint;
+- runtime accumulator/reframing of variable WASAPI callback packets into validated pipeline `AudioFrame`s;
 - actual hotplug/default-device recovery on Windows;
 - Windows virtual microphone endpoint/driver;
 - processed/bypass audio reaching Zoom/Teams/Meet through that endpoint;
@@ -211,6 +214,6 @@ These do not block the current approved local implementation slice, but apply be
 - Development AI/Supervisor/Worker identity selection before privileged worker dispatch.
 - Optional PM provider selection or explicit skip.
 - Provider access/licensing/privacy/cost verification before each third-party provider is activated.
-- Separate dataset/compute authorization before proprietary model training or material GPU spend.
+- Separate dataset/compute authorization before proprietary model training or material paid GPU spend.
 - Region/customer-specific legal/retention review before production release.
 - Product-specific test, signing, security and release evidence before deployment.
