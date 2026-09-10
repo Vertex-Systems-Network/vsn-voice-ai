@@ -256,7 +256,9 @@ mod tests {
     ) -> CapturedPacket {
         CapturedPacket {
             frames,
-            bytes: (0..frames).map(|offset| start_value + offset as u8).collect(),
+            bytes: (0..frames)
+                .map(|offset| start_value + offset as u8)
+                .collect(),
             flags,
             device_position_frames: position,
             qpc_position_100ns: position * 10_000_000 / 48_000,
@@ -267,10 +269,12 @@ mod tests {
     fn accumulates_short_packets_into_exact_pipeline_frame() {
         let mut reframer = PacketReframer::new(plan(4), 1).expect("valid reframer");
 
-        assert!(reframer
-            .push(packet(2, 1, CapturePacketFlags::default(), 0))
-            .expect("packet accepted")
-            .is_empty());
+        assert!(
+            reframer
+                .push(packet(2, 1, CapturePacketFlags::default(), 0))
+                .expect("packet accepted")
+                .is_empty()
+        );
         let frames = reframer
             .push(packet(2, 3, CapturePacketFlags::default(), 2))
             .expect("packet accepted");
