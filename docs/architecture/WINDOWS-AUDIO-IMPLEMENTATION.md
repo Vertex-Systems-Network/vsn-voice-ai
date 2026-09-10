@@ -127,20 +127,30 @@ The Rust implementation contains a CI-verified, versioned driver-facing metadata
 
 ### C++ / future WDK ABI binding
 
-`native/windows-virtual-mic/include/vsn_virtual_mic_protocol.h` now mirrors the Rust contract for the future driver boundary and is compiled/executed with MSVC x64 in Windows CI.
+`native/windows-virtual-mic/include/vsn_virtual_mic_protocol.h` mirrors the Rust contract for the future driver boundary and is compiled/executed with MSVC x64 in Windows CI.
 
-The C++ binding currently verifies:
+The C++ binding verifies:
 
 - protocol magic is the little-endian byte sequence `VSNM`;
 - `ProtocolHeader` is exactly 40 bytes, 8-byte aligned, with every field offset locked by `static_assert`;
 - `CursorSnapshot` is exactly 40 bytes, 8-byte aligned, with every field offset locked by `static_assert`;
 - C++ validation mirrors protocol version, header size, session generation, audio geometry, sample-format, frame-size and reserved-field constraints;
-- C++ cyclic ring planning mirrors Rust producer/consumer, wrap, stale-generation, reversed-cursor and oldest-frame overrun behavior;
-- the Windows workflow locates the installed MSVC x64 toolchain, compiles the ABI test under `/W4 /WX`, and executes it.
+- C++ cyclic ring planning mirrors Rust producer/consumer, wrap, stale-generation, reversed-cursor and oldest-frame overrun behavior.
 
-This is an actual native ABI binding, but it is still **not** a WDK audio endpoint or shared kernel/user transport implementation. It does not yet provide shared-memory atomics, memory-ordering primitives, IOCTL/device interfaces, security descriptors/ACLs, section mapping, IRQL/DPC behavior, WaveRT position registers, kernel buffering, endpoint topology, INF packaging or an installed Windows audio driver.
+### Shared cursor synchronization and region layout
 
-The staging/output boundary plus the Rust/C++ protocol contract do not create an OS-visible microphone or calling-application route.
+The next two transport-boundary slices are now CI verified on MSVC x64:
+
+- `vsn_virtual_mic_cursor_sync.h` accesses the aligned 64-bit cursor fields with Windows `Interlocked*64` primitives, uses bounded stable-snapshot reads, rejects producer/consumer regressions and stale session generations, and atomically tracks overrun/underrun counters;
+- producer publication occurs only after the PCM slot is fully written, and consumer publication occurs only after the slot is fully read; the interlocked publication operations provide the user-mode Windows memory barrier for this contract;
+- session rollover uses generation `0` as an invalid reset marker and is explicitly permitted only after producer and consumer endpoints have been quiesced; this does not claim lock-free concurrent reset safety;
+- `vsn_virtual_mic_region_layout.h` defines a deterministic 64-byte-aligned shared-region geometry: protocol header, cursor block, then PCM ring;
+- for the 48 kHz, mono, F32, 10 ms, four-frame reference contract, the header is at offset `0` (40 bytes), cursors at offset `64` (40 bytes), audio at offset `128`, each frame is `1,920` bytes, the ring is `7,680` bytes and total mapping size is `7,808` bytes;
+- mapping-size arithmetic is checked and rejects overflow before allocation/mapping is attempted.
+
+These are real native user-mode synchronization/layout contracts, but they are still **not** a WDK audio endpoint or an actual mapped kernel/user transport. The repository does not yet provide the kernel-side counterpart, section creation/mapping lifecycle, IOCTL/device interface, security descriptors/ACLs, IRQL/DPC behavior, WaveRT position registers, kernel buffering, endpoint topology, INF packaging or an installed Windows audio driver.
+
+The staging/output boundary plus the Rust/C++ protocol, cursor synchronization and region-layout contracts do not create an OS-visible microphone or calling-application route.
 
 ## Driver security and release requirements
 
@@ -179,9 +189,11 @@ Before production release:
 - session-generation and fixed-audio-geometry validation;
 - deterministic cyclic ring-slot planning and oldest-frame overrun normalization;
 - MSVC x64 C++ ABI mirror with locked structure sizes/alignment/field offsets and matching semantic validation;
-- Ubuntu repository-integrity checks plus Windows-native Rust compile/Clippy/tests and C++ ABI compile/run tests.
+- aligned Windows interlocked 64-bit cursor publication, bounded stable snapshots, monotonicity/session checks and atomic underrun/overrun counters;
+- deterministic 64-byte-aligned header/cursor/PCM shared-region layout with overflow-safe size calculation;
+- Ubuntu repository-integrity checks plus Windows-native Rust compile/Clippy/tests and C++ ABI/synchronization/layout compile/run tests.
 
-The latest exact implementation head for this boundary is `93c166709e3fad6aecd924a0378316761a9e318f`, which passed Ubuntu repository-integrity run `34528681411` and Windows Audio Validation run `34528681382`. The preceding Rust protocol implementation head `aa0792b81746a11d99b3b3451c3086e363714ee8` passed Ubuntu run `34525486454` and Windows run `34525486333`.
+The latest exact implementation head for this boundary is `fafd5100d430d0880fe1dfe0671edf7537683fcf`, which passed Ubuntu repository-integrity run `34531204947` and Windows Audio Validation run `34531204951`. The cursor-synchronization implementation head `29df8cf88878f14ec319e249562f3d25aa2efe30` passed Ubuntu run `34530771449` and Windows run `34530771628`. The earlier C++ ABI implementation head `93c166709e3fad6aecd924a0378316761a9e318f` passed Ubuntu run `34528681411` and Windows run `34528681382`.
 
 ### Controlled Windows hardware verification still required
 
@@ -197,7 +209,8 @@ The latest exact implementation head for this boundary is `93c166709e3fad6aecd92
 ### Driver/test-machine verification still required
 
 - WDK WaveRT endpoint implementation;
-- actual shared kernel/user transport with correct synchronization, memory ordering and ACL boundaries;
+- actual Windows section creation/mapping plus the kernel-side synchronization/lifecycle counterpart using the verified layout/publication contract;
+- IOCTL/device-interface and least-privilege ACL/security-descriptor boundaries;
 - virtual endpoint appears as a microphone to target calling applications;
 - processed and bypass audio both reach the endpoint through the actual driver transport;
 - Zoom/Teams/Meet/dialer/browser compatibility;
@@ -208,6 +221,6 @@ The latest exact implementation head for this boundary is `93c166709e3fad6aecd92
 
 ## Current implementation boundary
 
-WU-002 has code-level and hosted-CI evidence for the Windows event-driven WASAPI capture path, packet decoding/reframing, bounded runtime recovery, MMDevice notification registration and notification-to-recovery bridging. It also has CI evidence for a bounded user-mode virtual-microphone staging/output layer, a versioned Rust ring/cursor protocol contract, and an MSVC-verified C++ ABI mirror for the future driver handoff. Hosted Windows CI executes the native Rust compilation/tests, registration/unregistration smoke coverage and the C++ ABI executable; Ubuntu CI verifies the wider repository integrity and platform-neutral logic.
+WU-002 has code-level and hosted-CI evidence for the Windows event-driven WASAPI capture path, packet decoding/reframing, bounded runtime recovery, MMDevice notification registration and notification-to-recovery bridging. It also has CI evidence for a bounded user-mode virtual-microphone staging/output layer, a versioned Rust ring/cursor protocol contract, an MSVC-verified C++ ABI mirror, aligned interlocked cursor publication/stable snapshots, and deterministic overflow-safe shared-region geometry for the future driver handoff. Hosted Windows CI executes the native Rust compilation/tests, registration/unregistration smoke coverage and the C++ ABI/synchronization/layout executables; Ubuntu CI verifies the wider repository integrity and platform-neutral logic.
 
-This evidence does **not** yet prove physical-device hotplug/default-device recovery on controlled Windows hardware, an OS-visible production virtual microphone, actual shared kernel/user transport, calling-application compatibility, hardware latency/jitter targets, or signed driver lifecycle behavior. Those remain required before MOD-002 / WU-002 can be treated as complete.
+This evidence does **not** yet prove physical-device hotplug/default-device recovery on controlled Windows hardware, an OS-visible production virtual microphone, actual mapped shared kernel/user transport, calling-application compatibility, hardware latency/jitter targets, or signed driver lifecycle behavior. Those remain required before MOD-002 / WU-002 can be treated as complete.

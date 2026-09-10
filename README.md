@@ -46,11 +46,13 @@ The owner-approved product direction is:
 - `VirtualMicStagingBuffer` provides a fixed-format bounded user-mode output queue; overflow drops the oldest frame, underrun emits fresh silence, and accepted/drop/underrun counters are explicit.
 - `VirtualMicOutputBridge` routes both successfully processed frames and `AudioPipeline` safe-bypass originals through the same user-mode staging path, so an optional processing failure does not itself silence the output staging boundary.
 - `virtual_mic_protocol` defines a versioned C-compatible driver-facing header/cursor contract with session generations, fixed audio geometry, monotonic producer/consumer sequences and deterministic cyclic-ring overrun normalization.
-- `native/windows-virtual-mic` now provides an MSVC x64-verified C++ mirror of that wire ABI: 40-byte header/cursor structures, 8-byte alignment, exact field offsets, matching validation and matching cyclic-ring/session/cursor behavior.
+- `native/windows-virtual-mic` provides an MSVC x64-verified C++ mirror of that wire ABI: 40-byte header/cursor structures, 8-byte alignment, exact field offsets, matching validation and matching cyclic-ring/session/cursor behavior.
+- `vsn_virtual_mic_cursor_sync.h` adds CI-verified aligned Windows `Interlocked*64` cursor publication, bounded stable snapshots, session-generation fencing, monotonic producer/consumer checks and atomic underrun/overrun counters.
+- `vsn_virtual_mic_region_layout.h` adds a deterministic 64-byte-aligned header/cursor/PCM-ring geometry with overflow-safe mapping-size calculation; the four-frame reference contract is 7,808 bytes total with audio starting at offset 128.
 - Windows implementation contract is documented in `docs/architecture/WINDOWS-AUDIO-IMPLEMENTATION.md`.
-- **Physical-device hotplug/default-device recovery on controlled hardware, an OS-visible production virtual microphone, actual shared kernel/user transport, calling-app routing and hardware latency/jitter evidence are not yet claimed operational.**
+- **Physical-device hotplug/default-device recovery on controlled hardware, an OS-visible production virtual microphone, an actually mapped shared kernel/user transport, calling-app routing and hardware latency/jitter evidence are not yet claimed operational.**
 
-**Latest verified green implementation CI:** Ubuntu repository-integrity run `34528681411` and Windows Audio Validation run `34528681382` both passed on implementation head `93c166709e3fad6aecd924a0378316761a9e318f` — including the existing Windows audio/Rust protocol coverage plus an MSVC x64 compile-and-run validation of the C++ virtual-mic ABI mirror.
+**Latest verified green implementation CI:** Ubuntu repository-integrity run `34531204947` and Windows Audio Validation run `34531204951` both passed on implementation head `fafd5100d430d0880fe1dfe0671edf7537683fcf` — including the existing Rust/Windows audio coverage plus MSVC x64 compile-and-run validation of the C++ ABI, shared cursor synchronization and shared-region layout contracts. The cursor synchronization slice also passed Ubuntu run `34530771449` and Windows run `34530771628` on head `29df8cf88878f14ec319e249562f3d25aa2efe30`.
 
 ## README Reconciliation Rule — Mandatory
 
@@ -145,15 +147,17 @@ Implemented and CI-verified:
 - versioned C-compatible `VirtualMicProtocolHeader` / `VirtualMicCursorSnapshot` contract with magic/version/header-size validation, session generation, fixed audio geometry and monotonic ring cursors;
 - deterministic cyclic-ring slot planning with oldest-frame overrun normalization;
 - MSVC x64 C++ driver-facing ABI mirror in `native/windows-virtual-mic`, with 40-byte `ProtocolHeader` / `CursorSnapshot`, 8-byte alignment, exact static field offsets, matching validation and matching ring/session/cursor semantics;
-- Ubuntu repository-integrity run `34528681411` and Windows Audio Validation run `34528681382` on implementation head `93c166709e3fad6aecd924a0378316761a9e318f`, including the C++ ABI compile-and-run test under `/W4 /WX`.
+- aligned Windows `Interlocked*64` shared cursor publication with bounded stable snapshots, session-generation fencing, producer/consumer monotonicity checks and atomic overrun/underrun counters;
+- deterministic 64-byte-aligned shared-region planning for header/cursors/PCM ring with checked arithmetic; the 48 kHz mono F32 10 ms four-frame reference maps to 7,808 bytes total;
+- Ubuntu repository-integrity run `34531204947` and Windows Audio Validation run `34531204951` on implementation head `fafd5100d430d0880fe1dfe0671edf7537683fcf`, including MSVC `/W4 /WX` compile-and-run validation of ABI, cursor synchronization and region-layout behavior.
 
 Not yet verified and therefore **not claimed complete**:
 
 - confirmed `GetSharedModeEnginePeriod` values from a physical communications microphone on a controlled test machine when hosted CI exposes no capture endpoint;
 - actual unplug/replug, Bluetooth/headset disconnect and default-device recovery firing successfully on controlled Windows hardware;
 - sleep/wake and audio-service interruption recovery on representative hardware;
-- OS-visible Windows virtual microphone endpoint/driver and actual shared kernel/user-mode transport;
-- shared-memory synchronization/memory-ordering, IOCTL/device-interface, security ACL/mapping and WaveRT driver mechanics on a real WDK implementation;
+- OS-visible Windows virtual microphone endpoint/driver and actual mapped shared kernel/user-mode transport;
+- Windows section creation/mapping lifecycle, kernel-side synchronization integration, IOCTL/device-interface, security ACL/security-descriptor and WaveRT driver mechanics on a real WDK implementation;
 - processed/bypass audio reaching Zoom/Teams/Meet/dialers/browser apps through that real endpoint;
 - CPU/callback deadline, discontinuity, end-to-end latency and jitter evidence under controlled hardware load;
 - driver signing/install/update/uninstall/rollback and supported-Windows compatibility evidence.
