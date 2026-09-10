@@ -45,11 +45,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="vsn_virtual_mic_control.cpp" />
+    <ClCompile Include="vsn_virtual_mic_ring_contract.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\vsn_virtual_mic_protocol.h" />
     <ClInclude Include="..\include\vsn_virtual_mic_cursor_sync.h" />
+    <ClInclude Include="..\include\vsn_virtual_mic_slot_sync.h" />
     <ClInclude Include="..\include\vsn_virtual_mic_region_layout.h" />
+    <ClInclude Include="..\include\vsn_virtual_mic_ring_consumer.h" />
     <ClInclude Include="..\include\vsn_virtual_mic_device_control.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
