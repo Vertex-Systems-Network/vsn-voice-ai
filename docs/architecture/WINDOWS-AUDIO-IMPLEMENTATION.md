@@ -116,18 +116,31 @@ The repository contains a CI-verified user-mode staging/output contract before t
 
 ### Driver-facing protocol contract
 
-The repository also contains a CI-verified, versioned driver-facing metadata/ring contract in `virtual_mic_protocol`:
+The Rust implementation contains a CI-verified, versioned driver-facing metadata/ring contract in `virtual_mic_protocol`:
 
-- `VirtualMicProtocolHeader` and `VirtualMicCursorSnapshot` use `#[repr(C)]` so their field layout is intentionally compatible with a future native C/C++ binding boundary;
-- the header carries a protocol magic/version, header size, non-zero session generation, sample rate, channels, sample format, frame duration, ring capacity and samples per frame;
+- `VirtualMicProtocolHeader` and `VirtualMicCursorSnapshot` use `#[repr(C)]` for a stable native binding boundary on the verified Windows x64 target;
+- the header carries protocol magic/version, header size, non-zero session generation, sample rate, channels, sample format, frame duration, ring capacity and samples per frame;
 - protocol validation rejects incompatible magic/version/header size, invalid audio geometry, unsupported sample format, stale session generation and non-zero reserved fields;
 - producer and consumer sequences are monotonic within a session generation;
 - `plan_ring_window` maps those sequences to deterministic cyclic-buffer slots;
 - if producer distance exceeds ring capacity, the plan advances the logical consumer boundary and discards the oldest frames rather than allowing unbounded latency.
 
-This contract defines the intended handoff semantics only. It does **not** implement or prove shared-memory atomics, memory ordering, synchronization primitives, IOCTL/device interfaces, security descriptors/ACLs, section mapping, IRQL/DPC behavior, WaveRT position registers, kernel buffering, endpoint topology or an installed Windows audio driver. Those details must be implemented and verified in the actual C++/WDK driver boundary.
+### C++ / future WDK ABI binding
 
-The staging/output boundary plus this protocol contract do not create an OS-visible microphone or calling-application route.
+`native/windows-virtual-mic/include/vsn_virtual_mic_protocol.h` now mirrors the Rust contract for the future driver boundary and is compiled/executed with MSVC x64 in Windows CI.
+
+The C++ binding currently verifies:
+
+- protocol magic is the little-endian byte sequence `VSNM`;
+- `ProtocolHeader` is exactly 40 bytes, 8-byte aligned, with every field offset locked by `static_assert`;
+- `CursorSnapshot` is exactly 40 bytes, 8-byte aligned, with every field offset locked by `static_assert`;
+- C++ validation mirrors protocol version, header size, session generation, audio geometry, sample-format, frame-size and reserved-field constraints;
+- C++ cyclic ring planning mirrors Rust producer/consumer, wrap, stale-generation, reversed-cursor and oldest-frame overrun behavior;
+- the Windows workflow locates the installed MSVC x64 toolchain, compiles the ABI test under `/W4 /WX`, and executes it.
+
+This is an actual native ABI binding, but it is still **not** a WDK audio endpoint or shared kernel/user transport implementation. It does not yet provide shared-memory atomics, memory-ordering primitives, IOCTL/device interfaces, security descriptors/ACLs, section mapping, IRQL/DPC behavior, WaveRT position registers, kernel buffering, endpoint topology, INF packaging or an installed Windows audio driver.
+
+The staging/output boundary plus the Rust/C++ protocol contract do not create an OS-visible microphone or calling-application route.
 
 ## Driver security and release requirements
 
@@ -165,9 +178,10 @@ Before production release:
 - versioned C-compatible virtual-mic protocol header and cursor contract;
 - session-generation and fixed-audio-geometry validation;
 - deterministic cyclic ring-slot planning and oldest-frame overrun normalization;
-- Ubuntu repository-integrity checks plus Windows-native compile, Clippy and unit/smoke tests.
+- MSVC x64 C++ ABI mirror with locked structure sizes/alignment/field offsets and matching semantic validation;
+- Ubuntu repository-integrity checks plus Windows-native Rust compile/Clippy/tests and C++ ABI compile/run tests.
 
-The latest exact implementation head for this boundary is `aa0792b81746a11d99b3b3451c3086e363714ee8`, which passed Ubuntu repository-integrity run `34525486454` and Windows Audio Validation run `34525486333`. The preceding staging/output bridge boundary passed Ubuntu run `34522943083` and Windows run `34522943093`.
+The latest exact implementation head for this boundary is `93c166709e3fad6aecd924a0378316761a9e318f`, which passed Ubuntu repository-integrity run `34528681411` and Windows Audio Validation run `34528681382`. The preceding Rust protocol implementation head `aa0792b81746a11d99b3b3451c3086e363714ee8` passed Ubuntu run `34525486454` and Windows run `34525486333`.
 
 ### Controlled Windows hardware verification still required
 
@@ -182,7 +196,8 @@ The latest exact implementation head for this boundary is `aa0792b81746a11d99b3b
 
 ### Driver/test-machine verification still required
 
-- C++/WDK transport binding implements the protocol with correct synchronization and security boundaries;
+- WDK WaveRT endpoint implementation;
+- actual shared kernel/user transport with correct synchronization, memory ordering and ACL boundaries;
 - virtual endpoint appears as a microphone to target calling applications;
 - processed and bypass audio both reach the endpoint through the actual driver transport;
 - Zoom/Teams/Meet/dialer/browser compatibility;
@@ -193,6 +208,6 @@ The latest exact implementation head for this boundary is `aa0792b81746a11d99b3b
 
 ## Current implementation boundary
 
-WU-002 has code-level and hosted-CI evidence for the Windows event-driven WASAPI capture path, packet decoding/reframing, bounded runtime recovery, MMDevice notification registration and notification-to-recovery bridging. It also has CI evidence for a bounded user-mode virtual-microphone staging/output layer and a versioned C-compatible ring/cursor protocol contract for the planned driver handoff. Hosted Windows CI executes the native compilation/tests and registration/unregistration smoke coverage, while Ubuntu CI verifies the wider repository integrity and platform-neutral logic.
+WU-002 has code-level and hosted-CI evidence for the Windows event-driven WASAPI capture path, packet decoding/reframing, bounded runtime recovery, MMDevice notification registration and notification-to-recovery bridging. It also has CI evidence for a bounded user-mode virtual-microphone staging/output layer, a versioned Rust ring/cursor protocol contract, and an MSVC-verified C++ ABI mirror for the future driver handoff. Hosted Windows CI executes the native Rust compilation/tests, registration/unregistration smoke coverage and the C++ ABI executable; Ubuntu CI verifies the wider repository integrity and platform-neutral logic.
 
 This evidence does **not** yet prove physical-device hotplug/default-device recovery on controlled Windows hardware, an OS-visible production virtual microphone, actual shared kernel/user transport, calling-application compatibility, hardware latency/jitter targets, or signed driver lifecycle behavior. Those remain required before MOD-002 / WU-002 can be treated as complete.
