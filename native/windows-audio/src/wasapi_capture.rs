@@ -243,6 +243,7 @@ mod platform {
 #[cfg(windows)]
 mod platform {
     use std::ffi::c_void;
+    use std::ptr::addr_of;
     use std::ptr::{NonNull, null_mut, read_unaligned};
     use std::slice;
 
@@ -558,10 +559,12 @@ mod platform {
         let extensible = if wave.wFormatTag == WAVE_FORMAT_EXTENSIBLE_TAG
             && wave.cbSize >= crate::wave_format::WAVE_FORMAT_EXTENSIBLE_EXTRA_BYTES
         {
-            let format = unsafe { read_unaligned(mix_format.cast::<WAVEFORMATEXTENSIBLE>()) };
+            let format_ptr = mix_format.cast::<WAVEFORMATEXTENSIBLE>();
+            let samples = unsafe { read_unaligned(addr_of!((*format_ptr).Samples)) };
+            let sub_format = unsafe { read_unaligned(addr_of!((*format_ptr).SubFormat)) };
             Some(ExtensibleWaveFormat {
-                valid_bits_per_sample: unsafe { format.Samples.wValidBitsPerSample },
-                sub_format_guid: format.SubFormat.to_u128(),
+                valid_bits_per_sample: unsafe { samples.wValidBitsPerSample },
+                sub_format_guid: sub_format.to_u128(),
             })
         } else {
             None
