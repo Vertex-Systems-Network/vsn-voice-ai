@@ -1,0 +1,55 @@
+name: Windows Audio Validation
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "native/audio-core/**"
+      - "native/windows-audio/**"
+      - ".github/workflows/windows-audio.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "native/audio-core/**"
+      - "native/windows-audio/**"
+      - ".github/workflows/windows-audio.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-audio-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-audio:
+    name: windows-audio
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install pinned Rust toolchain
+        shell: pwsh
+        run: rustup toolchain install 1.98.1 --profile minimal --component clippy --component rustfmt
+
+      - name: Compile Windows audio crate
+        shell: pwsh
+        run: cargo +1.98.1 check -p vsn-windows-audio --all-targets
+
+      - name: Lint Windows audio crate
+        shell: pwsh
+        run: cargo +1.98.1 clippy -p vsn-windows-audio --all-targets -- -D warnings
+
+      - name: Test Windows audio crate
+        shell: pwsh
+        run: cargo +1.98.1 test -p vsn-windows-audio
