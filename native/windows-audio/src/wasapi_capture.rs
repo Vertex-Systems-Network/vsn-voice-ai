@@ -267,7 +267,9 @@ mod platform {
         SampleDecoder, SharedCapturePlan, WasapiCaptureError,
     };
     use crate::engine_period::EnginePeriodRange;
-    use crate::wave_format::{WAVE_FORMAT_EXTENSIBLE_TAG, ExtensibleWaveFormat, WaveFormatDescriptor};
+    use crate::wave_format::{
+        ExtensibleWaveFormat, WAVE_FORMAT_EXTENSIBLE_TAG, WaveFormatDescriptor,
+    };
 
     struct ComApartment;
 
