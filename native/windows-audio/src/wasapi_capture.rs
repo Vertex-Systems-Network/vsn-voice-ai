@@ -136,6 +136,9 @@ impl Drop for EventCaptureSession {
 pub enum WasapiCaptureError {
     UnsupportedPlatform,
     SessionNotStarted,
+    DeviceInvalidated,
+    ResourcesInvalidated,
+    AudioServiceNotRunning,
     InvalidMixFormat(&'static str),
     BlockAlignMismatch { declared: u16, expected: usize },
     PacketSizeOverflow { frames: u32, block_align: u16 },
@@ -152,6 +155,9 @@ impl Display for WasapiCaptureError {
         match self {
             Self::UnsupportedPlatform => f.write_str("WASAPI capture requires Windows"),
             Self::SessionNotStarted => f.write_str("WASAPI capture session must be started"),
+            Self::DeviceInvalidated => f.write_str("WASAPI capture endpoint was invalidated"),
+            Self::ResourcesInvalidated => f.write_str("WASAPI capture stream resources were invalidated"),
+            Self::AudioServiceNotRunning => f.write_str("Windows audio service is not running"),
             Self::InvalidMixFormat(message) => write!(f, "invalid WASAPI mix format: {message}"),
             Self::BlockAlignMismatch { declared, expected } => write!(
                 f,
@@ -253,8 +259,10 @@ mod platform {
         WAIT_TIMEOUT,
     };
     use windows::Win32::Media::Audio::{
-        AUDCLNT_STREAMFLAGS_EVENTCALLBACK, IAudioCaptureClient, IAudioClient3, IMMDeviceEnumerator,
-        MMDeviceEnumerator, WAVEFORMATEX, WAVEFORMATEXTENSIBLE, eCapture, eCommunications,
+        AUDCLNT_E_DEVICE_INVALIDATED, AUDCLNT_E_RESOURCES_INVALIDATED,
+        AUDCLNT_E_SERVICE_NOT_RUNNING, AUDCLNT_STREAMFLAGS_EVENTCALLBACK, IAudioCaptureClient,
+        IAudioClient3, IMMDeviceEnumerator, MMDeviceEnumerator, WAVEFORMATEX, WAVEFORMATEXTENSIBLE,
+        eCapture, eCommunications,
     };
     use windows::Win32::System::Com::{
         CLSCTX_ALL, COINIT_APARTMENTTHREADED, CoCreateInstance, CoInitializeEx, CoTaskMemFree,
@@ -590,7 +598,17 @@ mod platform {
         text
     }
 
-    fn backend_error(error: windows::core::Error) -> WasapiCaptureError {
+    pub(super) fn backend_error(error: windows::core::Error) -> WasapiCaptureError {
+        let code = error.code();
+        if code == AUDCLNT_E_DEVICE_INVALIDATED {
+            return WasapiCaptureError::DeviceInvalidated;
+        }
+        if code == AUDCLNT_E_RESOURCES_INVALIDATED {
+            return WasapiCaptureError::ResourcesInvalidated;
+        }
+        if code == AUDCLNT_E_SERVICE_NOT_RUNNING {
+            return WasapiCaptureError::AudioServiceNotRunning;
+        }
         WasapiCaptureError::Backend(error.to_string())
     }
 }
@@ -621,6 +639,34 @@ mod tests {
             EventCaptureSession::open_default(10),
             Err(WasapiCaptureError::UnsupportedPlatform)
         ));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn maps_documented_wasapi_lifecycle_errors() {
+        use windows::Win32::Media::Audio::{
+            AUDCLNT_E_DEVICE_INVALIDATED, AUDCLNT_E_RESOURCES_INVALIDATED,
+            AUDCLNT_E_SERVICE_NOT_RUNNING,
+        };
+
+        assert_eq!(
+            platform::backend_error(windows::core::Error::from_hresult(
+                AUDCLNT_E_DEVICE_INVALIDATED
+            )),
+            WasapiCaptureError::DeviceInvalidated
+        );
+        assert_eq!(
+            platform::backend_error(windows::core::Error::from_hresult(
+                AUDCLNT_E_RESOURCES_INVALIDATED
+            )),
+            WasapiCaptureError::ResourcesInvalidated
+        );
+        assert_eq!(
+            platform::backend_error(windows::core::Error::from_hresult(
+                AUDCLNT_E_SERVICE_NOT_RUNNING
+            )),
+            WasapiCaptureError::AudioServiceNotRunning
+        );
     }
 
     #[cfg(windows)]
