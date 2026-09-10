@@ -1,5 +1,6 @@
 pub mod capture_plan;
 pub mod engine_period;
+pub mod wasapi_capture;
 
 use std::error::Error;
 use std::fmt::{Display, Formatter};
