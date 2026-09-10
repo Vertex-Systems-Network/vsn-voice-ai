@@ -46,7 +46,9 @@ pub enum SampleDecodeError {
 impl Display for SampleDecodeError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::ChannelCountZero => f.write_str("native sample decoder channel count must be non-zero"),
+            Self::ChannelCountZero => {
+                f.write_str("native sample decoder channel count must be non-zero")
+            }
             Self::UnsupportedPcmContainerBits(bits) => {
                 write!(f, "unsupported PCM container width: {bits} bits")
             }
@@ -83,10 +85,7 @@ pub struct SampleDecoder {
 }
 
 impl SampleDecoder {
-    pub fn new(
-        encoding: NativeSampleEncoding,
-        channels: u16,
-    ) -> Result<Self, SampleDecodeError> {
+    pub fn new(encoding: NativeSampleEncoding, channels: u16) -> Result<Self, SampleDecodeError> {
         if channels == 0 {
             return Err(SampleDecodeError::ChannelCountZero);
         }
@@ -116,7 +115,7 @@ impl SampleDecoder {
     }
 
     pub fn decode_interleaved(self, bytes: &[u8]) -> Result<Vec<f32>, SampleDecodeError> {
-        if bytes.len() % self.frame_bytes != 0 {
+        if !bytes.len().is_multiple_of(self.frame_bytes) {
             return Err(SampleDecodeError::MisalignedInput {
                 frame_bytes: self.frame_bytes,
                 actual_bytes: bytes.len(),
@@ -141,7 +140,9 @@ impl SampleDecoder {
 
 fn validate_pcm_bits(container_bits: u16, valid_bits: u16) -> Result<(), SampleDecodeError> {
     if !matches!(container_bits, 16 | 24 | 32) {
-        return Err(SampleDecodeError::UnsupportedPcmContainerBits(container_bits));
+        return Err(SampleDecodeError::UnsupportedPcmContainerBits(
+            container_bits,
+        ));
     }
     if valid_bits == 0 || valid_bits > container_bits {
         return Err(SampleDecodeError::InvalidValidBits {
@@ -164,7 +165,8 @@ fn decode_pcm(bytes: &[u8], container_bits: u16, valid_bits: u16) -> f32 {
     let container_value = match container_bits {
         16 => i32::from(i16::from_le_bytes([bytes[0], bytes[1]])),
         24 => {
-            let raw = u32::from(bytes[0]) | (u32::from(bytes[1]) << 8) | (u32::from(bytes[2]) << 16);
+            let raw =
+                u32::from(bytes[0]) | (u32::from(bytes[1]) << 8) | (u32::from(bytes[2]) << 16);
             if raw & 0x0080_0000 != 0 {
                 (raw | 0xff00_0000) as i32
             } else {
@@ -246,7 +248,9 @@ mod tests {
         for value in [0.25f32, -0.5, 1.0, 0.0] {
             bytes.extend_from_slice(&value.to_le_bytes());
         }
-        let samples = decoder.decode_interleaved(&bytes).expect("valid float audio");
+        let samples = decoder
+            .decode_interleaved(&bytes)
+            .expect("valid float audio");
 
         assert_eq!(samples, vec![0.25, -0.5, 1.0, 0.0]);
         assert_eq!(decoder.frame_bytes(), 8);
