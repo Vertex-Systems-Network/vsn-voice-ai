@@ -6,6 +6,7 @@ pub mod engine_period;
 pub mod frame_assembler;
 pub mod packet_reframer;
 pub mod sample_decode;
+pub mod virtual_mic_output;
 pub mod virtual_mic_transport;
 pub mod wasapi_capture;
 pub mod wave_format;
