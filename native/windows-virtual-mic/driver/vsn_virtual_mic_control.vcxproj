@@ -51,6 +51,8 @@
     <ClCompile Include="vsn_virtual_mic_control.cpp" />
     <ClCompile Include="vsn_virtual_mic_ring_contract.cpp" />
     <ClCompile Include="vsn_virtual_mic_wavert_scaffold.cpp" />
+    <ClCompile Include="vsn_virtual_mic_portcls_lifecycle.cpp" />
+    <ClCompile Include="vsn_virtual_mic_wavert_stream_contract.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\vsn_virtual_mic_protocol.h" />
@@ -60,6 +62,7 @@
     <ClInclude Include="..\include\vsn_virtual_mic_ring_consumer.h" />
     <ClInclude Include="..\include\vsn_virtual_mic_device_control.h" />
     <ClInclude Include="..\include\vsn_virtual_mic_wavert_contract.h" />
+    <ClInclude Include="..\include\vsn_virtual_mic_wavert_stream_contract.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>
