@@ -166,6 +166,7 @@ mod platform {
     use std::thread::{self, JoinHandle};
 
     use vsn_audio_core::device::{DeviceFlow, DeviceRole, DeviceState};
+    use windows::Win32::Foundation::PROPERTYKEY;
     use windows::Win32::Media::Audio::{
         DEVICE_STATE, DEVICE_STATE_ACTIVE, DEVICE_STATE_DISABLED, DEVICE_STATE_NOTPRESENT,
         DEVICE_STATE_UNPLUGGED, EDataFlow, ERole, IMMDeviceEnumerator, IMMNotificationClient,
@@ -175,7 +176,6 @@ mod platform {
     use windows::Win32::System::Com::{
         CLSCTX_ALL, COINIT_MULTITHREADED, CoCreateInstance, CoInitializeEx, CoUninitialize,
     };
-    use windows::Win32::UI::Shell::PropertiesSystem::PROPERTYKEY;
     use windows::core::PCWSTR;
 
     use super::{EndpointNotification, EndpointNotificationError, NotificationPublisher};
