@@ -1,5 +1,4 @@
 #include "vsn_virtual_mic_device_control.h"
-#include "vsn_virtual_mic_shared_section.h"
 
 #include <cstdio>
 #include <stdint.h>
@@ -7,18 +6,19 @@
 namespace {
 
 using vsn::virtual_mic::ConnectRequest;
+using vsn::virtual_mic::ConnectResponse;
 using vsn::virtual_mic::DeviceControlContractStatus;
 using vsn::virtual_mic::DeviceControlStatus;
 using vsn::virtual_mic::DisconnectRequest;
 using vsn::virtual_mic::MakeConnectRequest;
+using vsn::virtual_mic::MakeConnectResponse;
 using vsn::virtual_mic::MakeDisconnectRequest;
 using vsn::virtual_mic::MakeQueryStatusRequest;
 using vsn::virtual_mic::ProtocolHeader;
 using vsn::virtual_mic::QueryStatusRequest;
-using vsn::virtual_mic::SharedSection;
-using vsn::virtual_mic::SharedSectionStatus;
 using vsn::virtual_mic::StatusResponse;
 using vsn::virtual_mic::ValidateConnectRequest;
+using vsn::virtual_mic::ValidateConnectResponse;
 using vsn::virtual_mic::ValidateDisconnectRequest;
 using vsn::virtual_mic::ValidateQueryStatusRequest;
 using vsn::virtual_mic::ValidateStatusResponse;
@@ -78,7 +78,9 @@ uint32_t IoctlDeviceType(DWORD code) {
 } // namespace
 
 int main() {
-    if (Require(sizeof(ConnectRequest) == 48u, "connect request size mismatch") ||
+    if (Require(kDeviceControlVersion == 2u, "device-control version did not advance") ||
+        Require(sizeof(ConnectRequest) == 56u, "connect request size mismatch") ||
+        Require(sizeof(ConnectResponse) == 48u, "connect response size mismatch") ||
         Require(sizeof(DisconnectRequest) == 24u, "disconnect request size mismatch") ||
         Require(sizeof(QueryStatusRequest) == 16u, "query-status request size mismatch") ||
         Require(sizeof(StatusResponse) == 40u, "status response size mismatch")) {
@@ -99,19 +101,10 @@ int main() {
         return 1;
     }
 
-    SharedSection section;
-    if (Require(
-            SharedSection::Create(ReferenceHeader(), &section) == SharedSectionStatus::kOk,
-            "reference shared section creation failed")) {
-        return 1;
-    }
-
-    const uint64_t handle_value = static_cast<uint64_t>(reinterpret_cast<uintptr_t>(section.handle()));
-    ConnectRequest connect = MakeConnectRequest(
-        ReferenceHeader().session_generation,
-        handle_value,
-        section.layout().total_bytes);
-    if (Require(ValidateConnectRequest(connect) == DeviceControlContractStatus::kOk, "valid connect request rejected")) {
+    const ProtocolHeader protocol = ReferenceHeader();
+    ConnectRequest connect = MakeConnectRequest(protocol);
+    if (Require(ValidateConnectRequest(connect) == DeviceControlContractStatus::kOk, "valid connect request rejected") ||
+        Require(connect.protocol.session_generation == 31u, "connect protocol generation mismatch")) {
         return 1;
     }
 
@@ -121,8 +114,8 @@ int main() {
         return 1;
     }
     bad_connect = connect;
-    ++bad_connect.version;
-    if (Require(ValidateConnectRequest(bad_connect) == DeviceControlContractStatus::kVersionMismatch, "bad control version accepted")) {
+    --bad_connect.version;
+    if (Require(ValidateConnectRequest(bad_connect) == DeviceControlContractStatus::kVersionMismatch, "legacy control version accepted")) {
         return 1;
     }
     bad_connect = connect;
@@ -131,28 +124,13 @@ int main() {
         return 1;
     }
     bad_connect = connect;
-    bad_connect.session_generation = 0u;
-    if (Require(ValidateConnectRequest(bad_connect) == DeviceControlContractStatus::kInvalidSessionGeneration, "zero generation accepted")) {
+    bad_connect.protocol.session_generation = 0u;
+    if (Require(ValidateConnectRequest(bad_connect) == DeviceControlContractStatus::kProtocolHeaderInvalid, "zero protocol generation accepted")) {
         return 1;
     }
     bad_connect = connect;
-    bad_connect.section_handle_value = 0u;
-    if (Require(ValidateConnectRequest(bad_connect) == DeviceControlContractStatus::kInvalidSectionHandle, "null section handle accepted")) {
-        return 1;
-    }
-    bad_connect = connect;
-    bad_connect.section_bytes = kDeviceControlMaxSectionBytes + 1u;
-    if (Require(ValidateConnectRequest(bad_connect) == DeviceControlContractStatus::kInvalidSectionSize, "oversized section accepted")) {
-        return 1;
-    }
-    bad_connect = connect;
-    bad_connect.expected_protocol_magic = 0u;
-    if (Require(ValidateConnectRequest(bad_connect) == DeviceControlContractStatus::kProtocolMagicMismatch, "bad protocol magic accepted")) {
-        return 1;
-    }
-    bad_connect = connect;
-    ++bad_connect.expected_protocol_version;
-    if (Require(ValidateConnectRequest(bad_connect) == DeviceControlContractStatus::kProtocolVersionMismatch, "bad protocol version accepted")) {
+    bad_connect.protocol.magic = 0u;
+    if (Require(ValidateConnectRequest(bad_connect) == DeviceControlContractStatus::kProtocolHeaderInvalid, "bad transport protocol accepted")) {
         return 1;
     }
     bad_connect = connect;
@@ -163,6 +141,43 @@ int main() {
     bad_connect = connect;
     bad_connect.reserved = 1u;
     if (Require(ValidateConnectRequest(bad_connect) == DeviceControlContractStatus::kReservedFieldNonZero, "non-zero connect reserved field accepted")) {
+        return 1;
+    }
+
+    // The user no longer supplies a section handle. A successful CONNECT response
+    // is the first place where a user-visible section handle can appear, after the
+    // future kernel driver has created and retained the section object itself.
+    ConnectResponse ready = MakeConnectResponse(
+        protocol.session_generation,
+        0x1234u,
+        7'808u,
+        DeviceControlStatus::kReady);
+    if (Require(ValidateConnectResponse(ready) == DeviceControlContractStatus::kOk, "valid ready connect response rejected")) {
+        return 1;
+    }
+
+    ConnectResponse bad_response = ready;
+    bad_response.section_handle_value = 0u;
+    if (Require(ValidateConnectResponse(bad_response) == DeviceControlContractStatus::kInvalidSectionHandle, "ready response without handle accepted")) {
+        return 1;
+    }
+    bad_response = ready;
+    bad_response.section_bytes = kDeviceControlMaxSectionBytes + 1u;
+    if (Require(ValidateConnectResponse(bad_response) == DeviceControlContractStatus::kInvalidSectionSize, "oversized driver section accepted")) {
+        return 1;
+    }
+
+    ConnectResponse faulted = MakeConnectResponse(
+        protocol.session_generation,
+        0u,
+        0u,
+        DeviceControlStatus::kFaulted,
+        ERROR_GEN_FAILURE);
+    if (Require(ValidateConnectResponse(faulted) == DeviceControlContractStatus::kOk, "valid faulted connect response rejected")) {
+        return 1;
+    }
+    faulted.section_handle_value = 0x1234u;
+    if (Require(ValidateConnectResponse(faulted) == DeviceControlContractStatus::kUnexpectedSectionMetadata, "faulted response leaked section metadata")) {
         return 1;
     }
 
@@ -186,7 +201,7 @@ int main() {
         return 1;
     }
 
-    const StatusResponse ready{
+    const StatusResponse status_ready{
         kDeviceControlMagic,
         kDeviceControlVersion,
         static_cast<uint16_t>(sizeof(StatusResponse)),
@@ -196,21 +211,21 @@ int main() {
         9u,
         7u,
     };
-    if (Require(ValidateStatusResponse(ready) == DeviceControlContractStatus::kOk, "valid status response rejected")) {
+    if (Require(ValidateStatusResponse(status_ready) == DeviceControlContractStatus::kOk, "valid status response rejected")) {
         return 1;
     }
 
-    StatusResponse bad_status = ready;
+    StatusResponse bad_status = status_ready;
     bad_status.status = static_cast<uint32_t>(DeviceControlStatus::kFaulted) + 1u;
     if (Require(ValidateStatusResponse(bad_status) == DeviceControlContractStatus::kInvalidRuntimeStatus, "unknown runtime status accepted")) {
         return 1;
     }
-    bad_status = ready;
+    bad_status = status_ready;
     bad_status.consumer_sequence = 10u;
     if (Require(ValidateStatusResponse(bad_status) == DeviceControlContractStatus::kCursorOrderInvalid, "reversed status cursors accepted")) {
         return 1;
     }
 
-    std::puts("VSN virtual microphone device-control ABI validation passed.");
+    std::puts("VSN virtual microphone secure device-control ABI validation passed.");
     return 0;
 }
