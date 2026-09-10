@@ -103,6 +103,19 @@ Physical microphone
     -> Zoom / Teams / Meet / dialers / browser apps
 ```
 
+### Current user-mode staging boundary
+
+The repository now contains a CI-verified user-mode staging/output contract before the future driver boundary:
+
+- `VirtualMicStagingBuffer` accepts one fixed `AudioFormat` and uses a bounded frame queue;
+- overflow drops the oldest queued frame rather than allowing latency to grow without bound;
+- underrun produces a fresh silence frame with a caller-supplied sequence/timestamp rather than replaying stale speech;
+- accepted-frame, overflow-drop and underrun counters are explicit;
+- format mismatches are rejected;
+- `VirtualMicOutputBridge` sends both successfully processed `AudioPipeline` output and the original safe-bypass frame produced after an optional processing-stage failure into the same staging path.
+
+This is a user-mode contract only. It does not create an OS-visible microphone, kernel transport, WaveRT cyclic buffer, signed driver package or calling-application route.
+
 Kernel/user-mode transport, driver packaging and endpoint topology will be documented separately before driver code is treated as release-capable.
 
 ## Driver security and release requirements
@@ -136,9 +149,11 @@ Before production release:
 - `IMMNotificationClient` registration/unregistration on a dedicated Windows MTA thread;
 - bounded non-blocking MMDevice notification queue with drop accounting;
 - owner-thread notification-to-recovery filtering/deduplication;
+- fixed-format bounded user-mode virtual-mic staging with oldest-drop overflow behavior and fresh-silence underrun behavior;
+- processed-frame and safe-bypass-frame routing through the same user-mode virtual-mic staging boundary;
 - Ubuntu repository-integrity checks plus Windows-native compile, Clippy and unit/smoke tests.
 
-Latest verified notification/recovery boundary passed Ubuntu repository-integrity run `34509104650` and Windows Audio Validation run `34509104681` on implementation head `c5d2984d587a344b36ae1ae753af8e26500b7e78`.
+The latest exact implementation head for this boundary is `6d5d0b9ac29db97d0c475dbdde6827187989c38f`, which passed Ubuntu repository-integrity run `34522943083` and Windows Audio Validation run `34522943093`. The underlying staging-only boundary also passed Ubuntu run `34522446261` and Windows run `34522445865`.
 
 ### Controlled Windows hardware verification still required
 
@@ -154,7 +169,7 @@ Latest verified notification/recovery boundary passed Ubuntu repository-integrit
 ### Driver/test-machine verification still required
 
 - virtual endpoint appears as a microphone to target calling applications;
-- processed and bypass audio both reach the endpoint;
+- processed and bypass audio both reach the endpoint through the actual driver transport;
 - Zoom/Teams/Meet/dialer/browser compatibility;
 - install/update/uninstall/rollback;
 - sleep/wake and reboot persistence;
@@ -163,6 +178,6 @@ Latest verified notification/recovery boundary passed Ubuntu repository-integrit
 
 ## Current implementation boundary
 
-WU-002 now has code-level and hosted-CI evidence for the Windows event-driven WASAPI capture path, packet decoding/reframing, bounded runtime recovery, MMDevice notification registration and notification-to-recovery bridging. Hosted Windows CI also executes registration/unregistration smoke coverage, while Ubuntu CI verifies the wider repository integrity and platform-neutral logic.
+WU-002 has code-level and hosted-CI evidence for the Windows event-driven WASAPI capture path, packet decoding/reframing, bounded runtime recovery, MMDevice notification registration and notification-to-recovery bridging. It now also has CI evidence for a bounded user-mode virtual-microphone staging layer and for routing both processed output and safe-bypass originals through that same staging path. Hosted Windows CI executes the native compilation/tests and registration/unregistration smoke coverage, while Ubuntu CI verifies the wider repository integrity and platform-neutral logic.
 
-This evidence does **not** yet prove physical-device hotplug/default-device recovery on controlled Windows hardware, production virtual microphone routing, calling-application compatibility, hardware latency/jitter targets, or signed driver lifecycle behavior. Those remain required before MOD-002 / WU-002 can be treated as complete.
+This evidence does **not** yet prove physical-device hotplug/default-device recovery on controlled Windows hardware, an OS-visible production virtual microphone, the kernel/user-mode driver transport, calling-application compatibility, hardware latency/jitter targets, or signed driver lifecycle behavior. Those remain required before MOD-002 / WU-002 can be treated as complete.
