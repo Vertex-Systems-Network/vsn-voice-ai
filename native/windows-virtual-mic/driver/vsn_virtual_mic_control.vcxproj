@@ -10,6 +10,7 @@
     <ProjectGuid>{04C7B54D-2B15-4DB9-8C64-1A246C1BC31C}</ProjectGuid>
     <RootNamespace>VsnVirtualMicControl</RootNamespace>
     <KMDF_VERSION_MAJOR>1</KMDF_VERSION_MAJOR>
+    <KMDF_VERSION_MINOR>21</KMDF_VERSION_MINOR>
     <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
     <Platform Condition="'$(Platform)' == ''">x64</Platform>
   </PropertyGroup>
