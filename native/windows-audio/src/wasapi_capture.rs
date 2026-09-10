@@ -211,7 +211,7 @@ mod platform {
 
     use vsn_audio_core::AudioFormat;
     use windows::Win32::Foundation::{
-        CloseHandle, ERROR_NOT_FOUND, HANDLE, WAIT_FAILED, WAIT_OBJECT_0, WAIT_TIMEOUT,
+        CloseHandle, ERROR_NOT_FOUND, GetLastError, HANDLE, WAIT_FAILED, WAIT_OBJECT_0, WAIT_TIMEOUT,
     };
     use windows::Win32::Media::Audio::{
         AUDCLNT_STREAMFLAGS_EVENTCALLBACK, IAudioCaptureClient, IAudioClient3, IMMDeviceEnumerator,
@@ -287,7 +287,11 @@ mod platform {
                 return Ok(false);
             }
             if result == WAIT_FAILED {
-                return Err(backend_error(windows::core::Error::from_win32()));
+                let error = unsafe { GetLastError() };
+                return Err(WasapiCaptureError::Backend(format!(
+                    "WaitForSingleObject failed with Win32 error {}",
+                    error.0
+                )));
             }
             Err(WasapiCaptureError::Backend(format!(
                 "unexpected WaitForSingleObject result: {}",
