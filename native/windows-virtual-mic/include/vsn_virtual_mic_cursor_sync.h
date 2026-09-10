@@ -6,10 +6,14 @@
 #error "VSN virtual microphone cursor synchronization is Windows-only"
 #endif
 
+#if defined(_NTDDK_) || defined(_WDMDDK_) || defined(_NTIFS_)
+// Kernel-mode callers include WDF/NT headers before this shared helper.
+#else
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <Windows.h>
+#endif
 
 #include <stdint.h>
 

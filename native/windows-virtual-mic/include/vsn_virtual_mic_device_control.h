@@ -6,6 +6,9 @@
 #error "VSN virtual microphone device-control ABI is Windows-only"
 #endif
 
+#if defined(_NTDDK_) || defined(_WDMDDK_) || defined(_NTIFS_)
+// Kernel-mode callers include WDF/NT headers before this shared ABI header.
+#else
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
@@ -14,6 +17,7 @@
 #endif
 #include <Windows.h>
 #include <winioctl.h>
+#endif
 
 #include <stddef.h>
 #include <stdint.h>
@@ -29,17 +33,17 @@ constexpr uint32_t kConnectFunction = 0x800u;
 constexpr uint32_t kDisconnectFunction = 0x801u;
 constexpr uint32_t kQueryStatusFunction = 0x802u;
 
-constexpr DWORD kIoctlVirtualMicConnect = CTL_CODE(
+constexpr uint32_t kIoctlVirtualMicConnect = CTL_CODE(
     FILE_DEVICE_UNKNOWN,
     kConnectFunction,
     METHOD_BUFFERED,
     FILE_READ_ACCESS | FILE_WRITE_ACCESS);
-constexpr DWORD kIoctlVirtualMicDisconnect = CTL_CODE(
+constexpr uint32_t kIoctlVirtualMicDisconnect = CTL_CODE(
     FILE_DEVICE_UNKNOWN,
     kDisconnectFunction,
     METHOD_BUFFERED,
     FILE_READ_ACCESS | FILE_WRITE_ACCESS);
-constexpr DWORD kIoctlVirtualMicQueryStatus = CTL_CODE(
+constexpr uint32_t kIoctlVirtualMicQueryStatus = CTL_CODE(
     FILE_DEVICE_UNKNOWN,
     kQueryStatusFunction,
     METHOD_BUFFERED,
@@ -306,7 +310,7 @@ constexpr ConnectResponse MakeConnectResponse(
     uint64_t section_handle_value,
     uint64_t section_bytes,
     DeviceControlStatus status,
-    uint32_t last_error = ERROR_SUCCESS) noexcept {
+    uint32_t last_error = 0u) noexcept {
     return ConnectResponse{
         kDeviceControlMagic,
         kDeviceControlVersion,
