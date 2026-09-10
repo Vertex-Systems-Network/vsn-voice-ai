@@ -5,21 +5,7 @@
 
 namespace {
 
-using vsn::virtual_mic::CursorSnapshot;
-using vsn::virtual_mic::CursorSyncStatus;
-using vsn::virtual_mic::InitializeCursorSession;
-using vsn::virtual_mic::PlanSharedRegionLayout;
-using vsn::virtual_mic::ProtocolHeader;
-using vsn::virtual_mic::PublishConsumerSequence;
-using vsn::virtual_mic::PublishProducerSequence;
-using vsn::virtual_mic::ReadStableCursorSnapshot;
-using vsn::virtual_mic::RecordOverrunDrop;
-using vsn::virtual_mic::RecordUnderrun;
-using vsn::virtual_mic::SharedRegionLayout;
-using vsn::virtual_mic::SharedRegionStatus;
-using vsn::virtual_mic::kProtocolMagic;
-using vsn::virtual_mic::kProtocolVersion;
-using vsn::virtual_mic::kSampleFormatF32Le;
+using namespace vsn::virtual_mic;
 
 int Require(bool condition, const char* message) {
     if (condition) {
@@ -78,8 +64,8 @@ int main() {
     }
 
     if (Require(
-            RecordOverrunDrop(&shared) == CursorSyncStatus::kOk,
-            "overrun counter update failed") ||
+            RecordOverrunDrops(&shared, 2u) == CursorSyncStatus::kOk,
+            "exact overrun counter update failed") ||
         Require(
             RecordUnderrun(&shared) == CursorSyncStatus::kOk,
             "underrun counter update failed")) {
@@ -91,7 +77,7 @@ int main() {
             "advanced stable snapshot rejected") ||
         Require(snapshot.producer_sequence == 3u, "producer snapshot mismatch") ||
         Require(snapshot.consumer_sequence == 2u, "consumer snapshot mismatch") ||
-        Require(snapshot.overrun_drops == 1u, "overrun snapshot mismatch") ||
+        Require(snapshot.overrun_drops == 2u, "overrun snapshot mismatch") ||
         Require(snapshot.underruns == 1u, "underrun snapshot mismatch")) {
         return 1;
     }
@@ -118,7 +104,11 @@ int main() {
         Require(
             PublishConsumerSequence(&shared, 12u, 3u) ==
                 CursorSyncStatus::kSessionGenerationMismatch,
-            "stale consumer generation was accepted")) {
+            "stale consumer generation was accepted") ||
+        Require(
+            PublishProducerSequence(&shared, 11u, kMaxFrameSequence + 2u) ==
+                CursorSyncStatus::kFrameSequenceOverflow,
+            "unencodable producer cursor was accepted")) {
         return 1;
     }
 
@@ -157,10 +147,13 @@ int main() {
         Require(layout.header_bytes == 40u, "header byte size mismatch") ||
         Require(layout.cursor_offset == 64u, "cursor offset mismatch") ||
         Require(layout.cursor_bytes == 40u, "cursor byte size mismatch") ||
-        Require(layout.audio_offset == 128u, "audio offset mismatch") ||
+        Require(layout.slot_stamps_offset == 128u, "slot-stamp offset mismatch") ||
+        Require(layout.slot_stamp_bytes == 8u, "slot-stamp byte size mismatch") ||
+        Require(layout.slot_stamps_bytes == 32u, "slot-stamp region size mismatch") ||
+        Require(layout.audio_offset == 192u, "audio offset mismatch") ||
         Require(layout.frame_bytes == 1'920u, "frame byte size mismatch") ||
         Require(layout.ring_bytes == 7'680u, "ring byte size mismatch") ||
-        Require(layout.total_bytes == 7'808u, "shared-region total byte size mismatch")) {
+        Require(layout.total_bytes == 7'872u, "shared-region total byte size mismatch")) {
         return 1;
     }
 
