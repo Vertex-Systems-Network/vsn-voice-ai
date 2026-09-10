@@ -1,4 +1,5 @@
 #include "vsn_virtual_mic_shared_section.h"
+#include "vsn_virtual_mic_slot_sync.h"
 
 #include <Aclapi.h>
 
@@ -7,21 +8,7 @@
 
 namespace {
 
-using vsn::virtual_mic::ContractStatus;
-using vsn::virtual_mic::CursorSnapshot;
-using vsn::virtual_mic::CursorSyncStatus;
-using vsn::virtual_mic::PlanSharedRegionLayout;
-using vsn::virtual_mic::ProtocolHeader;
-using vsn::virtual_mic::PublishProducerSequence;
-using vsn::virtual_mic::ReadStableCursorSnapshot;
-using vsn::virtual_mic::SharedRegionLayout;
-using vsn::virtual_mic::SharedRegionStatus;
-using vsn::virtual_mic::SharedSection;
-using vsn::virtual_mic::SharedSectionStatus;
-using vsn::virtual_mic::ValidateHeader;
-using vsn::virtual_mic::kProtocolMagic;
-using vsn::virtual_mic::kProtocolVersion;
-using vsn::virtual_mic::kSampleFormatF32Le;
+using namespace vsn::virtual_mic;
 
 int Require(bool condition, const char* message) {
     if (condition) {
@@ -202,6 +189,7 @@ int main() {
         Require(section.view() != nullptr, "created shared section view is null") ||
         Require(section.header() != nullptr, "mapped protocol header is null") ||
         Require(section.cursors() != nullptr, "mapped cursor block is null") ||
+        Require(section.slot_stamps() != nullptr, "mapped slot stamps are null") ||
         Require(section.audio_data() != nullptr, "mapped audio ring is null")) {
         return 1;
     }
@@ -210,7 +198,11 @@ int main() {
             ValidateHeader(*section.header()) == ContractStatus::kOk,
             "mapped protocol header is invalid") ||
         Require(section.header()->session_generation == 21u, "mapped generation mismatch") ||
-        Require(section.layout().total_bytes == 7'808u, "mapped total size mismatch")) {
+        Require(section.layout().slot_stamps_offset == 128u, "mapped slot stamp offset mismatch") ||
+        Require(section.layout().audio_offset == 192u, "mapped audio offset mismatch") ||
+        Require(section.layout().total_bytes == 7'872u, "mapped total size mismatch") ||
+        Require(AtomicLoad64(&section.slot_stamps()[0].value) == 0u,
+                "slot stamp did not zero-initialize")) {
         return 1;
     }
 
@@ -248,7 +240,16 @@ int main() {
         second_bytes + section.layout().header_offset);
     auto* second_cursors = reinterpret_cast<CursorSnapshot*>(
         second_bytes + section.layout().cursor_offset);
+    auto* second_stamps = reinterpret_cast<FrameSlotStamp*>(
+        second_bytes + section.layout().slot_stamps_offset);
     auto* second_audio = second_bytes + section.layout().audio_offset;
+
+    if (Require(
+            BeginSlotWrite(section.slot_stamps(), reference.capacity_frames, 0u) == SlotSyncStatus::kOk,
+            "slot did not enter writing state")) {
+        UnmapViewOfFile(second_view);
+        return 1;
+    }
 
     section.audio_data()[0] = 0x11u;
     section.audio_data()[1] = 0x22u;
@@ -256,19 +257,25 @@ int main() {
     section.audio_data()[3] = 0x44u;
 
     if (Require(
-            ValidateHeader(*second_header) == ContractStatus::kOk,
-            "second view protocol header is invalid") ||
-        Require(second_audio[0] == 0x11u, "shared audio byte 0 did not propagate") ||
-        Require(second_audio[1] == 0x22u, "shared audio byte 1 did not propagate") ||
-        Require(second_audio[2] == 0x33u, "shared audio byte 2 did not propagate") ||
-        Require(second_audio[3] == 0x44u, "shared audio byte 3 did not propagate")) {
+            CommitSlotWrite(section.slot_stamps(), reference.capacity_frames, 0u) == SlotSyncStatus::kOk,
+            "slot commit failed") ||
+        Require(
+            PublishProducerSequence(section.cursors(), 21u, 1u) == CursorSyncStatus::kOk,
+            "producer publication through first view failed")) {
         UnmapViewOfFile(second_view);
         return 1;
     }
 
     if (Require(
-            PublishProducerSequence(section.cursors(), 21u, 1u) == CursorSyncStatus::kOk,
-            "producer publication through first view failed") ||
+            ValidateHeader(*second_header) == ContractStatus::kOk,
+            "second view protocol header is invalid") ||
+        Require(second_audio[0] == 0x11u, "shared audio byte 0 did not propagate") ||
+        Require(second_audio[1] == 0x22u, "shared audio byte 1 did not propagate") ||
+        Require(second_audio[2] == 0x33u, "shared audio byte 2 did not propagate") ||
+        Require(second_audio[3] == 0x44u, "shared audio byte 3 did not propagate") ||
+        Require(
+            AtomicLoad64(&second_stamps[0].value) == EncodeStableSlotStamp(0u),
+            "slot stamp publication did not cross views") ||
         Require(
             ReadStableCursorSnapshot(second_cursors, &snapshot) == CursorSyncStatus::kOk,
             "cursor read through second view failed") ||
