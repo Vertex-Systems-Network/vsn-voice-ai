@@ -1,8 +1,8 @@
 use std::error::Error;
 use std::fmt::{Display, Formatter};
+use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::mpsc::{Receiver, SyncSender, TryRecvError, TrySendError, sync_channel};
-use std::sync::Arc;
 
 use vsn_audio_core::device::{DeviceFlow, DeviceId, DeviceRole, DeviceState};
 
@@ -136,7 +136,10 @@ impl Display for EndpointNotificationError {
                 f.write_str("MMDevice endpoint notifications require Windows")
             }
             Self::RegistrationFailed(message) => {
-                write!(f, "MMDevice endpoint notification registration failed: {message}")
+                write!(
+                    f,
+                    "MMDevice endpoint notification registration failed: {message}"
+                )
             }
             Self::RegistrationThreadStopped => {
                 f.write_str("MMDevice notification thread stopped before registration completed")
@@ -276,10 +279,8 @@ mod platform {
             let Some(state) = map_device_state(dwnewstate) else {
                 return Ok(());
             };
-            self.publisher.publish(EndpointNotification::DeviceStateChanged {
-                endpoint_id,
-                state,
-            });
+            self.publisher
+                .publish(EndpointNotification::DeviceStateChanged { endpoint_id, state });
             Ok(())
         }
 
