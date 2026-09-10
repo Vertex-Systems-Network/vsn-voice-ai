@@ -138,7 +138,10 @@ pub fn apply_capture_notifications<O>(
 where
     O: CapturePumpOpener,
 {
-    if !matches!(runtime.state(), StreamState::Running | StreamState::Bypassed) {
+    if !matches!(
+        runtime.state(),
+        StreamState::Running | StreamState::Bypassed
+    ) {
         return None;
     }
 
