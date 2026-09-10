@@ -2,7 +2,9 @@ use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::mpsc::{Receiver, SyncSender, TryRecvError, TrySendError, sync_channel};
+use std::sync::mpsc::{Receiver, TryRecvError};
+#[cfg(any(windows, test))]
+use std::sync::mpsc::{SyncSender, TrySendError, sync_channel};
 
 use vsn_audio_core::device::{DeviceFlow, DeviceId, DeviceRole, DeviceState};
 
@@ -27,12 +29,14 @@ pub enum EndpointNotification {
     },
 }
 
+#[cfg(any(windows, test))]
 #[derive(Clone)]
 struct NotificationPublisher {
     sender: SyncSender<EndpointNotification>,
     dropped: Arc<AtomicU64>,
 }
 
+#[cfg(any(windows, test))]
 impl NotificationPublisher {
     fn publish(&self, event: EndpointNotification) {
         match self.sender.try_send(event) {
@@ -56,19 +60,28 @@ impl EndpointNotificationSubscription {
             return Err(EndpointNotificationError::QueueCapacityZero);
         }
 
-        let (sender, receiver) = sync_channel(queue_capacity);
-        let dropped = Arc::new(AtomicU64::new(0));
-        let publisher = NotificationPublisher {
-            sender,
-            dropped: Arc::clone(&dropped),
-        };
-        let platform = platform::register(publisher)?;
+        #[cfg(not(windows))]
+        {
+            let _ = queue_capacity;
+            Err(EndpointNotificationError::UnsupportedPlatform)
+        }
 
-        Ok(Self {
-            receiver,
-            dropped,
-            _platform: platform,
-        })
+        #[cfg(windows)]
+        {
+            let (sender, receiver) = sync_channel(queue_capacity);
+            let dropped = Arc::new(AtomicU64::new(0));
+            let publisher = NotificationPublisher {
+                sender,
+                dropped: Arc::clone(&dropped),
+            };
+            let platform = platform::register(publisher)?;
+
+            Ok(Self {
+                receiver,
+                dropped,
+                _platform: platform,
+            })
+        }
     }
 
     pub fn register_with_standard_capacity() -> Result<Self, EndpointNotificationError> {
@@ -152,15 +165,7 @@ impl Error for EndpointNotificationError {}
 
 #[cfg(not(windows))]
 mod platform {
-    use super::{EndpointNotificationError, NotificationPublisher};
-
     pub struct Subscription;
-
-    pub fn register(
-        _publisher: NotificationPublisher,
-    ) -> Result<Subscription, EndpointNotificationError> {
-        Err(EndpointNotificationError::UnsupportedPlatform)
-    }
 }
 
 #[cfg(windows)]
