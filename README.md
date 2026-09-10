@@ -45,11 +45,12 @@ The owner-approved product direction is:
 - Owner-thread notification bridging filters active capture-route changes and collapses a notification batch into at most one recovery transition.
 - `VirtualMicStagingBuffer` provides a fixed-format bounded user-mode output queue; overflow drops the oldest frame, underrun emits fresh silence, and accepted/drop/underrun counters are explicit.
 - `VirtualMicOutputBridge` routes both successfully processed frames and `AudioPipeline` safe-bypass originals through the same user-mode staging path, so an optional processing failure does not itself silence the output staging boundary.
-- `virtual_mic_protocol` now defines a versioned C-compatible driver-facing header/cursor contract with session generations, fixed audio geometry, monotonic producer/consumer sequences and deterministic cyclic-ring overrun normalization.
+- `virtual_mic_protocol` defines a versioned C-compatible driver-facing header/cursor contract with session generations, fixed audio geometry, monotonic producer/consumer sequences and deterministic cyclic-ring overrun normalization.
+- `native/windows-virtual-mic` now provides an MSVC x64-verified C++ mirror of that wire ABI: 40-byte header/cursor structures, 8-byte alignment, exact field offsets, matching validation and matching cyclic-ring/session/cursor behavior.
 - Windows implementation contract is documented in `docs/architecture/WINDOWS-AUDIO-IMPLEMENTATION.md`.
 - **Physical-device hotplug/default-device recovery on controlled hardware, an OS-visible production virtual microphone, actual shared kernel/user transport, calling-app routing and hardware latency/jitter evidence are not yet claimed operational.**
 
-**Latest verified green implementation CI:** Ubuntu repository-integrity run `34525486454` and Windows Audio Validation run `34525486333` both passed on implementation head `aa0792b81746a11d99b3b3451c3086e363714ee8` — including the existing WASAPI/recovery/MMDevice/staging/output coverage plus versioned virtual-mic protocol validation and cyclic ring/cursor planning tests.
+**Latest verified green implementation CI:** Ubuntu repository-integrity run `34528681411` and Windows Audio Validation run `34528681382` both passed on implementation head `93c166709e3fad6aecd924a0378316761a9e318f` — including the existing Windows audio/Rust protocol coverage plus an MSVC x64 compile-and-run validation of the C++ virtual-mic ABI mirror.
 
 ## README Reconciliation Rule — Mandatory
 
@@ -143,7 +144,8 @@ Implemented and CI-verified:
 - `VirtualMicOutputBridge` that stages both processed output and the original safe-bypass frame after an optional processing failure through the same output path;
 - versioned C-compatible `VirtualMicProtocolHeader` / `VirtualMicCursorSnapshot` contract with magic/version/header-size validation, session generation, fixed audio geometry and monotonic ring cursors;
 - deterministic cyclic-ring slot planning with oldest-frame overrun normalization;
-- Ubuntu repository-integrity run `34525486454` and Windows Audio Validation run `34525486333` on implementation head `aa0792b81746a11d99b3b3451c3086e363714ee8`.
+- MSVC x64 C++ driver-facing ABI mirror in `native/windows-virtual-mic`, with 40-byte `ProtocolHeader` / `CursorSnapshot`, 8-byte alignment, exact static field offsets, matching validation and matching ring/session/cursor semantics;
+- Ubuntu repository-integrity run `34528681411` and Windows Audio Validation run `34528681382` on implementation head `93c166709e3fad6aecd924a0378316761a9e318f`, including the C++ ABI compile-and-run test under `/W4 /WX`.
 
 Not yet verified and therefore **not claimed complete**:
 
