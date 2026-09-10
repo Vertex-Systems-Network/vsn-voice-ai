@@ -35,13 +35,18 @@ The owner-approved product direction is:
 - `vsn-windows-audio` provides a snapshot-to-core-catalog boundary and explicit unsupported-platform behavior off Windows.
 - Verified WASAPI planning slice validates `IAudioClient3`-style default/fundamental/min/max period grids, chooses the nearest supported fundamental multiple and converts sample-rate/duration targets to frame counts (`48 kHz × 10 ms = 480` frames).
 - Verified `SharedCapturePlan` separates WASAPI audio-frame cadence from interleaved pipeline sample count and marks exact vs accumulator-required capture cadence without assuming one callback equals one pipeline frame.
-- Dedicated `.github/workflows/windows-audio.yml` now compiles, lints and tests `vsn-windows-audio` on a hosted Windows runner.
+- Dedicated `.github/workflows/windows-audio.yml` compiles, lints and tests `vsn-windows-audio` on a hosted Windows runner.
 - Windows COM initialization, `IMMDeviceEnumerator`, active endpoint/default-role snapshot logic and core-catalog mapping have executed successfully in hosted Windows CI.
-- The default-capture `IAudioClient3` probe now compiles/tests on Windows, activates the communications endpoint when one is available, reads its mix format and validates shared-mode engine-period constraints; the probe safely returns no result when the hosted environment exposes no communications capture endpoint.
+- The default-capture `IAudioClient3` probe compiles/tests on Windows, activates the communications endpoint when one is available, reads its mix format and validates shared-mode engine-period constraints; the probe safely returns no result when the hosted environment exposes no communications capture endpoint.
+- Event-driven WASAPI capture, native sample decoding, bounded packet draining and packet-to-`AudioFrame` assembly are implemented and CI-verified.
+- Documented WASAPI device/resource/audio-service lifecycle failures are classified into structured retryable capture failures where appropriate.
+- `CaptureRuntime` provides externally scheduled bounded reopen recovery with sequence continuity and no internal unbounded retry/sleep loop.
+- `IMMNotificationClient` registration/unregistration is implemented on a dedicated Windows MTA thread with a bounded non-blocking event queue and dropped-event accounting.
+- Owner-thread notification bridging filters active capture-route changes and collapses a notification batch into at most one recovery transition.
 - Windows implementation contract is documented in `docs/architecture/WINDOWS-AUDIO-IMPLEMENTATION.md`.
-- **Event-driven WASAPI sample capture, physical-device hotplug/recovery, production virtual microphone routing and hardware latency/jitter evidence are not yet claimed operational.**
+- **Physical-device hotplug/default-device recovery on controlled hardware, production virtual microphone routing and hardware latency/jitter evidence are not yet claimed operational.**
 
-**Latest verified green implementation CI:** Ubuntu repository-integrity run `34424232264` and Windows Audio Validation run `34424232265` both passed on the same implementation head — including ANPOS/Go/Rust/schema/YAML gates on Ubuntu and Windows-native compile, Clippy and **14/14** `vsn-windows-audio` tests on Windows Server 2025.
+**Latest verified green implementation CI:** Ubuntu repository-integrity run `34509104650` and Windows Audio Validation run `34509104681` both passed on implementation head `c5d2984d587a344b36ae1ae753af8e26500b7e78` — including ANPOS/Go/Rust/schema/YAML gates on Ubuntu and Windows-native compile, Clippy, unit/smoke tests, MMDevice notification registration/unregistration, and capture-recovery bridge coverage.
 
 ## README Reconciliation Rule — Mandatory
 
@@ -123,18 +128,25 @@ Implemented and CI-verified:
 - Windows COM apartment initialization and `IMMDeviceEnumerator` creation;
 - hosted-Windows execution of active capture/render endpoint enumeration, default-role lookup and snapshot-to-core-catalog validation;
 - Windows-compiled/tested `IAudioClient3` activation, mix-format and shared-mode engine-period probe path, with a safe no-default-endpoint result;
-- Ubuntu `rustfmt`, Clippy `-D warnings`, workspace tests and repository gates plus Windows-native compile/Clippy/tests.
+- event-driven WASAPI capture session using event callbacks and `IAudioCaptureClient` packet reads;
+- native sample decoding and packet-to-validated-`AudioFrame` assembly, including cadence accumulation/reframing where required;
+- bounded capture-pump packet draining so event bursts cannot create an unbounded drain loop;
+- structured retryable classification for documented WASAPI device/resource/audio-service lifecycle failures;
+- externally scheduled bounded `CaptureRuntime` reopen recovery with sequence continuity;
+- MMDevice `IMMNotificationClient` registration/unregistration on a dedicated Windows MTA thread;
+- bounded non-blocking endpoint notification delivery with drop accounting;
+- owner-thread active-route notification filtering and at-most-one recovery transition per drained notification batch;
+- Ubuntu repository-integrity run `34509104650` and Windows Audio Validation run `34509104681` on implementation head `c5d2984d587a344b36ae1ae753af8e26500b7e78`.
 
 Not yet verified and therefore **not claimed complete**:
 
-- event-driven WASAPI microphone sample capture using `InitializeSharedAudioStream` / `IAudioCaptureClient`;
 - confirmed `GetSharedModeEnginePeriod` values from a physical communications microphone on a controlled test machine when hosted CI exposes no capture endpoint;
-- runtime accumulator/reframing of variable WASAPI callback packets into validated pipeline `AudioFrame`s;
-- actual hotplug/default-device recovery on Windows hardware;
-- Windows virtual microphone endpoint/driver;
-- processed/bypass audio reaching Zoom/Teams/Meet through that endpoint;
-- latency/jitter/device-recovery hardware evidence;
-- driver signing/install/update/uninstall/rollback.
+- actual unplug/replug, Bluetooth/headset disconnect and default-device recovery firing successfully on controlled Windows hardware;
+- sleep/wake and audio-service interruption recovery on representative hardware;
+- Windows virtual microphone endpoint/driver and user-mode transport;
+- processed/bypass audio reaching Zoom/Teams/Meet/dialers/browser apps through that endpoint;
+- CPU/callback deadline, discontinuity, end-to-end latency and jitter evidence under controlled hardware load;
+- driver signing/install/update/uninstall/rollback and supported-Windows compatibility evidence.
 
 ## Hybrid Provider Model
 
