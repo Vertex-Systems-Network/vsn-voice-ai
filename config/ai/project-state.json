@@ -26,9 +26,9 @@
     "Finalize deployment-jurisdiction retention/legal policy before production release."
   ],
   "critical_defects": [],
-  "qa_readiness": "phase_1_audio_core_and_device_catalog_ci_verified",
+  "qa_readiness": "phase_1_audio_core_device_stream_and_windows_backend_scaffold_ci_verified",
   "security_readiness": "voice_ai_threat_and_data_baselines_defined_pending_implementation_verification",
-  "last_reconciled_repository_ref": "7a3ba94f182726e2945990188b4092e97cc3a85d",
-  "last_reconciled_at": "2026-09-09T23:18:52+00:00",
-  "notes": "PHASE-000 foundation is complete and PHASE-001 development is active. WU-002 started with the Rust native audio workspace at commit 047d974c2dd5b5f65b51a63311fcd2ff84c46883 (2026-09-10 03:43 PKT). The initial audio-frame, bounded-queue and safe-bypass slice passed GitHub Actions run 34415564226. The platform-neutral device catalog and lifecycle fallback slice passed Rust formatting, Clippy, unit tests, Go gateway tests, product schema validation and ANPOS checks in GitHub Actions run 34416070554. Canonical module bank, execution plan and README are reconciled to MOD-002/WU-002 in progress. WU-002 is not complete until Windows capture, virtual routing, device lifecycle and latency/jitter acceptance evidence exists. Paid provider usage, proprietary model training, production credentials/cloud spend and deployment remain subject to applicable provider/data/compute/release gates."
+  "last_reconciled_repository_ref": "e15f9d18aa9827083126a8f7e16b9172ed486848",
+  "last_reconciled_at": "2026-09-10T00:14:04+00:00",
+  "notes": "PHASE-000 foundation is complete and PHASE-001 development is active. WU-002 started with the Rust native audio workspace at commit 047d974c2dd5b5f65b51a63311fcd2ff84c46883 (2026-09-10 03:43 PKT). Initial audio-frame/queue/bypass, device catalog, deterministic device reselection and bounded stream recovery slices are implemented and CI verified. native/windows-audio is now a workspace crate; EndpointSnapshot-to-DeviceCatalog mapping and explicit non-Windows unsupported behavior passed Ubuntu workspace CI in GitHub Actions run 34420328611. Windows-only source now contains COM/MMDevice active capture/render enumeration and Console/Multimedia/Communications default-role lookup, but that cfg(windows) branch has not yet been compiled or run on a Windows runner/hardware and is not treated as Windows runtime evidence. WU-002 is not complete until Windows capture, virtual routing, device lifecycle and latency/jitter acceptance evidence exists. Paid provider usage, proprietary model training, production credentials/cloud spend and deployment remain subject to applicable provider/data/compute/release gates."
 }
