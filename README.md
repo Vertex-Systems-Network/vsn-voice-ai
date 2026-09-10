@@ -32,14 +32,16 @@ The owner-approved product direction is:
 - Verified audio-core slice includes `AudioFormat`, `AudioFrame`, bounded queues and safe processing bypass.
 - Verified device-lifecycle slice includes stable device IDs, capture/render roles, preferred/default selection, active fallback and lifecycle-state handling.
 - Verified device/stream control slices include deterministic device reselection, processing bypass, bounded invalidation recovery and exponential reopen backoff.
-- `vsn-windows-audio` provides a CI-tested snapshot-to-core-catalog boundary and explicit unsupported-platform behavior off Windows.
+- `vsn-windows-audio` provides a snapshot-to-core-catalog boundary and explicit unsupported-platform behavior off Windows.
 - Verified WASAPI planning slice validates `IAudioClient3`-style default/fundamental/min/max period grids, chooses the nearest supported fundamental multiple and converts sample-rate/duration targets to frame counts (`48 kHz × 10 ms = 480` frames).
 - Verified `SharedCapturePlan` separates WASAPI audio-frame cadence from interleaved pipeline sample count and marks exact vs accumulator-required capture cadence without assuming one callback equals one pipeline frame.
-- Windows-only MMDevice active endpoint enumeration and Console/Multimedia/Communications default-role code now exists behind `cfg(windows)`.
+- Dedicated `.github/workflows/windows-audio.yml` now compiles, lints and tests `vsn-windows-audio` on a hosted Windows runner.
+- Windows COM initialization, `IMMDeviceEnumerator`, active endpoint/default-role snapshot logic and core-catalog mapping have executed successfully in hosted Windows CI.
+- The default-capture `IAudioClient3` probe now compiles/tests on Windows, activates the communications endpoint when one is available, reads its mix format and validates shared-mode engine-period constraints; the probe safely returns no result when the hosted environment exposes no communications capture endpoint.
 - Windows implementation contract is documented in `docs/architecture/WINDOWS-AUDIO-IMPLEMENTATION.md`.
-- **The Windows-only MMDevice branch has not yet been compiled/run on a Windows CI runner or hardware, and WASAPI capture plus the production virtual microphone are not claimed operational.**
+- **Event-driven WASAPI sample capture, physical-device hotplug/recovery, production virtual microphone routing and hardware latency/jitter evidence are not yet claimed operational.**
 
-**Latest verified green implementation CI:** GitHub Actions run `34421431894` — ANPOS validation, Go provider-gateway tests, Rust formatting, Clippy, workspace Rust unit tests, product JSON Schemas, YAML and whitespace gates all passed on Ubuntu.
+**Latest verified green implementation CI:** Ubuntu repository-integrity run `34424232264` and Windows Audio Validation run `34424232265` both passed on the same implementation head — including ANPOS/Go/Rust/schema/YAML gates on Ubuntu and Windows-native compile, Clippy and **14/14** `vsn-windows-audio` tests on Windows Server 2025.
 
 ## README Reconciliation Rule — Mandatory
 
@@ -117,24 +119,18 @@ Implemented and CI-verified:
 - deterministic nearest-supported fundamental-multiple period selection, preferring the lower period on exact ties;
 - checked sample-rate/duration to frame-count conversion (`48 kHz / 10 ms = 480` frames);
 - shared-mode capture cadence planning that keeps WASAPI audio frames separate from interleaved sample counts and explicitly identifies when buffering/accumulation is required;
-- Rust `rustfmt`, Clippy `-D warnings` and workspace unit-test gates in CI.
-
-Implemented in source but **not yet Windows-platform verified**:
-
-- Windows COM apartment initialization for endpoint discovery;
-- `IMMDeviceEnumerator` creation;
-- active capture/render endpoint enumeration;
-- Console/Multimedia/Communications default endpoint lookup;
-- endpoint-ID mapping into core device descriptors.
+- dedicated Windows-native compile/Clippy/test workflow;
+- Windows COM apartment initialization and `IMMDeviceEnumerator` creation;
+- hosted-Windows execution of active capture/render endpoint enumeration, default-role lookup and snapshot-to-core-catalog validation;
+- Windows-compiled/tested `IAudioClient3` activation, mix-format and shared-mode engine-period probe path, with a safe no-default-endpoint result;
+- Ubuntu `rustfmt`, Clippy `-D warnings`, workspace tests and repository gates plus Windows-native compile/Clippy/tests.
 
 Not yet verified and therefore **not claimed complete**:
 
-- compilation of the Windows-only MMDevice path on a Windows CI runner;
-- real Windows MMDevice endpoint enumeration on a Windows machine;
-- event-driven WASAPI microphone capture;
-- actual `IAudioClient3::GetSharedModeEnginePeriod` / `InitializeSharedAudioStream` negotiation against a Windows audio endpoint;
+- event-driven WASAPI microphone sample capture using `InitializeSharedAudioStream` / `IAudioCaptureClient`;
+- confirmed `GetSharedModeEnginePeriod` values from a physical communications microphone on a controlled test machine when hosted CI exposes no capture endpoint;
 - runtime accumulator/reframing of variable WASAPI callback packets into validated pipeline `AudioFrame`s;
-- actual hotplug/default-device recovery on Windows;
+- actual hotplug/default-device recovery on Windows hardware;
 - Windows virtual microphone endpoint/driver;
 - processed/bypass audio reaching Zoom/Teams/Meet through that endpoint;
 - latency/jitter/device-recovery hardware evidence;
