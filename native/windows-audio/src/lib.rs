@@ -88,8 +88,8 @@ pub fn snapshot_endpoints() -> Result<EndpointSnapshot, WindowsAudioError> {
     platform::snapshot_endpoints()
 }
 
-pub fn probe_default_capture_periods() -> Result<Option<DefaultCapturePeriodProbe>, WindowsAudioError>
-{
+pub fn probe_default_capture_periods()
+-> Result<Option<DefaultCapturePeriodProbe>, WindowsAudioError> {
     platform::probe_default_capture_periods()
 }
 
@@ -101,8 +101,8 @@ mod platform {
         Err(WindowsAudioError::UnsupportedPlatform)
     }
 
-    pub fn probe_default_capture_periods(
-    ) -> Result<Option<DefaultCapturePeriodProbe>, WindowsAudioError> {
+    pub fn probe_default_capture_periods()
+    -> Result<Option<DefaultCapturePeriodProbe>, WindowsAudioError> {
         Err(WindowsAudioError::UnsupportedPlatform)
     }
 }
@@ -218,13 +218,12 @@ mod platform {
         Ok(EndpointSnapshot { devices, defaults })
     }
 
-    pub fn probe_default_capture_periods(
-    ) -> Result<Option<DefaultCapturePeriodProbe>, WindowsAudioError> {
+    pub fn probe_default_capture_periods()
+    -> Result<Option<DefaultCapturePeriodProbe>, WindowsAudioError> {
         let _com = ComApartment::initialize()?;
         let enumerator = create_enumerator()?;
-        let device = match unsafe {
-            enumerator.GetDefaultAudioEndpoint(eCapture, eCommunications)
-        } {
+        let device = match unsafe { enumerator.GetDefaultAudioEndpoint(eCapture, eCommunications) }
+        {
             Ok(device) => device,
             Err(_) => return Ok(None),
         };
