@@ -2,7 +2,7 @@ use std::error::Error;
 use std::fmt::{Display, Formatter};
 
 use vsn_audio_core::device::{
-    DeviceCatalog, DeviceDescriptor, DeviceError, DeviceFlow, DeviceId, DeviceRole, DeviceState,
+    DeviceCatalog, DeviceDescriptor, DeviceError, DeviceFlow, DeviceId, DeviceRole,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -73,6 +73,7 @@ mod platform {
 mod platform {
     use std::ffi::c_void;
 
+    use vsn_audio_core::device::DeviceState;
     use windows::Win32::Media::Audio::{
         DEVICE_STATE_ACTIVE, IMMDevice, IMMDeviceEnumerator, MMDeviceEnumerator, eCapture,
         eCommunications, eConsole, eMultimedia, eRender,
@@ -83,8 +84,8 @@ mod platform {
     };
 
     use super::{
-        DefaultEndpoint, DeviceDescriptor, DeviceFlow, DeviceId, DeviceRole, DeviceState,
-        EndpointSnapshot, WindowsAudioError,
+        DefaultEndpoint, DeviceDescriptor, DeviceFlow, DeviceId, DeviceRole, EndpointSnapshot,
+        WindowsAudioError,
     };
 
     struct ComApartment;
@@ -230,6 +231,7 @@ mod platform {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use vsn_audio_core::device::DeviceState;
 
     fn id(value: &str) -> DeviceId {
         DeviceId::new(value).expect("valid test device id")
