@@ -33,11 +33,12 @@ The owner-approved product direction is:
 - Verified device-lifecycle slice includes stable device IDs, capture/render roles, preferred/default selection, active fallback and lifecycle-state handling.
 - Verified device/stream control slices include deterministic device reselection, processing bypass, bounded invalidation recovery and exponential reopen backoff.
 - `vsn-windows-audio` provides a CI-tested snapshot-to-core-catalog boundary and explicit unsupported-platform behavior off Windows.
+- Verified WASAPI planning slice validates `IAudioClient3`-style default/fundamental/min/max period grids, chooses the nearest supported fundamental multiple and converts sample-rate/duration targets to frame counts (`48 kHz × 10 ms = 480` frames).
 - Windows-only MMDevice active endpoint enumeration and Console/Multimedia/Communications default-role code now exists behind `cfg(windows)`.
 - Windows implementation contract is documented in `docs/architecture/WINDOWS-AUDIO-IMPLEMENTATION.md`.
 - **The Windows-only MMDevice branch has not yet been compiled/run on a Windows CI runner or hardware, and WASAPI capture plus the production virtual microphone are not claimed operational.**
 
-**Latest verified green implementation CI:** GitHub Actions run `34420328611` — ANPOS validation, Go provider-gateway tests, Rust formatting, Clippy, workspace Rust unit tests, product JSON Schemas, YAML and whitespace gates all passed on Ubuntu.
+**Latest verified green implementation CI:** GitHub Actions run `34420942799` — ANPOS validation, Go provider-gateway tests, Rust formatting, Clippy, workspace Rust unit tests, product JSON Schemas, YAML and whitespace gates all passed on Ubuntu.
 
 ## README Reconciliation Rule — Mandatory
 
@@ -111,6 +112,9 @@ Implemented and CI-verified:
 - `vsn-windows-audio` workspace crate;
 - `EndpointSnapshot` to core `DeviceCatalog` validation/mapping;
 - explicit `UnsupportedPlatform` behavior outside Windows;
+- `IAudioClient3`-compatible engine-period range validation for default/fundamental/min/max frame counts;
+- deterministic nearest-supported fundamental-multiple period selection, preferring the lower period on exact ties;
+- checked sample-rate/duration to frame-count conversion (`48 kHz / 10 ms = 480` frames);
 - Rust `rustfmt`, Clippy `-D warnings` and workspace unit-test gates in CI.
 
 Implemented in source but **not yet Windows-platform verified**:
@@ -126,7 +130,7 @@ Not yet verified and therefore **not claimed complete**:
 - compilation of the Windows-only MMDevice path on a Windows CI runner;
 - real Windows MMDevice endpoint enumeration on a Windows machine;
 - event-driven WASAPI microphone capture;
-- `IAudioClient3` engine-period negotiation;
+- actual `IAudioClient3::GetSharedModeEnginePeriod` / `InitializeSharedAudioStream` negotiation against a Windows audio endpoint;
 - actual hotplug/default-device recovery on Windows;
 - Windows virtual microphone endpoint/driver;
 - processed/bypass audio reaching Zoom/Teams/Meet through that endpoint;
