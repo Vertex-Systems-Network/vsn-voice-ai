@@ -21,7 +21,8 @@
 namespace vsn::virtual_mic {
 
 constexpr uint32_t kDeviceControlMagic = 0x434E5356u; // Little-endian bytes: "VSNC".
-constexpr uint16_t kDeviceControlVersion = 1u;
+// Version 2 removes the unsafe user-supplied section handle from CONNECT.
+constexpr uint16_t kDeviceControlVersion = 2u;
 constexpr uint64_t kDeviceControlMaxSectionBytes = 16u * 1024u * 1024u;
 
 constexpr uint32_t kConnectFunction = 0x800u;
@@ -51,16 +52,29 @@ enum class DeviceControlStatus : uint32_t {
     kFaulted = 3u,
 };
 
+// Security invariant:
+// CONNECT carries desired protocol geometry only. A kernel driver must create
+// the section itself, retain an object reference for its lifetime, and only
+// then return a user-visible section handle in ConnectResponse. A section
+// handle received from user mode must never be used as the transport object.
 struct alignas(8) ConnectRequest final {
+    uint32_t magic;
+    uint16_t version;
+    uint16_t struct_bytes;
+    ProtocolHeader protocol;
+    uint32_t flags;
+    uint32_t reserved;
+};
+
+struct alignas(8) ConnectResponse final {
     uint32_t magic;
     uint16_t version;
     uint16_t struct_bytes;
     uint64_t session_generation;
     uint64_t section_handle_value;
     uint64_t section_bytes;
-    uint32_t expected_protocol_magic;
-    uint16_t expected_protocol_version;
-    uint16_t flags;
+    uint32_t status;
+    uint32_t last_error;
     uint64_t reserved;
 };
 
@@ -90,18 +104,23 @@ struct alignas(8) StatusResponse final {
     uint64_t consumer_sequence;
 };
 
-static_assert(sizeof(ConnectRequest) == 48u, "ConnectRequest ABI size drifted");
+static_assert(sizeof(ConnectRequest) == 56u, "ConnectRequest ABI size drifted");
 static_assert(alignof(ConnectRequest) == 8u, "ConnectRequest ABI alignment drifted");
 static_assert(offsetof(ConnectRequest, magic) == 0u, "ConnectRequest.magic offset drifted");
 static_assert(offsetof(ConnectRequest, version) == 4u, "ConnectRequest.version offset drifted");
 static_assert(offsetof(ConnectRequest, struct_bytes) == 6u, "ConnectRequest.struct_bytes offset drifted");
-static_assert(offsetof(ConnectRequest, session_generation) == 8u, "ConnectRequest.session_generation offset drifted");
-static_assert(offsetof(ConnectRequest, section_handle_value) == 16u, "ConnectRequest.section_handle_value offset drifted");
-static_assert(offsetof(ConnectRequest, section_bytes) == 24u, "ConnectRequest.section_bytes offset drifted");
-static_assert(offsetof(ConnectRequest, expected_protocol_magic) == 32u, "ConnectRequest.expected_protocol_magic offset drifted");
-static_assert(offsetof(ConnectRequest, expected_protocol_version) == 36u, "ConnectRequest.expected_protocol_version offset drifted");
-static_assert(offsetof(ConnectRequest, flags) == 38u, "ConnectRequest.flags offset drifted");
-static_assert(offsetof(ConnectRequest, reserved) == 40u, "ConnectRequest.reserved offset drifted");
+static_assert(offsetof(ConnectRequest, protocol) == 8u, "ConnectRequest.protocol offset drifted");
+static_assert(offsetof(ConnectRequest, flags) == 48u, "ConnectRequest.flags offset drifted");
+static_assert(offsetof(ConnectRequest, reserved) == 52u, "ConnectRequest.reserved offset drifted");
+
+static_assert(sizeof(ConnectResponse) == 48u, "ConnectResponse ABI size drifted");
+static_assert(alignof(ConnectResponse) == 8u, "ConnectResponse ABI alignment drifted");
+static_assert(offsetof(ConnectResponse, session_generation) == 8u, "ConnectResponse.session_generation offset drifted");
+static_assert(offsetof(ConnectResponse, section_handle_value) == 16u, "ConnectResponse.section_handle_value offset drifted");
+static_assert(offsetof(ConnectResponse, section_bytes) == 24u, "ConnectResponse.section_bytes offset drifted");
+static_assert(offsetof(ConnectResponse, status) == 32u, "ConnectResponse.status offset drifted");
+static_assert(offsetof(ConnectResponse, last_error) == 36u, "ConnectResponse.last_error offset drifted");
+static_assert(offsetof(ConnectResponse, reserved) == 40u, "ConnectResponse.reserved offset drifted");
 
 static_assert(sizeof(DisconnectRequest) == 24u, "DisconnectRequest ABI size drifted");
 static_assert(alignof(DisconnectRequest) == 8u, "DisconnectRequest ABI alignment drifted");
@@ -126,10 +145,10 @@ enum class DeviceControlContractStatus : uint32_t {
     kVersionMismatch,
     kStructSizeMismatch,
     kInvalidSessionGeneration,
+    kProtocolHeaderInvalid,
     kInvalidSectionHandle,
     kInvalidSectionSize,
-    kProtocolMagicMismatch,
-    kProtocolVersionMismatch,
+    kUnexpectedSectionMetadata,
     kUnsupportedFlags,
     kReservedFieldNonZero,
     kInvalidRuntimeStatus,
@@ -163,26 +182,53 @@ constexpr DeviceControlContractStatus ValidateConnectRequest(
     if (prefix != DeviceControlContractStatus::kOk) {
         return prefix;
     }
-    if (request.session_generation == 0u) {
-        return DeviceControlContractStatus::kInvalidSessionGeneration;
-    }
-    if (request.section_handle_value == 0u || request.section_handle_value == UINT64_MAX) {
-        return DeviceControlContractStatus::kInvalidSectionHandle;
-    }
-    if (request.section_bytes == 0u || request.section_bytes > kDeviceControlMaxSectionBytes) {
-        return DeviceControlContractStatus::kInvalidSectionSize;
-    }
-    if (request.expected_protocol_magic != kProtocolMagic) {
-        return DeviceControlContractStatus::kProtocolMagicMismatch;
-    }
-    if (request.expected_protocol_version != kProtocolVersion) {
-        return DeviceControlContractStatus::kProtocolVersionMismatch;
+    if (ValidateHeader(request.protocol) != ContractStatus::kOk) {
+        return DeviceControlContractStatus::kProtocolHeaderInvalid;
     }
     if (request.flags != 0u) {
         return DeviceControlContractStatus::kUnsupportedFlags;
     }
     if (request.reserved != 0u) {
         return DeviceControlContractStatus::kReservedFieldNonZero;
+    }
+    return DeviceControlContractStatus::kOk;
+}
+
+constexpr DeviceControlContractStatus ValidateConnectResponse(
+    const ConnectResponse& response) noexcept {
+    const DeviceControlContractStatus prefix = ValidateControlPrefix(
+        response.magic,
+        response.version,
+        response.struct_bytes,
+        sizeof(ConnectResponse));
+    if (prefix != DeviceControlContractStatus::kOk) {
+        return prefix;
+    }
+    if (response.session_generation == 0u) {
+        return DeviceControlContractStatus::kInvalidSessionGeneration;
+    }
+    if (response.status > static_cast<uint32_t>(DeviceControlStatus::kFaulted)) {
+        return DeviceControlContractStatus::kInvalidRuntimeStatus;
+    }
+    if (response.reserved != 0u) {
+        return DeviceControlContractStatus::kReservedFieldNonZero;
+    }
+
+    const bool ready = response.status == static_cast<uint32_t>(DeviceControlStatus::kReady);
+    const bool has_handle = response.section_handle_value != 0u &&
+        response.section_handle_value != UINT64_MAX;
+    const bool has_size = response.section_bytes != 0u &&
+        response.section_bytes <= kDeviceControlMaxSectionBytes;
+
+    if (ready) {
+        if (!has_handle) {
+            return DeviceControlContractStatus::kInvalidSectionHandle;
+        }
+        if (!has_size) {
+            return DeviceControlContractStatus::kInvalidSectionSize;
+        }
+    } else if (response.section_handle_value != 0u || response.section_bytes != 0u) {
+        return DeviceControlContractStatus::kUnexpectedSectionMetadata;
     }
     return DeviceControlContractStatus::kOk;
 }
@@ -244,20 +290,32 @@ constexpr DeviceControlContractStatus ValidateStatusResponse(
     return DeviceControlContractStatus::kOk;
 }
 
-constexpr ConnectRequest MakeConnectRequest(
-    uint64_t session_generation,
-    uint64_t section_handle_value,
-    uint64_t section_bytes) noexcept {
+constexpr ConnectRequest MakeConnectRequest(const ProtocolHeader& protocol) noexcept {
     return ConnectRequest{
         kDeviceControlMagic,
         kDeviceControlVersion,
         static_cast<uint16_t>(sizeof(ConnectRequest)),
+        protocol,
+        0u,
+        0u,
+    };
+}
+
+constexpr ConnectResponse MakeConnectResponse(
+    uint64_t session_generation,
+    uint64_t section_handle_value,
+    uint64_t section_bytes,
+    DeviceControlStatus status,
+    uint32_t last_error = ERROR_SUCCESS) noexcept {
+    return ConnectResponse{
+        kDeviceControlMagic,
+        kDeviceControlVersion,
+        static_cast<uint16_t>(sizeof(ConnectResponse)),
         session_generation,
         section_handle_value,
         section_bytes,
-        kProtocolMagic,
-        kProtocolVersion,
-        0u,
+        static_cast<uint32_t>(status),
+        last_error,
         0u,
     };
 }
