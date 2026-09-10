@@ -1,12 +1,12 @@
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 
-use vsn_audio_core::device::{DeviceError, DeviceId};
 use vsn_audio_core::AudioFormat;
+use vsn_audio_core::device::{DeviceError, DeviceId};
 
+use crate::MixFormatSummary;
 use crate::capture_plan::{CapturePlanError, SharedCapturePlan};
 use crate::engine_period::EnginePeriodRange;
-use crate::MixFormatSummary;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CaptureSessionSummary {
@@ -141,8 +141,8 @@ mod platform {
 
     use windows::Win32::Foundation::{CloseHandle, ERROR_NOT_FOUND, HANDLE};
     use windows::Win32::Media::Audio::{
-        AUDCLNT_STREAMFLAGS_EVENTCALLBACK, IAudioCaptureClient, IAudioClient3,
-        IMMDeviceEnumerator, MMDeviceEnumerator, WAVEFORMATEX, eCapture, eCommunications,
+        AUDCLNT_STREAMFLAGS_EVENTCALLBACK, IAudioCaptureClient, IAudioClient3, IMMDeviceEnumerator,
+        MMDeviceEnumerator, WAVEFORMATEX, eCapture, eCommunications,
     };
     use windows::Win32::System::Com::{
         CLSCTX_ALL, COINIT_APARTMENTTHREADED, CoCreateInstance, CoInitializeEx, CoTaskMemFree,
@@ -243,9 +243,8 @@ mod platform {
         let enumerator: IMMDeviceEnumerator = unsafe {
             CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL).map_err(backend_error)?
         };
-        let device = match unsafe {
-            enumerator.GetDefaultAudioEndpoint(eCapture, eCommunications)
-        } {
+        let device = match unsafe { enumerator.GetDefaultAudioEndpoint(eCapture, eCommunications) }
+        {
             Ok(device) => device,
             Err(error) if error.code() == ERROR_NOT_FOUND.to_hresult() => return Ok(None),
             Err(error) => return Err(backend_error(error)),
@@ -275,13 +274,9 @@ mod platform {
         }
         .map_err(backend_error)?;
 
-        let periods = EnginePeriodRange::new(
-            default_frames,
-            fundamental_frames,
-            min_frames,
-            max_frames,
-        )
-        .map_err(crate::capture_plan::CapturePlanError::from)?;
+        let periods =
+            EnginePeriodRange::new(default_frames, fundamental_frames, min_frames, max_frames)
+                .map_err(crate::capture_plan::CapturePlanError::from)?;
         let format = AudioFormat {
             sample_rate_hz: wave.nSamplesPerSec,
             channels: wave.nChannels,
@@ -300,11 +295,17 @@ mod platform {
         .map_err(backend_error)?;
 
         let event = OwnedEvent::create_auto_reset()?;
-        unsafe { audio_client.SetEventHandle(event.handle()).map_err(backend_error)? };
+        unsafe {
+            audio_client
+                .SetEventHandle(event.handle())
+                .map_err(backend_error)?
+        };
         let capture_client: IAudioCaptureClient =
             unsafe { audio_client.GetService().map_err(backend_error)? };
-        let endpoint_buffer_frames = unsafe { audio_client.GetBufferSize().map_err(backend_error)? };
-        let stream_latency_100ns = unsafe { audio_client.GetStreamLatency().map_err(backend_error)? };
+        let endpoint_buffer_frames =
+            unsafe { audio_client.GetBufferSize().map_err(backend_error)? };
+        let stream_latency_100ns =
+            unsafe { audio_client.GetStreamLatency().map_err(backend_error)? };
 
         let summary = CaptureSessionSummary {
             endpoint_id,
@@ -328,7 +329,9 @@ mod platform {
         Ok(Some((session, summary)))
     }
 
-    fn device_id(device: &windows::Win32::Media::Audio::IMMDevice) -> Result<String, WasapiCaptureError> {
+    fn device_id(
+        device: &windows::Win32::Media::Audio::IMMDevice,
+    ) -> Result<String, WasapiCaptureError> {
         let value = unsafe { device.GetId().map_err(backend_error)? };
         let text = unsafe { value.to_string() }
             .map_err(|error| WasapiCaptureError::Backend(error.to_string()));
@@ -381,7 +384,9 @@ mod tests {
 
         session.start().expect("WASAPI capture stream should start");
         assert!(session.is_started());
-        session.start().expect("repeated start should be idempotent");
+        session
+            .start()
+            .expect("repeated start should be idempotent");
         session.stop().expect("WASAPI capture stream should stop");
         assert!(!session.is_started());
         session.stop().expect("repeated stop should be idempotent");
