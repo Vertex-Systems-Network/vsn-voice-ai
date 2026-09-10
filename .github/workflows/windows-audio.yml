@@ -56,6 +56,40 @@ jobs:
         shell: pwsh
         run: cargo +1.98.1 test -p vsn-windows-audio
 
+      - name: Restore pinned Windows Driver Kit packages
+        shell: pwsh
+        working-directory: native/windows-virtual-mic/driver
+        run: nuget restore packages.config -PackagesDirectory packages -NonInteractive
+
+      - name: Build KMDF virtual microphone control skeleton
+        shell: pwsh
+        run: |
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} "Microsoft Visual Studio\Installer\vswhere.exe"
+          if (-not (Test-Path $vswhere)) {
+            throw "vswhere.exe was not found on the Windows runner"
+          }
+
+          $installation = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $installation) {
+            throw "A Visual Studio installation with MSVC x64 tools was not found"
+          }
+
+          $msbuild = Join-Path $installation "MSBuild\Current\Bin\MSBuild.exe"
+          if (-not (Test-Path $msbuild)) {
+            throw "MSBuild.exe was not found at $msbuild"
+          }
+
+          & $msbuild "native\windows-virtual-mic\driver\vsn_virtual_mic_control.vcxproj" /m /t:Build /p:Configuration=Debug /p:Platform=x64 /p:SignMode=Off /v:minimal
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
+
+          $driver = Get-ChildItem "native\windows-virtual-mic\driver" -Recurse -Filter "vsn_virtual_mic_control.sys" | Select-Object -First 1
+          if (-not $driver) {
+            throw "KMDF build completed without producing vsn_virtual_mic_control.sys"
+          }
+          Write-Host "Built control-driver skeleton: $($driver.FullName)"
+
       - name: Validate C++ virtual microphone transport contracts
         shell: pwsh
         run: |
