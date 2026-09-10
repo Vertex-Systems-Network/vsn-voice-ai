@@ -156,7 +156,9 @@ impl Display for WasapiCaptureError {
             Self::UnsupportedPlatform => f.write_str("WASAPI capture requires Windows"),
             Self::SessionNotStarted => f.write_str("WASAPI capture session must be started"),
             Self::DeviceInvalidated => f.write_str("WASAPI capture endpoint was invalidated"),
-            Self::ResourcesInvalidated => f.write_str("WASAPI capture stream resources were invalidated"),
+            Self::ResourcesInvalidated => {
+                f.write_str("WASAPI capture stream resources were invalidated")
+            }
             Self::AudioServiceNotRunning => f.write_str("Windows audio service is not running"),
             Self::InvalidMixFormat(message) => write!(f, "invalid WASAPI mix format: {message}"),
             Self::BlockAlignMismatch { declared, expected } => write!(
