@@ -6,8 +6,12 @@
 namespace vsn::virtual_mic {
 
 constexpr uint32_t kProtocolMagic = 0x4D4E5356u; // Little-endian bytes: "VSNM".
-constexpr uint16_t kProtocolVersion = 1u;
+// Version 2 adds one interlocked seqlock-style stamp per PCM ring slot so a
+// consumer can reject a slot that is being overwritten during an overrun.
+constexpr uint16_t kProtocolVersion = 2u;
 constexpr uint16_t kSampleFormatF32Le = 1u;
+constexpr uint64_t kSlotStampWritingBit = 1u;
+constexpr uint64_t kMaxFrameSequence = UINT64_MAX >> 1u;
 
 struct alignas(8) ProtocolHeader final {
     uint32_t magic;
@@ -29,6 +33,10 @@ struct alignas(8) CursorSnapshot final {
     uint64_t consumer_sequence;
     uint64_t overrun_drops;
     uint64_t underruns;
+};
+
+struct alignas(8) FrameSlotStamp final {
+    uint64_t value;
 };
 
 static_assert(sizeof(ProtocolHeader) == 40u, "ProtocolHeader ABI size drifted");
@@ -53,6 +61,30 @@ static_assert(offsetof(CursorSnapshot, consumer_sequence) == 16u, "CursorSnapsho
 static_assert(offsetof(CursorSnapshot, overrun_drops) == 24u, "CursorSnapshot.overrun_drops offset drifted");
 static_assert(offsetof(CursorSnapshot, underruns) == 32u, "CursorSnapshot.underruns offset drifted");
 
+static_assert(sizeof(FrameSlotStamp) == 8u, "FrameSlotStamp ABI size drifted");
+static_assert(alignof(FrameSlotStamp) == 8u, "FrameSlotStamp ABI alignment drifted");
+static_assert(offsetof(FrameSlotStamp, value) == 0u, "FrameSlotStamp.value offset drifted");
+
+constexpr bool CanEncodeFrameSequence(uint64_t sequence) noexcept {
+    return sequence <= kMaxFrameSequence;
+}
+
+constexpr uint64_t EncodeStableSlotStamp(uint64_t sequence) noexcept {
+    return sequence << 1u;
+}
+
+constexpr uint64_t EncodeWritingSlotStamp(uint64_t sequence) noexcept {
+    return EncodeStableSlotStamp(sequence) | kSlotStampWritingBit;
+}
+
+constexpr bool SlotStampIsWriting(uint64_t stamp) noexcept {
+    return (stamp & kSlotStampWritingBit) != 0u;
+}
+
+constexpr uint64_t DecodeSlotStampSequence(uint64_t stamp) noexcept {
+    return stamp >> 1u;
+}
+
 enum class ContractStatus : uint32_t {
     kOk = 0u,
     kMagicMismatch,
@@ -69,6 +101,7 @@ enum class ContractStatus : uint32_t {
     kReservedFieldNonZero,
     kSessionGenerationMismatch,
     kCursorOrderInvalid,
+    kFrameSequenceOverflow,
     kNullOutput,
 };
 
@@ -150,6 +183,12 @@ constexpr ContractStatus PlanRingWindow(
     }
     if (cursors.producer_sequence < cursors.consumer_sequence) {
         return ContractStatus::kCursorOrderInvalid;
+    }
+    // producer_sequence is a count. The highest readable frame index is
+    // producer_sequence - 1 and must fit in the v2 slot-stamp encoding.
+    if (cursors.producer_sequence > kMaxFrameSequence + 1u ||
+        cursors.consumer_sequence > kMaxFrameSequence + 1u) {
+        return ContractStatus::kFrameSequenceOverflow;
     }
 
     const uint64_t capacity = header.capacity_frames;

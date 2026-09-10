@@ -4,15 +4,7 @@
 
 namespace {
 
-using vsn::virtual_mic::ContractStatus;
-using vsn::virtual_mic::CursorSnapshot;
-using vsn::virtual_mic::PlanRingWindow;
-using vsn::virtual_mic::ProtocolHeader;
-using vsn::virtual_mic::RingWindow;
-using vsn::virtual_mic::ValidateHeader;
-using vsn::virtual_mic::kProtocolMagic;
-using vsn::virtual_mic::kProtocolVersion;
-using vsn::virtual_mic::kSampleFormatF32Le;
+using namespace vsn::virtual_mic;
 
 int Require(bool condition, const char* message) {
     if (condition) {
@@ -42,7 +34,10 @@ ProtocolHeader ReferenceHeader() {
 
 int main() {
     const ProtocolHeader reference = ReferenceHeader();
-    if (Require(ValidateHeader(reference) == ContractStatus::kOk, "reference header rejected")) {
+    if (Require(ValidateHeader(reference) == ContractStatus::kOk, "reference header rejected") ||
+        Require(kProtocolVersion == 2u, "protocol version did not advance to v2") ||
+        Require(sizeof(FrameSlotStamp) == 8u, "slot stamp size mismatch") ||
+        Require(alignof(FrameSlotStamp) == 8u, "slot stamp alignment mismatch")) {
         return 1;
     }
 
@@ -56,14 +51,23 @@ int main() {
         return 1;
     }
 
+    const uint64_t sequence = 42u;
+    if (Require(CanEncodeFrameSequence(sequence), "normal frame sequence rejected") ||
+        Require(!SlotStampIsWriting(EncodeStableSlotStamp(sequence)), "stable stamp marked writing") ||
+        Require(SlotStampIsWriting(EncodeWritingSlotStamp(sequence)), "writing stamp not marked writing") ||
+        Require(DecodeSlotStampSequence(EncodeStableSlotStamp(sequence)) == sequence,
+                "stable slot stamp decode mismatch") ||
+        Require(DecodeSlotStampSequence(EncodeWritingSlotStamp(sequence)) == sequence,
+                "writing slot stamp decode mismatch")) {
+        return 1;
+    }
+
     RingWindow window{};
     const CursorSnapshot wrapped{7u, 6u, 3u, 0u, 0u};
     if (Require(
             PlanRingWindow(reference, wrapped, &window) == ContractStatus::kOk,
-            "wrapped ring plan rejected")) {
-        return 1;
-    }
-    if (Require(window.buffered_frames == 3u, "wrapped buffered frame count mismatch") ||
+            "wrapped ring plan rejected") ||
+        Require(window.buffered_frames == 3u, "wrapped buffered frame count mismatch") ||
         Require(window.producer_slot == 2u, "wrapped producer slot mismatch") ||
         Require(window.consumer_slot == 3u, "wrapped consumer slot mismatch") ||
         Require(window.dropped_frames == 0u, "wrapped plan unexpectedly dropped frames")) {
@@ -73,10 +77,8 @@ int main() {
     const CursorSnapshot overrun{7u, 10u, 2u, 3u, 1u};
     if (Require(
             PlanRingWindow(reference, overrun, &window) == ContractStatus::kOk,
-            "overrun ring plan rejected")) {
-        return 1;
-    }
-    if (Require(window.buffered_frames == 4u, "overrun buffer was not bounded to capacity") ||
+            "overrun ring plan rejected") ||
+        Require(window.buffered_frames == 4u, "overrun buffer was not bounded to capacity") ||
         Require(window.dropped_frames == 4u, "overrun oldest-drop count mismatch") ||
         Require(window.normalized_consumer_sequence == 6u, "overrun consumer normalization mismatch") ||
         Require(window.consumer_slot == 2u, "overrun consumer slot mismatch") ||
@@ -107,7 +109,17 @@ int main() {
         return 1;
     }
 
+    const CursorSnapshot overflow{
+        7u,
+        kMaxFrameSequence + 2u,
+        kMaxFrameSequence + 2u,
+        0u,
+        0u,
+    };
     if (Require(
+            PlanRingWindow(reference, overflow, &window) == ContractStatus::kFrameSequenceOverflow,
+            "unencodable ring cursor was accepted") ||
+        Require(
             PlanRingWindow(reference, wrapped, nullptr) == ContractStatus::kNullOutput,
             "null output contract was accepted")) {
         return 1;

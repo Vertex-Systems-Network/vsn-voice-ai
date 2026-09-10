@@ -5,8 +5,11 @@ use std::mem::size_of;
 use vsn_audio_core::AudioFormat;
 
 pub const VIRTUAL_MIC_PROTOCOL_MAGIC: u32 = u32::from_le_bytes(*b"VSNM");
-pub const VIRTUAL_MIC_PROTOCOL_VERSION: u16 = 1;
+// Version 2 adds one seqlock-style stamp per PCM ring slot.
+pub const VIRTUAL_MIC_PROTOCOL_VERSION: u16 = 2;
 pub const VIRTUAL_MIC_SAMPLE_FORMAT_F32_LE: u16 = 1;
+pub const VIRTUAL_MIC_SLOT_STAMP_WRITING_BIT: u64 = 1;
+pub const VIRTUAL_MIC_MAX_FRAME_SEQUENCE: u64 = u64::MAX >> 1;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -139,6 +142,32 @@ pub struct VirtualMicCursorSnapshot {
     pub underruns: u64,
 }
 
+#[repr(C, align(8))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct VirtualMicFrameSlotStamp {
+    pub value: u64,
+}
+
+pub const fn can_encode_frame_sequence(sequence: u64) -> bool {
+    sequence <= VIRTUAL_MIC_MAX_FRAME_SEQUENCE
+}
+
+pub const fn encode_stable_slot_stamp(sequence: u64) -> u64 {
+    sequence << 1
+}
+
+pub const fn encode_writing_slot_stamp(sequence: u64) -> u64 {
+    encode_stable_slot_stamp(sequence) | VIRTUAL_MIC_SLOT_STAMP_WRITING_BIT
+}
+
+pub const fn slot_stamp_is_writing(stamp: u64) -> bool {
+    stamp & VIRTUAL_MIC_SLOT_STAMP_WRITING_BIT != 0
+}
+
+pub const fn decode_slot_stamp_sequence(stamp: u64) -> u64 {
+    stamp >> 1
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct VirtualMicRingPlan {
     pub capacity_frames: u64,
@@ -165,6 +194,11 @@ pub fn plan_ring_window(
             producer: cursors.producer_sequence,
             consumer: cursors.consumer_sequence,
         });
+    }
+    if cursors.producer_sequence > VIRTUAL_MIC_MAX_FRAME_SEQUENCE + 1
+        || cursors.consumer_sequence > VIRTUAL_MIC_MAX_FRAME_SEQUENCE + 1
+    {
+        return Err(VirtualMicProtocolError::FrameSequenceOverflow);
     }
 
     let capacity_frames = u64::from(header.capacity_frames);
@@ -194,6 +228,7 @@ pub enum VirtualMicProtocolError {
     InvalidSessionGeneration,
     HeaderSizeOverflow,
     SlotIndexOverflow,
+    FrameSequenceOverflow,
     MagicMismatch { expected: u32, actual: u32 },
     VersionMismatch { expected: u16, actual: u16 },
     HeaderSizeMismatch { expected: usize, actual: usize },
@@ -221,6 +256,9 @@ impl Display for VirtualMicProtocolError {
                 f.write_str("virtual microphone protocol header is too large")
             }
             Self::SlotIndexOverflow => f.write_str("virtual microphone ring slot index overflow"),
+            Self::FrameSequenceOverflow => {
+                f.write_str("virtual microphone frame sequence exceeds slot-stamp encoding")
+            }
             Self::MagicMismatch { expected, actual } => write!(
                 f,
                 "virtual microphone protocol magic mismatch: expected {expected:#010x}, got {actual:#010x}"
@@ -287,6 +325,8 @@ mod tests {
         assert_eq!(header.frame_duration_micros, 10_000);
         assert_eq!(header.samples_per_frame, 480);
         assert_eq!(header.capacity_frames, 8);
+        assert_eq!(size_of::<VirtualMicFrameSlotStamp>(), 8);
+        assert_eq!(std::mem::align_of::<VirtualMicFrameSlotStamp>(), 8);
     }
 
     #[test]
@@ -298,6 +338,19 @@ mod tests {
             header.validate(),
             Err(VirtualMicProtocolError::VersionMismatch { .. })
         ));
+    }
+
+    #[test]
+    fn slot_stamp_encoding_distinguishes_writing_from_stable() {
+        let sequence = 42;
+        let writing = encode_writing_slot_stamp(sequence);
+        let stable = encode_stable_slot_stamp(sequence);
+
+        assert!(can_encode_frame_sequence(sequence));
+        assert!(slot_stamp_is_writing(writing));
+        assert!(!slot_stamp_is_writing(stable));
+        assert_eq!(decode_slot_stamp_sequence(writing), sequence);
+        assert_eq!(decode_slot_stamp_sequence(stable), sequence);
     }
 
     #[test]
@@ -364,6 +417,22 @@ mod tests {
         assert!(matches!(
             plan_ring_window(&header, cursors),
             Err(VirtualMicProtocolError::CursorOrderInvalid { .. })
+        ));
+    }
+
+    #[test]
+    fn ring_plan_rejects_cursor_beyond_slot_stamp_encoding() {
+        let header = VirtualMicProtocolHeader::new(FORMAT, 4, 1).expect("header");
+        let cursors = VirtualMicCursorSnapshot {
+            session_generation: 1,
+            producer_sequence: VIRTUAL_MIC_MAX_FRAME_SEQUENCE + 2,
+            consumer_sequence: VIRTUAL_MIC_MAX_FRAME_SEQUENCE + 2,
+            ..VirtualMicCursorSnapshot::default()
+        };
+
+        assert!(matches!(
+            plan_ring_window(&header, cursors),
+            Err(VirtualMicProtocolError::FrameSequenceOverflow)
         ));
     }
 }

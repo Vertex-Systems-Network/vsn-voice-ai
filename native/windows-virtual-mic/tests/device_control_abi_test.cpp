@@ -1,39 +1,12 @@
 #include "vsn_virtual_mic_device_control.h"
+#include "vsn_virtual_mic_region_layout.h"
 
 #include <cstdio>
 #include <stdint.h>
 
 namespace {
 
-using vsn::virtual_mic::ConnectRequest;
-using vsn::virtual_mic::ConnectResponse;
-using vsn::virtual_mic::DeviceControlContractStatus;
-using vsn::virtual_mic::DeviceControlStatus;
-using vsn::virtual_mic::DisconnectRequest;
-using vsn::virtual_mic::MakeConnectRequest;
-using vsn::virtual_mic::MakeConnectResponse;
-using vsn::virtual_mic::MakeDisconnectRequest;
-using vsn::virtual_mic::MakeQueryStatusRequest;
-using vsn::virtual_mic::ProtocolHeader;
-using vsn::virtual_mic::QueryStatusRequest;
-using vsn::virtual_mic::StatusResponse;
-using vsn::virtual_mic::ValidateConnectRequest;
-using vsn::virtual_mic::ValidateConnectResponse;
-using vsn::virtual_mic::ValidateDisconnectRequest;
-using vsn::virtual_mic::ValidateQueryStatusRequest;
-using vsn::virtual_mic::ValidateStatusResponse;
-using vsn::virtual_mic::kConnectFunction;
-using vsn::virtual_mic::kDeviceControlMagic;
-using vsn::virtual_mic::kDeviceControlMaxSectionBytes;
-using vsn::virtual_mic::kDeviceControlVersion;
-using vsn::virtual_mic::kDisconnectFunction;
-using vsn::virtual_mic::kIoctlVirtualMicConnect;
-using vsn::virtual_mic::kIoctlVirtualMicDisconnect;
-using vsn::virtual_mic::kIoctlVirtualMicQueryStatus;
-using vsn::virtual_mic::kProtocolMagic;
-using vsn::virtual_mic::kProtocolVersion;
-using vsn::virtual_mic::kQueryStatusFunction;
-using vsn::virtual_mic::kSampleFormatF32Le;
+using namespace vsn::virtual_mic;
 
 int Require(bool condition, const char* message) {
     if (condition) {
@@ -78,7 +51,8 @@ uint32_t IoctlDeviceType(DWORD code) {
 } // namespace
 
 int main() {
-    if (Require(kDeviceControlVersion == 2u, "device-control version did not advance") ||
+    if (Require(kDeviceControlVersion == 2u, "device-control version mismatch") ||
+        Require(kProtocolVersion == 2u, "transport protocol version mismatch") ||
         Require(sizeof(ConnectRequest) == 56u, "connect request size mismatch") ||
         Require(sizeof(ConnectResponse) == 48u, "connect response size mismatch") ||
         Require(sizeof(DisconnectRequest) == 24u, "disconnect request size mismatch") ||
@@ -102,6 +76,14 @@ int main() {
     }
 
     const ProtocolHeader protocol = ReferenceHeader();
+    SharedRegionLayout layout{};
+    if (Require(
+            PlanSharedRegionLayout(protocol, &layout) == SharedRegionStatus::kOk,
+            "reference shared-region layout rejected") ||
+        Require(layout.total_bytes == 7'872u, "protocol v2 section size mismatch")) {
+        return 1;
+    }
+
     ConnectRequest connect = MakeConnectRequest(protocol);
     if (Require(ValidateConnectRequest(connect) == DeviceControlContractStatus::kOk, "valid connect request rejected") ||
         Require(connect.protocol.session_generation == 31u, "connect protocol generation mismatch")) {
@@ -129,6 +111,11 @@ int main() {
         return 1;
     }
     bad_connect = connect;
+    bad_connect.protocol.version = 1u;
+    if (Require(ValidateConnectRequest(bad_connect) == DeviceControlContractStatus::kProtocolHeaderInvalid, "legacy transport protocol accepted")) {
+        return 1;
+    }
+    bad_connect = connect;
     bad_connect.protocol.magic = 0u;
     if (Require(ValidateConnectRequest(bad_connect) == DeviceControlContractStatus::kProtocolHeaderInvalid, "bad transport protocol accepted")) {
         return 1;
@@ -144,13 +131,10 @@ int main() {
         return 1;
     }
 
-    // The user no longer supplies a section handle. A successful CONNECT response
-    // is the first place where a user-visible section handle can appear, after the
-    // future kernel driver has created and retained the section object itself.
     ConnectResponse ready = MakeConnectResponse(
         protocol.session_generation,
         0x1234u,
-        7'808u,
+        layout.total_bytes,
         DeviceControlStatus::kReady);
     if (Require(ValidateConnectResponse(ready) == DeviceControlContractStatus::kOk, "valid ready connect response rejected")) {
         return 1;
