@@ -8,7 +8,7 @@
 
 Provide a low-latency Windows audio path that captures a selected physical microphone, runs VSN realtime processing, and exposes processed or safely bypassed audio to calling applications through an OS-visible VSN virtual microphone.
 
-The verified implementation currently reaches a WDK-buildable KMDF control-driver/shared-memory boundary. It does **not** yet provide the final WaveRT/PortCls audio miniport or an installed OS-visible microphone endpoint.
+The verified implementation currently reaches a WDK-buildable KMDF control-driver plus a race-safe kernel/user shared-ring consumer boundary. It does **not** yet provide the final WaveRT/PortCls audio miniport or an installed OS-visible microphone endpoint.
 
 ## Platform APIs
 
@@ -19,10 +19,10 @@ The critical Windows realtime path uses native Windows audio/device APIs:
 - WASAPI and `IAudioClient3` for capture stream setup and period planning;
 - `IAudioCaptureClient` for capture packets;
 - event-driven buffering for normal realtime capture;
-- WDF/KMDF for the current virtual-mic control-driver boundary;
+- WDF/KMDF for the current virtual-mic control/shared-memory boundary;
 - planned PortCls/WaveRT miniport architecture for the OS-visible virtual microphone endpoint.
 
-Microsoft architectural references include WASAPI/Core Audio, WDF, WaveRT and the SysVAD virtual-audio sample. The production VSN driver must use only the minimum required endpoint/transport surface rather than shipping an unchanged sample implementation.
+Microsoft architectural references include WASAPI/Core Audio, WDF, WaveRT, SysVAD and the Simple Audio Sample. The production VSN driver must use only the minimum required endpoint/transport surface rather than shipping an unchanged sample implementation.
 
 ## Internal audio contract
 
@@ -73,8 +73,8 @@ Physical microphone
     -> optional realtime AI pipeline
     -> safe bypass/fallback selector
     -> user-mode virtual-mic producer
-    -> verified shared-region/control contract
-    -> kernel ring consumer
+    -> verified protocol-v2 shared region / KMDF control plane
+    -> guarded kernel ring consumer
     -> WaveRT/PortCls VSN capture endpoint
     -> Zoom / Teams / Meet / dialers / browser apps
 ```
@@ -90,11 +90,11 @@ Physical microphone
 - explicit accepted/drop/underrun counters;
 - processed output and safe-bypass originals use the same virtual-mic staging path.
 
-## Shared protocol and ring contract
+## Shared protocol v2 and ring contract
 
-Rust and C++ share a versioned wire contract.
+Rust and C++ share a versioned wire contract. Protocol version 2 adds one aligned 64-bit seqlock-style stamp per PCM ring slot so a consumer can prove a slot was not concurrently reused while its PCM bytes were copied.
 
-`VirtualMicProtocolHeader` / `ProtocolHeader` and `VirtualMicCursorSnapshot` / `CursorSnapshot` provide:
+`VirtualMicProtocolHeader` / `ProtocolHeader`, `VirtualMicCursorSnapshot` / `CursorSnapshot`, and `VirtualMicFrameSlotStamp` / `FrameSlotStamp` provide:
 
 - stable C-compatible layout;
 - protocol magic/version/header-size validation;
@@ -102,19 +102,29 @@ Rust and C++ share a versioned wire contract.
 - fixed sample rate/channel/sample format/frame duration/ring capacity/samples-per-frame geometry;
 - monotonic producer and consumer sequences;
 - deterministic cyclic-ring slot planning;
-- bounded overrun normalization by discarding the oldest logical window.
+- bounded overrun normalization by discarding the oldest logical window;
+- an 8-byte slot stamp encoding stable/writing state plus logical frame sequence;
+- a bounded frame-sequence range compatible with that encoding.
 
-The C++ ABI is MSVC x64 verified with exact structure sizes/alignment/offsets locked by `static_assert`.
+Producer publication order is:
+
+1. publish the target slot's `writing` stamp;
+2. write the complete PCM frame;
+3. publish the target slot's stable sequence stamp;
+4. publish the global producer cursor.
+
+The consumer validates the exact stable stamp both before and after PCM copy. If the producer begins reusing that physical slot during the copy, the consumer rejects the frame instead of exposing torn PCM.
+
+The C++ ABI is MSVC x64 verified with exact structure sizes/alignment/offsets locked by `static_assert`, and the Rust mirror has matching version/stamp semantics.
 
 ## Cursor synchronization and shared-region layout
 
-`vsn_virtual_mic_cursor_sync.h` and `vsn_virtual_mic_region_layout.h` provide the shared-memory synchronization contract.
+`vsn_virtual_mic_cursor_sync.h`, `vsn_virtual_mic_slot_sync.h` and `vsn_virtual_mic_region_layout.h` provide the shared-memory synchronization contract.
 
-- aligned 64-bit cursor operations use Windows interlocked primitives;
-- stable reads are bounded;
-- stale generations and cursor regressions are rejected;
-- producer publication occurs after the PCM slot write;
-- consumer publication occurs after the PCM slot read;
+- aligned 64-bit cursor and slot-stamp operations use Windows interlocked primitives;
+- stable cursor reads are bounded;
+- stale generations, cursor regressions and unencodable frame sequences are rejected;
+- exact multi-frame overrun drops can be accounted atomically;
 - session reset uses generation `0` only after producer/consumer quiescence;
 - region geometry is 64-byte aligned and overflow checked.
 
@@ -122,10 +132,11 @@ Reference layout for 48 kHz mono F32, 10 ms frames, ring capacity 4:
 
 - header: offset `0`, 40 bytes;
 - cursor block: offset `64`, 40 bytes;
-- audio: offset `128`;
+- slot-stamp array: offset `128`, 4 × 8 bytes = 32 bytes;
+- audio: offset `192`;
 - frame: `1,920` bytes;
 - ring: `7,680` bytes;
-- total: `7,808` bytes.
+- total: `7,872` bytes.
 
 ## User-mode shared-section implementation
 
@@ -137,8 +148,8 @@ Reference layout for 48 kHz mono F32, 10 ms frames, ring capacity 4:
 - configurable 16 MiB default maximum;
 - non-inheritable handle;
 - protected DACL restricted to LocalSystem plus the current authenticated process user;
-- initialized protocol/cursors;
-- second-view propagation checks for protocol/audio/cursors;
+- initialized protocol/cursors/slot-stamp storage;
+- second-view propagation checks for protocol/audio/cursors/slot stamps;
 - explicit handle/DACL inspection in Windows CI.
 
 This user-mode helper is test evidence for the shared-region contract. The secure installed-driver connection path is the driver-owned handshake described below.
@@ -155,9 +166,9 @@ IOCTLs:
 
 All use `METHOD_BUFFERED` and require `FILE_READ_ACCESS | FILE_WRITE_ACCESS`.
 
-The security-critical v2 change is that **CONNECT no longer accepts a caller-provided section handle**. The request carries validated protocol geometry/session metadata. The driver creates the section itself and returns a user handle only after successful initialization.
+The security-critical v2 control change is that **CONNECT no longer accepts a caller-provided section handle**. The request carries validated transport-protocol geometry/session metadata. The driver creates the section itself and returns a user handle only after successful initialization.
 
-The v1 user-supplied-handle assumption was removed before KMDF implementation. Secure-v2 verification passed AI Native run `34537871677` and Windows run `34537871806`, then merged to `main` as `3953069f468c46d744f30625b3696e5b12f03a77`.
+The original user-supplied-handle assumption was removed before KMDF implementation. Secure control-v2 verification passed AI Native run `34537871677` and Windows run `34537871806`, then merged to `main` as `3953069f468c46d744f30625b3696e5b12f03a77`.
 
 ## KMDF control-driver boundary
 
@@ -188,7 +199,7 @@ CONNECT lifecycle:
 4. create a paging-file-backed section while attached to requestor context;
 5. immediately retain an independent kernel section-object reference;
 6. map the retained object into system space;
-7. zero/initialize protocol header and generation-fenced cursor block;
+7. zero/initialize protocol header, generation-fenced cursor block and v2 slot-stamp storage;
 8. store immutable authoritative protocol geometry in device context;
 9. retain requestor PID + owning file object;
 10. return the user section handle and ready response only after successful initialization.
@@ -197,27 +208,47 @@ The kernel does not rely on user-written mapped header bytes as authoritative co
 
 QUERY_STATUS reads a stable cursor snapshot through the retained system-space mapping. DISCONNECT and cleanup release the system-space view and section-object reference. File cleanup handles owner-close teardown; device cleanup also performs bounded teardown. The WDF wait-lock lifetime is driver-parented so it remains valid through device cleanup.
 
+## Guarded kernel/user ring-consumer boundary
+
+`vsn_virtual_mic_ring_consumer.h` is shared between user-mode contract tests and the WDK build. `native/windows-virtual-mic/driver/vsn_virtual_mic_ring_contract.cpp` compiles and links the exact consumer through the real KMDF/WDK translation environment.
+
+`ConsumeOneRingFrame`:
+
+- accepts the immutable CONNECT-time `ProtocolHeader` retained by the driver rather than trusting mutable mapped header bytes;
+- verifies expected session generation, mapped-region size and exact output-frame size;
+- reads a bounded stable cursor snapshot;
+- normalizes overruns to the oldest retained logical frame and records the exact number of dropped frames;
+- on underrun, emits a freshly zeroed frame, increments underrun accounting and leaves the consumer cursor unchanged;
+- before copy, requires the target slot stamp to equal the expected stable logical sequence;
+- copies one bounded PCM frame;
+- performs a read barrier and rechecks the exact same stable stamp;
+- if the stamp changed or indicates a concurrent/future write, zeros the output, returns `kSlotUnstable`, and does not advance the consumer cursor;
+- publishes the next consumer sequence only after a stable copy;
+- contains no sleep/retry loop.
+
+The Windows regression suite includes a deliberate slot-reuse race that begins writing a future logical frame into the physical slot still targeted by the consumer before the future global producer cursor is published. Protocol v2 rejects that slot and prevents partial PCM exposure.
+
 ## Current CI evidence
 
-Latest implementation head: `6bb193f96ecec505f341600b5577b18e4046a89c`.
+Latest implementation head: `7948c1dc31a05fc5688d9d2b7f0da8d00605037d`.
 
 Verified green runs:
 
-- AI Native Quality Gates: `34539554036`;
-- Windows Audio Validation: `34539554115`.
+- AI Native Quality Gates: `34541120876`;
+- Windows Audio Validation: `34541120903`.
 
 The Windows run verifies, in order:
 
 - pinned Rust toolchain install;
 - `vsn-windows-audio` compile;
 - Clippy with warnings denied;
-- Windows Rust tests;
+- Windows Rust tests including protocol-v2 stamp semantics;
 - pinned WDK/SDK package restore;
-- KMDF `vsn_virtual_mic_control.sys` build;
+- KMDF `vsn_virtual_mic_control.sys` build with the ring-consumer compile probe linked in;
 - WDK post-build validation;
-- native C++ protocol/cursor/layout/shared-section/device-control compile/run regression tests.
+- native C++ protocol/cursor/layout/shared-section/device-control/ring-consumer compile/run regression tests, including the deliberate concurrent-slot-reuse case.
 
-The implementation merged to main as `b2761ad400d92c1d810751fabcf4b071a40dfb9c`.
+The guarded ring-consumer implementation merged to main as `9c57207482bdc20ca5dc70a06cbb43c0cfa86741`.
 
 ## What this evidence proves
 
@@ -226,13 +257,16 @@ The repository now has code-level and hosted-Windows-CI evidence for:
 - event-driven WASAPI capture foundation;
 - device lifecycle/recovery state machines;
 - user-mode virtual-mic staging and safe-bypass routing;
-- Rust/C++ protocol ABI;
-- shared cursor synchronization and region layout;
+- Rust/C++ transport protocol v2 ABI;
+- shared cursor synchronization and guarded slot layout;
 - real Windows shared-memory behavior/security tests;
-- secure driver-owned CONNECT-v2 contract;
+- secure driver-owned CONNECT-v2 control contract;
 - WDK-buildable KMDF control driver;
 - kernel-created shared-section lifecycle with retained object reference/system-space mapping;
-- access-restricted control interface and bounded ownership/cleanup logic.
+- access-restricted control interface and bounded ownership/cleanup logic;
+- exact overrun accounting and fresh-silence underrun behavior at the shared-ring consumer boundary;
+- before/after slot-stamp validation that rejects concurrent slot reuse/torn PCM;
+- successful compilation/linkage of that same consumer helper in the real WDK driver target.
 
 ## What is still not proven
 
@@ -240,7 +274,7 @@ This evidence does **not** yet prove:
 
 - a WaveRT/PortCls audio miniport/topology;
 - an OS-visible VSN microphone endpoint;
-- actual kernel audio consumption from the ring on an audio-engine schedule;
+- audio-engine scheduling that invokes the guarded consumer;
 - WaveRT position/notification behavior;
 - INF/package installation or test signing;
 - runtime `DeviceIoControl` against an installed VSN device;
@@ -254,10 +288,10 @@ This evidence does **not** yet prove:
 
 The next authorized implementation slice remains inside `WU-002`:
 
-1. establish the minimal WDK WaveRT/PortCls virtual-microphone endpoint/topology skeleton;
-2. bind a kernel ring-consumer path to the retained shared region without trusting mutable user configuration;
-3. implement bounded underrun/silence and generation-reset behavior at the audio-consumer boundary;
-4. add compile/static contract checks in hosted Windows CI;
+1. establish the minimal WDK PortCls/WaveRT virtual-microphone capture endpoint/topology scaffold;
+2. define the initial 48 kHz mono capture data-range/format contract and single capture-stream boundary;
+3. bind the WaveRT stream-copy/scheduling boundary to the verified guarded ring consumer while preserving immutable CONNECT-time geometry;
+4. add position/notification state with bounded underrun behavior and compile/static contract checks in hosted Windows CI;
 5. then add an INF/test package and controlled Windows-machine install/enumeration/runtime handshake evidence;
 6. only after endpoint enumeration and real audio flow should calling-app compatibility testing begin.
 
