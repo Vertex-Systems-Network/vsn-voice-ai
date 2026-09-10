@@ -159,9 +159,9 @@ impl StreamController {
                     delay_ms: self.policy.initial_backoff_ms,
                 }
             }
-            StreamEvent::StreamFailed { retryable: true, .. }
-                if matches!(self.state, StreamState::Running | StreamState::Bypassed) =>
-            {
+            StreamEvent::StreamFailed {
+                retryable: true, ..
+            } if matches!(self.state, StreamState::Running | StreamState::Bypassed) => {
                 self.reopen_failures = 0;
                 self.state = StreamState::Recovering;
                 StreamAction::ScheduleRetry {
