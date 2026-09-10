@@ -6,6 +6,36 @@ use vsn_audio_core::device::{DeviceError, DeviceId};
 use crate::MixFormatSummary;
 use crate::capture_plan::{CapturePlanError, SharedCapturePlan};
 
+const BUFFERFLAG_DATA_DISCONTINUITY: u32 = 0x1;
+const BUFFERFLAG_SILENT: u32 = 0x2;
+const BUFFERFLAG_TIMESTAMP_ERROR: u32 = 0x4;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct CapturePacketFlags {
+    pub silent: bool,
+    pub data_discontinuity: bool,
+    pub timestamp_error: bool,
+}
+
+impl CapturePacketFlags {
+    pub fn from_raw(raw: u32) -> Self {
+        Self {
+            silent: raw & BUFFERFLAG_SILENT != 0,
+            data_discontinuity: raw & BUFFERFLAG_DATA_DISCONTINUITY != 0,
+            timestamp_error: raw & BUFFERFLAG_TIMESTAMP_ERROR != 0,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CapturedPacket {
+    pub frames: u32,
+    pub bytes: Vec<u8>,
+    pub flags: CapturePacketFlags,
+    pub device_position_frames: u64,
+    pub qpc_position_100ns: u64,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CaptureSessionSummary {
     pub endpoint_id: DeviceId,
@@ -58,8 +88,25 @@ impl EventCaptureSession {
         Ok(())
     }
 
+    pub fn wait_for_packet_event(&self, timeout_ms: u32) -> Result<bool, WasapiCaptureError> {
+        if !self.started {
+            return Err(WasapiCaptureError::SessionNotStarted);
+        }
+        self.inner.wait_for_packet_event(timeout_ms)
+    }
+
     pub fn next_packet_frames(&self) -> Result<u32, WasapiCaptureError> {
+        if !self.started {
+            return Err(WasapiCaptureError::SessionNotStarted);
+        }
         self.inner.next_packet_frames()
+    }
+
+    pub fn read_packet(&self) -> Result<Option<CapturedPacket>, WasapiCaptureError> {
+        if !self.started {
+            return Err(WasapiCaptureError::SessionNotStarted);
+        }
+        self.inner.read_packet()
     }
 }
 
@@ -75,6 +122,10 @@ impl Drop for EventCaptureSession {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum WasapiCaptureError {
     UnsupportedPlatform,
+    SessionNotStarted,
+    InvalidMixFormat(&'static str),
+    PacketSizeOverflow { frames: u32, block_align: u16 },
+    NullPacketData { frames: u32 },
     Backend(String),
     InvalidEndpoint(DeviceError),
     InvalidCapturePlan(CapturePlanError),
@@ -84,6 +135,18 @@ impl Display for WasapiCaptureError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::UnsupportedPlatform => f.write_str("WASAPI capture requires Windows"),
+            Self::SessionNotStarted => f.write_str("WASAPI capture session must be started"),
+            Self::InvalidMixFormat(message) => write!(f, "invalid WASAPI mix format: {message}"),
+            Self::PacketSizeOverflow {
+                frames,
+                block_align,
+            } => write!(
+                f,
+                "WASAPI packet size overflow for {frames} frames at block alignment {block_align}"
+            ),
+            Self::NullPacketData { frames } => {
+                write!(f, "WASAPI returned null packet data for {frames} non-silent frames")
+            }
             Self::Backend(message) => write!(f, "WASAPI capture error: {message}"),
             Self::InvalidEndpoint(error) => write!(f, "invalid capture endpoint: {error}"),
             Self::InvalidCapturePlan(error) => write!(f, "invalid capture plan: {error}"),
@@ -107,7 +170,7 @@ impl From<CapturePlanError> for WasapiCaptureError {
 
 #[cfg(not(windows))]
 mod platform {
-    use super::{CaptureSessionSummary, WasapiCaptureError};
+    use super::{CapturedPacket, CaptureSessionSummary, WasapiCaptureError};
 
     pub struct Session;
 
@@ -126,7 +189,15 @@ mod platform {
             Err(WasapiCaptureError::UnsupportedPlatform)
         }
 
+        pub fn wait_for_packet_event(&self, _timeout_ms: u32) -> Result<bool, WasapiCaptureError> {
+            Err(WasapiCaptureError::UnsupportedPlatform)
+        }
+
         pub fn next_packet_frames(&self) -> Result<u32, WasapiCaptureError> {
+            Err(WasapiCaptureError::UnsupportedPlatform)
+        }
+
+        pub fn read_packet(&self) -> Result<Option<CapturedPacket>, WasapiCaptureError> {
             Err(WasapiCaptureError::UnsupportedPlatform)
         }
     }
@@ -135,10 +206,13 @@ mod platform {
 #[cfg(windows)]
 mod platform {
     use std::ffi::c_void;
-    use std::ptr::NonNull;
+    use std::ptr::{NonNull, null_mut};
+    use std::slice;
 
     use vsn_audio_core::AudioFormat;
-    use windows::Win32::Foundation::{CloseHandle, ERROR_NOT_FOUND, HANDLE};
+    use windows::Win32::Foundation::{
+        CloseHandle, ERROR_NOT_FOUND, HANDLE, WAIT_FAILED, WAIT_OBJECT_0, WAIT_TIMEOUT,
+    };
     use windows::Win32::Media::Audio::{
         AUDCLNT_STREAMFLAGS_EVENTCALLBACK, IAudioCaptureClient, IAudioClient3, IMMDeviceEnumerator,
         MMDeviceEnumerator, WAVEFORMATEX, eCapture, eCommunications,
@@ -147,10 +221,11 @@ mod platform {
         CLSCTX_ALL, COINIT_APARTMENTTHREADED, CoCreateInstance, CoInitializeEx, CoTaskMemFree,
         CoUninitialize,
     };
-    use windows::Win32::System::Threading::CreateEventW;
+    use windows::Win32::System::Threading::{CreateEventW, WaitForSingleObject};
 
     use super::{
-        CaptureSessionSummary, DeviceId, MixFormatSummary, SharedCapturePlan, WasapiCaptureError,
+        CapturePacketFlags, CaptureSessionSummary, CapturedPacket, DeviceId, MixFormatSummary,
+        SharedCapturePlan, WasapiCaptureError,
     };
     use crate::engine_period::EnginePeriodRange;
 
@@ -202,6 +277,23 @@ mod platform {
         fn handle(&self) -> HANDLE {
             self.0
         }
+
+        fn wait(&self, timeout_ms: u32) -> Result<bool, WasapiCaptureError> {
+            let result = unsafe { WaitForSingleObject(self.0, timeout_ms) };
+            if result == WAIT_OBJECT_0 {
+                return Ok(true);
+            }
+            if result == WAIT_TIMEOUT {
+                return Ok(false);
+            }
+            if result == WAIT_FAILED {
+                return Err(backend_error(windows::core::Error::from_win32()));
+            }
+            Err(WasapiCaptureError::Backend(format!(
+                "unexpected WaitForSingleObject result: {}",
+                result.0
+            )))
+        }
     }
 
     impl Drop for OwnedEvent {
@@ -213,7 +305,8 @@ mod platform {
     pub struct Session {
         audio_client: IAudioClient3,
         capture_client: IAudioCaptureClient,
-        _event: OwnedEvent,
+        event: OwnedEvent,
+        block_align: u16,
         _apartment: ComApartment,
     }
 
@@ -226,12 +319,73 @@ mod platform {
             unsafe { self.audio_client.Stop().map_err(backend_error) }
         }
 
+        pub fn wait_for_packet_event(&self, timeout_ms: u32) -> Result<bool, WasapiCaptureError> {
+            self.event.wait(timeout_ms)
+        }
+
         pub fn next_packet_frames(&self) -> Result<u32, WasapiCaptureError> {
             unsafe {
                 self.capture_client
                     .GetNextPacketSize()
                     .map_err(backend_error)
             }
+        }
+
+        pub fn read_packet(&self) -> Result<Option<CapturedPacket>, WasapiCaptureError> {
+            if self.next_packet_frames()? == 0 {
+                return Ok(None);
+            }
+
+            let mut data = null_mut();
+            let mut frames = 0u32;
+            let mut raw_flags = 0u32;
+            let mut device_position_frames = 0u64;
+            let mut qpc_position_100ns = 0u64;
+
+            unsafe {
+                self.capture_client.GetBuffer(
+                    &mut data,
+                    &mut frames,
+                    &mut raw_flags,
+                    Some(&mut device_position_frames),
+                    Some(&mut qpc_position_100ns),
+                )
+            }
+            .map_err(backend_error)?;
+
+            if frames == 0 {
+                return Ok(None);
+            }
+
+            let flags = CapturePacketFlags::from_raw(raw_flags);
+            let byte_len = usize::try_from(frames)
+                .ok()
+                .and_then(|count| count.checked_mul(usize::from(self.block_align)))
+                .ok_or(WasapiCaptureError::PacketSizeOverflow {
+                    frames,
+                    block_align: self.block_align,
+                });
+
+            let packet = byte_len.and_then(|byte_len| {
+                let bytes = if flags.silent {
+                    vec![0; byte_len]
+                } else {
+                    let pointer = NonNull::new(data)
+                        .ok_or(WasapiCaptureError::NullPacketData { frames })?;
+                    unsafe { slice::from_raw_parts(pointer.as_ptr(), byte_len) }.to_vec()
+                };
+
+                Ok(CapturedPacket {
+                    frames,
+                    bytes,
+                    flags,
+                    device_position_frames,
+                    qpc_position_100ns,
+                })
+            });
+
+            unsafe { self.capture_client.ReleaseBuffer(frames).map_err(backend_error)? };
+            packet.map(Some)
         }
     }
 
@@ -257,6 +411,11 @@ mod platform {
             "IAudioClient3::GetMixFormat",
         )?;
         let wave: WAVEFORMATEX = unsafe { *mix_format.as_ptr() };
+        if wave.nBlockAlign == 0 {
+            return Err(WasapiCaptureError::InvalidMixFormat(
+                "block alignment must be greater than zero",
+            ));
+        }
 
         let mut default_frames = 0;
         let mut fundamental_frames = 0;
@@ -321,7 +480,8 @@ mod platform {
         let session = Session {
             audio_client,
             capture_client,
-            _event: event,
+            event,
+            block_align: wave.nBlockAlign,
             _apartment: apartment,
         };
 
@@ -347,6 +507,18 @@ mod platform {
 mod tests {
     use super::*;
 
+    #[test]
+    fn packet_flags_decode_wasapi_bits() {
+        let flags = CapturePacketFlags::from_raw(
+            BUFFERFLAG_SILENT | BUFFERFLAG_DATA_DISCONTINUITY | BUFFERFLAG_TIMESTAMP_ERROR,
+        );
+
+        assert!(flags.silent);
+        assert!(flags.data_discontinuity);
+        assert!(flags.timestamp_error);
+        assert_eq!(CapturePacketFlags::from_raw(0), CapturePacketFlags::default());
+    }
+
     #[cfg(not(windows))]
     #[test]
     fn capture_session_is_explicitly_unavailable_off_windows() {
@@ -366,9 +538,18 @@ mod tests {
             let summary = session.summary();
             assert!(summary.mix_format.sample_rate_hz > 0);
             assert!(summary.mix_format.channels > 0);
+            assert!(summary.mix_format.block_align > 0);
             assert!(summary.endpoint_buffer_frames > 0);
             assert!(summary.plan.engine_period_frames > 0);
             assert!(!session.is_started());
+            assert!(matches!(
+                session.wait_for_packet_event(0),
+                Err(WasapiCaptureError::SessionNotStarted)
+            ));
+            assert!(matches!(
+                session.read_packet(),
+                Err(WasapiCaptureError::SessionNotStarted)
+            ));
         }
     }
 
@@ -386,6 +567,8 @@ mod tests {
         session
             .start()
             .expect("repeated start should be idempotent");
+        let _ = session.wait_for_packet_event(0);
+        let _ = session.next_packet_frames();
         session.stop().expect("WASAPI capture stream should stop");
         assert!(!session.is_started());
         session.stop().expect("repeated stop should be idempotent");
