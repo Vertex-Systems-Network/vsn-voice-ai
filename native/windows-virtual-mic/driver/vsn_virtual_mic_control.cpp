@@ -516,3 +516,76 @@ void VsnEvtDeviceCleanup(WDFOBJECT device_object) {
 }
 
 } // namespace
+
+extern "C" NTSTATUS VsnCreateSecureControlDeviceFromInit(
+    PWDFDEVICE_INIT* device_init,
+    PCUNICODE_STRING symbolic_link,
+    WDFDEVICE* output_device) noexcept {
+    if (device_init == nullptr ||
+        *device_init == nullptr ||
+        symbolic_link == nullptr ||
+        output_device == nullptr) {
+        return STATUS_INVALID_PARAMETER;
+    }
+    *output_device = nullptr;
+
+    WdfDeviceInitSetDeviceType(*device_init, FILE_DEVICE_UNKNOWN);
+    WdfDeviceInitSetExclusive(*device_init, TRUE);
+    WdfDeviceInitSetIoType(*device_init, WdfDeviceIoBuffered);
+
+    WDF_FILEOBJECT_CONFIG file_config{};
+    WDF_FILEOBJECT_CONFIG_INIT(
+        &file_config,
+        WDF_NO_EVENT_CALLBACK,
+        WDF_NO_EVENT_CALLBACK,
+        VsnEvtFileCleanup);
+    WdfDeviceInitSetFileObjectConfig(*device_init, &file_config, WDF_NO_OBJECT_ATTRIBUTES);
+
+    WDF_OBJECT_ATTRIBUTES device_attributes{};
+    WDF_OBJECT_ATTRIBUTES_INIT_CONTEXT_TYPE(&device_attributes, VSN_DEVICE_CONTEXT);
+    device_attributes.EvtCleanupCallback = VsnEvtDeviceCleanup;
+    device_attributes.ExecutionLevel = WdfExecutionLevelPassive;
+
+    WDFDEVICE device = nullptr;
+    NTSTATUS status = WdfDeviceCreate(device_init, &device_attributes, &device);
+    if (!NT_SUCCESS(status)) {
+        return status;
+    }
+
+    auto* context = VsnGetDeviceContext(device);
+    RtlZeroMemory(context, sizeof(*context));
+
+    status = WdfWaitLockCreate(WDF_NO_OBJECT_ATTRIBUTES, &context->state_lock);
+    if (!NT_SUCCESS(status)) {
+        WdfObjectDelete(device);
+        return status;
+    }
+
+    status = WdfDeviceCreateSymbolicLink(device, symbolic_link);
+    if (!NT_SUCCESS(status)) {
+        WdfObjectDelete(device);
+        return status;
+    }
+
+    WDF_IO_QUEUE_CONFIG queue_config{};
+    WDF_IO_QUEUE_CONFIG_INIT_DEFAULT_QUEUE(&queue_config, WdfIoQueueDispatchSequential);
+    queue_config.EvtIoDeviceControl = VsnEvtIoDeviceControl;
+
+    WDF_OBJECT_ATTRIBUTES queue_attributes{};
+    WDF_OBJECT_ATTRIBUTES_INIT(&queue_attributes);
+    queue_attributes.ExecutionLevel = WdfExecutionLevelPassive;
+
+    status = WdfIoQueueCreate(
+        device,
+        &queue_config,
+        &queue_attributes,
+        WDF_NO_HANDLE);
+    if (!NT_SUCCESS(status)) {
+        WdfObjectDelete(device);
+        return status;
+    }
+
+    WdfControlFinishInitializing(device);
+    *output_device = device;
+    return STATUS_SUCCESS;
+}
