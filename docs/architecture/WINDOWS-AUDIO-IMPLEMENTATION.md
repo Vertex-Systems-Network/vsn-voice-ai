@@ -8,7 +8,7 @@
 
 Provide a low-latency Windows audio path that captures a selected physical microphone, runs VSN realtime processing, and exposes processed or safely bypassed audio to calling applications through an OS-visible VSN virtual microphone.
 
-The verified implementation currently reaches a WDK-buildable KMDF control driver, a race-safe kernel/user shared-ring consumer, compile-verified PortCls/WaveRT capture/topology descriptors, fail-closed PortCls adapter lifecycle linkage and a bounded WaveRT stream state/position contract. It does **not** yet switch the live driver entry point to PortCls, register real audio miniports, create an `IMiniportWaveRT` stream object, or provide an installed OS-visible microphone endpoint.
+The verified implementation currently reaches a WDK-buildable KMDF control driver, a race-safe kernel/user shared-ring consumer, compile-verified PortCls/WaveRT capture/topology descriptors, fail-closed PortCls adapter lifecycle linkage and a bounded WaveRT stream state/position contract. A WDF control-device experiment is also compile verified, but Microsoft KMDF miniport restrictions make framework control-device objects invalid for the intended live PortCls-miniport architecture. It is retained as experimental evidence only. The corrected live design uses a same-driver raw WDM control device plus PortCls dispatch multiplexing. No installed OS-visible microphone endpoint is claimed yet.
 
 ## Platform APIs
 
@@ -19,12 +19,13 @@ The critical Windows realtime path uses native Windows audio/device APIs:
 - WASAPI and `IAudioClient3` for capture stream setup and period planning;
 - `IAudioCaptureClient` for capture packets;
 - event-driven buffering for normal realtime capture;
-- WDF/KMDF for the current virtual-mic control/shared-memory boundary;
+- WDF/KMDF for the current verified control/shared-memory implementation and future miniport helper objects where permitted;
 - PortCls/WaveRT and Kernel Streaming descriptors for the virtual microphone endpoint contract;
-- compile-linked `PcInitializeAdapterDriver` / `PcAddAdapterDevice` lifecycle functions for the upcoming PortCls-primary driver architecture;
+- `PcInitializeAdapterDriver`, `PcAddAdapterDevice` and `PcDispatchIrp` for the PortCls adapter lifecycle and selective IRP forwarding;
+- `IoCreateDeviceSecure` plus raw WDM IRP dispatch for the planned same-driver secure control device;
 - planned PortCls wave/topology miniports and `IMiniportWaveRT` capture stream for the OS-visible endpoint.
 
-Microsoft architectural references include WASAPI/Core Audio, WDF, WaveRT, SysVAD and the Simple Audio Sample. The production VSN driver must use only the minimum required endpoint/transport surface rather than shipping an unchanged sample implementation.
+Microsoft architectural references include WASAPI/Core Audio, WDF miniport restrictions, PortCls DDI guidance, WaveRT, SysVAD and the Simple Audio Sample. The production VSN driver must use only the minimum required endpoint/transport surface rather than shipping an unchanged sample implementation.
 
 ## Internal audio contract
 
@@ -75,7 +76,7 @@ Physical microphone
     -> optional realtime AI pipeline
     -> safe bypass/fallback selector
     -> user-mode virtual-mic producer
-    -> verified protocol-v2 shared region / secure control device
+    -> protocol-v2 shared region / secure raw WDM control device
     -> guarded kernel ring consumer
     -> PortCls/WaveRT capture miniport + stream
     -> OS-visible VSN microphone endpoint
@@ -211,7 +212,7 @@ The kernel does not rely on user-written mapped header bytes as authoritative co
 
 QUERY_STATUS reads a stable cursor snapshot through the retained system-space mapping. DISCONNECT and cleanup release the system-space view and section-object reference. File cleanup handles owner-close teardown; device cleanup also performs bounded teardown. The WDF wait-lock lifetime is driver-parented so it remains valid through device cleanup.
 
-The current `DriverEntry` remains a normal KMDF PnP control-driver entry point. That must be refactored before live PortCls ownership because PortCls needs control of the audio PnP dispatch path.
+The current `DriverEntry` remains a normal KMDF PnP control-driver entry point. Its secure behavior is implementation evidence that must be preserved when the control surface is ported to the corrected raw-WDM PortCls architecture.
 
 ## Guarded kernel/user ring-consumer boundary
 
@@ -267,13 +268,34 @@ The WDK target links `portcls.lib`, `stdunk.lib` and `libcntpr.lib`, defines `PC
 
 ## Fail-closed PortCls lifecycle boundary
 
-`native/windows-virtual-mic/driver/vsn_virtual_mic_portcls_lifecycle.cpp` now references the real PortCls adapter APIs in the WDK target:
+`native/windows-virtual-mic/driver/vsn_virtual_mic_portcls_lifecycle.cpp` references the real PortCls adapter APIs in the WDK target:
 
 - `VsnPortClsInitializeAdapterScaffold` calls `PcInitializeAdapterDriver`;
 - `VsnPortClsAddDeviceScaffold` calls `PcAddAdapterDevice` with room for exactly two subdevices (wave + topology);
 - the associated `StartDevice` callback validates its inputs and deliberately returns `STATUS_NOT_SUPPORTED`.
 
-This is a compile/link proof, not live registration. `VsnPortClsInitializeAdapterScaffold` is intentionally **not** the current `DriverEntry`. Switching the live driver to PortCls before the secure IOCTL surface is moved from a framework-owned PnP FDO to a compatible WDF control device would create competing ownership of the PnP dispatch path.
+This is a compile/link proof, not live registration. `VsnPortClsInitializeAdapterScaffold` is intentionally **not** the current `DriverEntry`.
+
+## Control-plane architecture correction
+
+A WDF control-device scaffold was added and CI verified in merge `f084e4be4d7930830ca68948699c26e42fc036c1`. It proved that the desired naming, SDDL, passive sequential queue and fail-closed behavior compile in the current WDK target. It does **not** establish a valid live PortCls control path.
+
+The subsequent secure migration experiment in PR #18 was closed without merge. The reason is architectural, not a compiler failure: Microsoft KMDF miniport guidance requires `WdfDriverInitNoDispatchOverride` so the port driver receives IRPs and explicitly states that miniport drivers cannot use framework control-device objects. Therefore a framework `WdfControlDeviceInitAllocate` device cannot be the live companion control device for this PortCls miniport.
+
+The corrected same-driver control-plane design is raw WDM:
+
+1. create one named control `DEVICE_OBJECT` with `IoCreateDeviceSecure` and a VSN-specific device-class GUID;
+2. use a strict development SDDL equivalent to the existing LocalSystem + built-in Administrators boundary and `FILE_DEVICE_SECURE_OPEN`;
+3. create a user-visible symbolic link only for that control object;
+4. after `PcInitializeAdapterDriver`, install only the required custom driver dispatch entries (`CREATE`, `CLOSE`, `CLEANUP`, `DEVICE_CONTROL` initially);
+5. in each custom dispatch routine, handle requests only when `DeviceObject` is the exact VSN control object;
+6. forward every IRP targeting PortCls-created audio device objects to `PcDispatchIrp` without reinterpretation;
+7. keep one driver-owned shared-section/session context reachable by both the raw control device and the future WaveRT miniport;
+8. port the current security invariants from WDF request/file objects to WDM IRP/file objects before exposing CONNECT.
+
+This direction is supported by PortCls documentation: `PcInitializeAdapterDriver` installs IRP handlers, an adapter driver may replace selected handlers, and custom handlers can forward requests back to the PortCls default handler using `PcDispatchIrp`. Microsoft named-device guidance requires `IoCreateDeviceSecure` when a named device's security is not supplied by INF and recommends a unique class GUID.
+
+The first WDM control-device slice must remain fail-closed: it may prove secure device creation, symbolic-link teardown, exact `PDEVICE_OBJECT` discrimination and PortCls forwarding, but must not expose the CONNECT ABI until PID/file/session ownership and driver-owned shared-section cleanup have been ported and verified.
 
 ## WaveRT stream state / position contract
 
@@ -294,25 +316,25 @@ The current reference test uses a `7,680` byte cyclic buffer, `4` byte block ali
 
 ## Current CI evidence
 
-Latest implementation head: `54da66c1aa78f913d98ac98faaa9a8d56e4dcdf7`.
+Latest merged implementation head: `fe74aea5f359eff4a97a1ed258c0c2cbdd96248d`.
 
 Verified green runs:
 
-- AI Native Quality Gates: `34543128712`;
-- Windows Audio Validation: `34543128651`.
+- AI Native Quality Gates: `34543962499`;
+- Windows Audio Validation: `34543962515`.
 
-The Windows run verifies, in order:
+The Windows run verifies the merged boundary through:
 
 - pinned Rust toolchain install;
 - `vsn-windows-audio` compile;
 - Clippy with warnings denied;
 - Windows Rust tests including protocol-v2 stamp semantics;
 - pinned WDK/SDK package restore;
-- KMDF `vsn_virtual_mic_control.sys` build with guarded ring consumer, PortCls descriptors, PortCls lifecycle linkage and WaveRT stream state compile probe linked in;
+- KMDF `vsn_virtual_mic_control.sys` build with guarded ring consumer, PortCls descriptors, PortCls lifecycle linkage, WaveRT stream state probe and the WDF control-device experiment linked in;
 - WDK post-build validation;
 - native C++ protocol/cursor/layout/shared-section/device-control/ring-consumer/WaveRT-descriptor/WaveRT-stream compile/run regression tests.
 
-The PortCls lifecycle/WaveRT stream-contract slice merged to main as `78ef04bf86bf02b25b9da25ef401dc84f73f0f2b`. The descriptor scaffold immediately preceding it merged as `da1b0543bcbfe63ff6a342690cab3b250057bbe2`; the guarded ring consumer merged as `9c57207482bdc20ca5dc70a06cbb43c0cfa86741`.
+The WDF control-device experiment merged as `f084e4be4d7930830ca68948699c26e42fc036c1` but is superseded for live PortCls control-plane use by the architecture correction above. PR #18 was closed unmerged. The PortCls lifecycle/WaveRT stream-contract slice merged as `78ef04bf86bf02b25b9da25ef401dc84f73f0f2b`; the descriptor scaffold merged as `da1b0543bcbfe63ff6a342690cab3b250057bbe2`; the guarded ring consumer merged as `9c57207482bdc20ca5dc70a06cbb43c0cfa86741`.
 
 ## What this evidence proves
 
@@ -324,23 +346,26 @@ The repository now has code-level and hosted-Windows-CI evidence for:
 - Rust/C++ transport protocol v2 ABI;
 - shared cursor synchronization and guarded slot layout;
 - real Windows shared-memory behavior/security tests;
-- secure driver-owned CONNECT-v2 control contract;
+- secure driver-owned CONNECT-v2 control contract in the current KMDF implementation;
 - WDK-buildable KMDF control driver;
 - kernel-created shared-section lifecycle with retained object reference/system-space mapping;
-- access-restricted control interface and bounded ownership/cleanup logic;
+- access-restricted current control interface and bounded ownership/cleanup logic;
 - exact overrun accounting and fresh-silence underrun behavior at the shared-ring consumer boundary;
 - before/after slot-stamp validation that rejects concurrent slot reuse/torn PCM;
 - successful compilation/linkage of that same consumer helper in the real WDK driver target;
 - build-valid PortCls/KS wave and topology descriptors for the initial 48 kHz mono IEEE-float capture contract;
 - successful WDK linkage against `PcInitializeAdapterDriver` / `PcAddAdapterDevice` through a fail-closed lifecycle scaffold;
-- WDK-locked WaveRT state values plus bounded cyclic/linear position and notification accounting contracts.
+- WDK-locked WaveRT state values plus bounded cyclic/linear position and notification accounting contracts;
+- a compile-verified WDF control-device experiment whose live use has now been explicitly rejected by architecture evidence.
 
 ## What is still not proven
 
 This evidence does **not** yet prove:
 
+- secure raw-WDM control-device creation/teardown in the PortCls adapter driver;
+- correct exact-device IRP multiplexing and `PcDispatchIrp` forwarding;
+- WDM IRP/PFILE_OBJECT equivalents of the current requestor PID/file/session fencing and cleanup semantics;
 - a PortCls-primary live `DriverEntry`;
-- a PortCls-compatible WDF control device carrying the secure IOCTL surface;
 - live PortCls adapter initialization or wave/topology miniport registration;
 - an `IMiniportWaveRT` capture-stream implementation;
 - audio-engine scheduling that invokes the guarded consumer;
@@ -358,12 +383,15 @@ This evidence does **not** yet prove:
 
 The next authorized implementation slice remains inside `WU-002`:
 
-1. refactor the current secure IOCTL surface from a WDF PnP FDO into a named, access-restricted WDF control device while preserving driver-owned section creation, requestor PID/file ownership, cleanup and passive-level queue semantics;
-2. create the WDF driver in miniport/no-dispatch-override mode so PortCls can own the audio PnP dispatch path;
-3. switch live `DriverEntry` to call `PcInitializeAdapterDriver` only after the control-device creation path is build-valid; keep `StartDevice` fail-closed until real miniports exist;
-4. then implement/register the minimal wave/topology miniports and concrete `IMiniportWaveRT` capture stream, binding stream-copy scheduling to `ConsumeOneRingFrame` and the verified position/notification contract;
-5. then add an INF/test package and controlled Windows-machine install/enumeration/runtime handshake evidence;
-6. only after endpoint enumeration and real audio flow should calling-app compatibility testing begin.
+1. add a compile-only/fail-closed raw WDM control-device scaffold using `IoCreateDeviceSecure`, `FILE_DEVICE_SECURE_OPEN`, a unique VSN class GUID and strict SYSTEM/Admin development SDDL;
+2. add bounded symbolic-link/device teardown and exact control-`PDEVICE_OBJECT` identification;
+3. add dispatch-wrapper contracts for CREATE/CLOSE/CLEANUP/DEVICE_CONTROL that return a closed/error result for the control DO and forward every non-control device IRP to `PcDispatchIrp`;
+4. keep the current live `DriverEntry` unchanged until the raw WDM scaffold is WDK/CI verified;
+5. then port the current secure CONNECT/DISCONNECT/QUERY_STATUS driver-owned section lifecycle, requestor PID/file/session fencing and cleanup from WDFREQUEST/WDFFILEOBJECT to IRP/PFILE_OBJECT semantics;
+6. only after that security port is verified, switch live `DriverEntry` to WDF miniport/no-dispatch-override assistance plus `PcInitializeAdapterDriver`, create the raw WDM control DO, and keep PortCls `StartDevice` fail-closed;
+7. then implement/register the minimal wave/topology miniports and concrete `IMiniportWaveRT` capture stream, binding stream-copy scheduling to `ConsumeOneRingFrame` and the verified position/notification contract;
+8. then add an INF/test package and controlled Windows-machine install/enumeration/runtime handshake evidence;
+9. only after endpoint enumeration and real audio flow should calling-app compatibility testing begin.
 
 `WU-002` must remain in progress until its acceptance criterion is actually satisfied: approved desktop calling applications consume processed audio with safe bypass through the OS-visible VSN virtual microphone.
 
