@@ -2,6 +2,9 @@
 #include <portcls.h>
 #include <wdmsec.h>
 
+extern "C" DRIVER_DISPATCH VsnWdmControlDispatchCreateClose;
+extern "C" DRIVER_DISPATCH VsnWdmControlDispatchDeviceControl;
+
 namespace {
 
 // Unique security class GUID for the VSN raw control device only.
@@ -96,12 +99,12 @@ extern "C" void VsnWdmControlDeleteScaffold() noexcept {
 
 extern "C" NTSTATUS VsnWdmControlDispatchCreateClose(
     PDEVICE_OBJECT device_object,
-    PIRP irp) noexcept {
+    PIRP irp) {
+    if (device_object == nullptr || irp == nullptr) {
+        return STATUS_INVALID_PARAMETER;
+    }
     if (!IsVsnControlDevice(device_object)) {
         return PcDispatchIrp(device_object, irp);
-    }
-    if (irp == nullptr) {
-        return STATUS_INVALID_PARAMETER;
     }
 
     const PIO_STACK_LOCATION stack = IoGetCurrentIrpStackLocation(irp);
@@ -124,7 +127,10 @@ extern "C" NTSTATUS VsnWdmControlDispatchCreateClose(
 
 extern "C" NTSTATUS VsnWdmControlDispatchDeviceControl(
     PDEVICE_OBJECT device_object,
-    PIRP irp) noexcept {
+    PIRP irp) {
+    if (device_object == nullptr || irp == nullptr) {
+        return STATUS_INVALID_PARAMETER;
+    }
     if (!IsVsnControlDevice(device_object)) {
         return PcDispatchIrp(device_object, irp);
     }
