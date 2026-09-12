@@ -27,6 +27,8 @@ function defaultPostgresQueryClientFactory(
 export class RuntimeOrganizationMembershipResolver
   implements OrganizationMembershipResolver, OnApplicationShutdown
 {
+  private closePromise: Promise<void> | null = null;
+
   public constructor(
     private readonly delegate: OrganizationMembershipResolver,
     private readonly closeClient: (() => Promise<void>) | null,
@@ -39,10 +41,14 @@ export class RuntimeOrganizationMembershipResolver
     return this.delegate.resolve(principal, organizationId);
   }
 
-  public async onApplicationShutdown(): Promise<void> {
-    if (this.closeClient !== null) {
-      await this.closeClient();
+  public onApplicationShutdown(): Promise<void> {
+    if (this.closeClient === null) {
+      return Promise.resolve();
     }
+    if (this.closePromise === null) {
+      this.closePromise = this.closeClient();
+    }
+    return this.closePromise;
   }
 }
 
