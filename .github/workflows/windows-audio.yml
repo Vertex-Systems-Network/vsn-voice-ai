@@ -129,3 +129,30 @@ jobs:
           if ($LASTEXITCODE -ne 0) {
             exit $LASTEXITCODE
           }
+
+      - name: Compile installed endpoint runtime smoke harness
+        shell: pwsh
+        run: |
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} "Microsoft Visual Studio\Installer\vswhere.exe"
+          if (-not (Test-Path $vswhere)) {
+            throw "vswhere.exe was not found on the Windows runner"
+          }
+
+          $installation = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $installation) {
+            throw "A Visual Studio installation with MSVC x64 tools was not found"
+          }
+
+          $devCmd = Join-Path $installation "Common7\Tools\VsDevCmd.bat"
+          if (-not (Test-Path $devCmd)) {
+            throw "VsDevCmd.bat was not found at $devCmd"
+          }
+
+          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
+          $compile = "`"$devCmd`" -no_logo -arch=x64 && cl.exe /nologo /std:c++17 /permissive- /W4 /WX /EHsc /I native\windows-virtual-mic\include native\windows-virtual-mic\tests\installed_runtime_smoke.cpp /Fe:artifacts\virtual_mic_installed_runtime_smoke.exe /link ole32.lib"
+          & cmd.exe /d /c $compile
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
+
+          ./scripts/windows/run-virtual-mic-installed-smoke.ps1 -Executable artifacts/virtual_mic_installed_runtime_smoke.exe -AllowVerificationRequired
