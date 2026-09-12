@@ -57,11 +57,6 @@ enum class DeviceControlStatus : uint32_t {
     kFaulted = 3u,
 };
 
-// Security invariant:
-// CONNECT carries desired protocol geometry only. A kernel driver must create
-// the section itself, retain an object reference for its lifetime, and only
-// then return a user-visible section handle in ConnectResponse. A section
-// handle received from user mode must never be used as the transport object.
 struct alignas(8) ConnectRequest final {
     uint32_t magic;
     uint16_t version;
@@ -181,7 +176,9 @@ constexpr DeviceControlContractStatus ValidateControlPrefix(
 constexpr bool ProtocolMatchesWaveRtEndpoint(const ProtocolHeader& protocol) noexcept {
     return protocol.sample_rate_hz == kWaveRtSampleRateHz &&
         protocol.channels == kWaveRtChannels &&
-        protocol.sample_format == kSampleFormatF32Le;
+        protocol.sample_format == kSampleFormatF32Le &&
+        protocol.frame_duration_micros == kWaveRtSchedulerFrameDurationMicros &&
+        protocol.samples_per_frame == kWaveRtSchedulerSamplesPerFrame;
 }
 
 constexpr DeviceControlContractStatus ValidateConnectRequest(
