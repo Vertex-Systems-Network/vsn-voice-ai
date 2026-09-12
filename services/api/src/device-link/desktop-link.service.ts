@@ -1,0 +1,170 @@
+import {
+  createHash,
+  randomBytes,
+  randomUUID,
+  timingSafeEqual,
+} from 'node:crypto';
+
+import type { AuthenticatedPrincipal } from '../identity/authenticated-principal.js';
+import type { AuthorizationContext } from '../organizations/tenant-authorization.js';
+import type {
+  DesktopLinkRecord,
+  DesktopLinkRecordStore,
+} from './desktop-link-record.js';
+
+const DEFAULT_TTL_MS = 5 * 60 * 1_000;
+const MIN_TTL_MS = 30 * 1_000;
+const MAX_TTL_MS = 10 * 60 * 1_000;
+const TOKEN_BYTES = 32;
+const REQUIRED_PERMISSION = 'device.link';
+
+export interface DesktopLinkIssue {
+  readonly recordId: string;
+  readonly exchangeToken: string;
+  readonly expiresAt: string;
+}
+
+export interface DesktopLinkBinding {
+  readonly linked: true;
+  readonly recordId: string;
+  readonly subjectId: string;
+  readonly organizationId: string;
+  readonly deviceId: string;
+  readonly consumedAt: string;
+}
+
+export interface DesktopLinkClock {
+  now(): Date;
+}
+
+export class SystemDesktopLinkClock implements DesktopLinkClock {
+  public now(): Date {
+    return new Date();
+  }
+}
+
+export class DesktopLinkDeniedError extends Error {
+  public constructor(reason: string) {
+    super(reason);
+    this.name = 'DesktopLinkDeniedError';
+  }
+}
+
+function digestToken(token: string): string {
+  return createHash('sha256').update(token, 'utf8').digest('hex');
+}
+
+function safeDigestEqual(left: string, right: string): boolean {
+  const leftBytes = Buffer.from(left, 'hex');
+  const rightBytes = Buffer.from(right, 'hex');
+  return leftBytes.length === rightBytes.length && timingSafeEqual(leftBytes, rightBytes);
+}
+
+function requireNonEmpty(value: string, field: string): void {
+  if (value.trim().length === 0) {
+    throw new DesktopLinkDeniedError(`${field} is required`);
+  }
+}
+
+function ttlMilliseconds(ttlMs: number | undefined): number {
+  const ttl = ttlMs ?? DEFAULT_TTL_MS;
+  if (!Number.isSafeInteger(ttl) || ttl < MIN_TTL_MS || ttl > MAX_TTL_MS) {
+    throw new DesktopLinkDeniedError('desktop link ttl must be between 30 seconds and 10 minutes');
+  }
+  return ttl;
+}
+
+export class DesktopLinkService {
+  public constructor(
+    private readonly store: DesktopLinkRecordStore,
+    private readonly clock: DesktopLinkClock = new SystemDesktopLinkClock(),
+  ) {}
+
+  public issue(
+    authorization: AuthorizationContext,
+    deviceId: string,
+    ttlMs?: number,
+  ): DesktopLinkIssue {
+    requireNonEmpty(deviceId, 'device id');
+    if (!authorization.permissions.includes(REQUIRED_PERMISSION)) {
+      throw new DesktopLinkDeniedError('device.link permission is required');
+    }
+
+    const issuedAt = this.clock.now();
+    const expiresAt = new Date(issuedAt.getTime() + ttlMilliseconds(ttlMs));
+    const recordId = randomUUID();
+    const exchangeToken = randomBytes(TOKEN_BYTES).toString('base64url');
+
+    const record: DesktopLinkRecord = {
+      schema_version: 1,
+      record_id: recordId,
+      token_digest: digestToken(exchangeToken),
+      subject_id: authorization.subject_id,
+      organization_id: authorization.organization_id,
+      device_id: deviceId,
+      issued_at: issuedAt.toISOString(),
+      expires_at: expiresAt.toISOString(),
+      status: 'issued',
+    };
+    this.store.put(record);
+
+    return Object.freeze({
+      recordId,
+      exchangeToken,
+      expiresAt: expiresAt.toISOString(),
+    });
+  }
+
+  public consume(
+    principal: AuthenticatedPrincipal,
+    organizationId: string,
+    deviceId: string,
+    recordId: string,
+    exchangeToken: string,
+  ): DesktopLinkBinding {
+    requireNonEmpty(principal.subjectId, 'subject id');
+    requireNonEmpty(organizationId, 'organization id');
+    requireNonEmpty(deviceId, 'device id');
+    requireNonEmpty(recordId, 'record id');
+    requireNonEmpty(exchangeToken, 'exchange token');
+
+    const record = this.store.get(recordId);
+    const suppliedDigest = digestToken(exchangeToken);
+    if (
+      record === undefined ||
+      record.status !== 'issued' ||
+      !safeDigestEqual(record.token_digest, suppliedDigest)
+    ) {
+      throw new DesktopLinkDeniedError('desktop link exchange is invalid or already consumed');
+    }
+
+    const now = this.clock.now();
+    if (now.getTime() >= Date.parse(record.expires_at)) {
+      throw new DesktopLinkDeniedError('desktop link exchange has expired');
+    }
+    if (record.subject_id !== principal.subjectId) {
+      throw new DesktopLinkDeniedError('desktop link subject does not match');
+    }
+    if (record.organization_id !== organizationId) {
+      throw new DesktopLinkDeniedError('desktop link organization does not match');
+    }
+    if (record.device_id !== deviceId) {
+      throw new DesktopLinkDeniedError('desktop link device does not match');
+    }
+
+    const consumedAt = now.toISOString();
+    const consumed = this.store.consumeIfIssued(recordId, suppliedDigest, consumedAt);
+    if (consumed === undefined) {
+      throw new DesktopLinkDeniedError('desktop link exchange lost single-use race');
+    }
+
+    return Object.freeze({
+      linked: true,
+      recordId: consumed.record_id,
+      subjectId: consumed.subject_id,
+      organizationId: consumed.organization_id,
+      deviceId: consumed.device_id,
+      consumedAt,
+    });
+  }
+}
