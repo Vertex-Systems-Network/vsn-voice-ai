@@ -6,10 +6,8 @@ import {
   RejectingTrustedPrincipalResolver,
   TRUSTED_PRINCIPAL_RESOLVER,
 } from './identity/trusted-principal-resolver.js';
-import {
-  ORGANIZATION_MEMBERSHIP_RESOLVER,
-  RejectingOrganizationMembershipResolver,
-} from './organizations/organization-membership-resolver.js';
+import { ORGANIZATION_MEMBERSHIP_RESOLVER } from './organizations/organization-membership-resolver.js';
+import { createRuntimeOrganizationMembershipResolver } from './organizations/runtime-organization-membership-resolver.js';
 import { WorkspaceController } from './workspace/workspace.controller.js';
 
 @Module({
@@ -25,7 +23,7 @@ import { WorkspaceController } from './workspace/workspace.controller.js';
     },
     {
       provide: ORGANIZATION_MEMBERSHIP_RESOLVER,
-      useClass: RejectingOrganizationMembershipResolver,
+      useFactory: () => createRuntimeOrganizationMembershipResolver(process.env),
     },
   ],
 })
