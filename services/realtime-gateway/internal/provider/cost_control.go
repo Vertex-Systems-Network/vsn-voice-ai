@@ -10,11 +10,11 @@ import (
 const routingBasisPointsScale uint64 = 10_000
 
 type RoutingCostControlSummary struct {
-	TotalSelections                         uint64                `json:"total_selections"`
-	NoEligibleCount                         uint64                `json:"no_eligible_count"`
-	NoEligibleBasisPoints                   uint32                `json:"no_eligible_basis_points"`
+	TotalSelections                        uint64                `json:"total_selections"`
+	NoEligibleCount                        uint64                `json:"no_eligible_count"`
+	NoEligibleBasisPoints                  uint32                `json:"no_eligible_basis_points"`
 	AverageSelectedCostMicrounitsPerMinute int64                 `json:"average_selected_cost_microunits_per_minute"`
-	ByProvider                              []ProviderCostControl `json:"by_provider"`
+	ByProvider                             []ProviderCostControl `json:"by_provider"`
 }
 
 type ProviderCostControl struct {
