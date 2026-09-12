@@ -6,12 +6,12 @@ import "sync"
 // It deliberately contains no customer audio, transcript text, credentials,
 // tenant PII, provider secrets, or request payload content.
 type ProviderRoutingMetrics struct {
-	ProviderID                  string         `json:"provider_id"`
-	SelectionCount              uint64         `json:"selection_count"`
-	LatencyP95Milliseconds      int            `json:"latency_p95_ms,omitempty"`
-	CostMicrounitsPerMinute     int64          `json:"cost_microunits_per_minute,omitempty"`
-	Health                      HealthState    `json:"health"`
-	RateLimit                   RateLimitState `json:"rate_limit"`
+	ProviderID              string         `json:"provider_id"`
+	SelectionCount          uint64         `json:"selection_count"`
+	LatencyP95Milliseconds  int            `json:"latency_p95_ms,omitempty"`
+	CostMicrounitsPerMinute int64          `json:"cost_microunits_per_minute,omitempty"`
+	Health                  HealthState    `json:"health"`
+	RateLimit               RateLimitState `json:"rate_limit"`
 }
 
 // RoutingMetricsSnapshot is an immutable-by-copy snapshot suitable for an
