@@ -1,3 +1,5 @@
+export const RUNTIME_CONFIG = Symbol('vsn.runtime-config');
+
 export type RuntimeEnvironment = 'development' | 'test' | 'production';
 
 export interface RuntimeConfig {
