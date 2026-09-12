@@ -6,7 +6,9 @@
 #include <stdunk.h>
 #pragma warning(pop)
 
+#include "../include/vsn_virtual_mic_transport_bridge.h"
 #include "../include/vsn_virtual_mic_wavert_contract.h"
+#include "../include/vsn_virtual_mic_wavert_scheduler.h"
 #include "../include/vsn_virtual_mic_wavert_stream.h"
 #include "../include/vsn_virtual_mic_wavert_stream_contract.h"
 
@@ -17,6 +19,14 @@ namespace {
 using namespace vsn::virtual_mic;
 
 constexpr ULONG kVsnWaveRtStreamPoolTag = 'SnSV';
+constexpr ULONG kVsnWaveRtSchedulerPoolTag = 'FnSV';
+constexpr LONGLONG kVsnWaveRtSchedulerPeriod100ns =
+    static_cast<LONGLONG>(kWaveRtSchedulerFrameDurationMicros) * 10LL;
+
+static_assert(kVsnWaveRtSchedulerPeriod100ns == 100'000LL, "10 ms scheduler period drifted");
+static_assert(kVsnWaveRtSchedulerPeriod100ns <= MAXLONG, "scheduler period exceeds EX_TIMER limit");
+
+EXT_CALLBACK VsnWaveRtSchedulerTimer;
 
 bool EqualGuid(const GUID& left, const GUID& right) noexcept {
     return IsEqualGUIDAligned(left, right) != FALSE;
@@ -86,6 +96,9 @@ public:
           buffer_size_(0),
           notifications_per_buffer_(0),
           notification_event_(nullptr),
+          scheduler_timer_(nullptr),
+          scheduler_frame_(nullptr),
+          scheduler_started_(FALSE),
           runtime_{} {
         KeInitializeSpinLock(&lock_);
         if (port_stream_ != nullptr) {
@@ -94,6 +107,8 @@ public:
     }
 
     ~VsnVirtualMicWaveRtStream() override {
+        ShutdownScheduler();
+
         if (buffer_mdl_ != nullptr) {
             if (buffer_ != nullptr) {
                 port_stream_->UnmapAllocatedPages(buffer_, buffer_mdl_);
@@ -122,16 +137,163 @@ public:
         operator delete(memory);
     }
 
+    NTSTATUS InitializeScheduler() noexcept;
+    void OnSchedulerTick() noexcept;
+
 private:
+    void CancelSchedulerAndFlush() noexcept;
+    void ShutdownScheduler() noexcept;
+
     PPORTWAVERTSTREAM port_stream_;
     PMDL buffer_mdl_;
     BYTE* buffer_;
     ULONG buffer_size_;
     ULONG notifications_per_buffer_;
     PKEVENT notification_event_;
+    PEX_TIMER scheduler_timer_;
+    BYTE* scheduler_frame_;
+    BOOLEAN scheduler_started_;
     KSPIN_LOCK lock_;
     WaveRtStreamRuntime runtime_;
 };
+
+#pragma code_seg("PAGE")
+NTSTATUS VsnVirtualMicWaveRtStream::InitializeScheduler() noexcept {
+    PAGED_CODE();
+
+    if (scheduler_timer_ != nullptr || scheduler_frame_ != nullptr) {
+        return STATUS_INVALID_DEVICE_STATE;
+    }
+
+    scheduler_timer_ = ExAllocateTimer(
+        VsnWaveRtSchedulerTimer,
+        this,
+        EX_TIMER_HIGH_RESOLUTION);
+    if (scheduler_timer_ == nullptr) {
+        return STATUS_INSUFFICIENT_RESOURCES;
+    }
+
+    scheduler_frame_ = static_cast<BYTE*>(ExAllocatePool2(
+        POOL_FLAG_NON_PAGED,
+        kWaveRtSchedulerFrameBytes,
+        kVsnWaveRtSchedulerPoolTag));
+    if (scheduler_frame_ == nullptr) {
+        ExDeleteTimer(scheduler_timer_, TRUE, TRUE, nullptr);
+        scheduler_timer_ = nullptr;
+        return STATUS_INSUFFICIENT_RESOURCES;
+    }
+
+    RtlZeroMemory(scheduler_frame_, kWaveRtSchedulerFrameBytes);
+    return STATUS_SUCCESS;
+}
+#pragma code_seg()
+
+void VsnVirtualMicWaveRtStream::CancelSchedulerAndFlush() noexcept {
+    BOOLEAN should_cancel = FALSE;
+
+    KIRQL old_irql;
+    KeAcquireSpinLock(&lock_, &old_irql);
+    should_cancel = scheduler_started_;
+    scheduler_started_ = FALSE;
+    KeReleaseSpinLock(&lock_, old_irql);
+
+    if (should_cancel != FALSE && scheduler_timer_ != nullptr) {
+        ExCancelTimer(scheduler_timer_, nullptr);
+        KeFlushQueuedDpcs();
+    }
+}
+
+void VsnVirtualMicWaveRtStream::ShutdownScheduler() noexcept {
+    NT_ASSERT(KeGetCurrentIrql() <= APC_LEVEL);
+
+    KIRQL old_irql;
+    KeAcquireSpinLock(&lock_, &old_irql);
+    scheduler_started_ = FALSE;
+    KeReleaseSpinLock(&lock_, old_irql);
+
+    if (scheduler_timer_ != nullptr) {
+        ExDeleteTimer(scheduler_timer_, TRUE, TRUE, nullptr);
+        scheduler_timer_ = nullptr;
+    }
+    if (scheduler_frame_ != nullptr) {
+        ExFreePoolWithTag(scheduler_frame_, kVsnWaveRtSchedulerPoolTag);
+        scheduler_frame_ = nullptr;
+    }
+}
+
+void VsnVirtualMicWaveRtStream::OnSchedulerTick() noexcept {
+    KeAcquireSpinLockAtDpcLevel(&lock_);
+
+    if (scheduler_started_ == FALSE ||
+        runtime_.state != WaveRtStreamState::kRun ||
+        buffer_ == nullptr ||
+        buffer_size_ < kWaveRtSchedulerFrameBytes ||
+        scheduler_frame_ == nullptr) {
+        KeReleaseSpinLockFromDpcLevel(&lock_);
+        return;
+    }
+
+    // Always clear the scratch frame before crossing the transport boundary so
+    // every failure mode is silence, never bytes retained from a prior tick.
+    RtlZeroMemory(scheduler_frame_, kWaveRtSchedulerFrameBytes);
+    RingConsumeResult consume_result{};
+    const TransportBridgeStatus consume_status = VsnWdmControlConsumeFrame(
+        scheduler_frame_,
+        kWaveRtSchedulerFrameBytes,
+        &consume_result);
+    UNREFERENCED_PARAMETER(consume_result);
+    if (consume_status != TransportBridgeStatus::kOk &&
+        consume_status != TransportBridgeStatus::kSilence &&
+        consume_status != TransportBridgeStatus::kUnavailable) {
+        RtlZeroMemory(scheduler_frame_, kWaveRtSchedulerFrameBytes);
+    }
+
+    CyclicWritePlan write_plan{};
+    if (PlanWaveRtCyclicWrite(
+            buffer_size_,
+            runtime_.cyclic_position_bytes,
+            kWaveRtSchedulerFrameBytes,
+            &write_plan) != WaveRtSchedulerStatus::kOk) {
+        KeReleaseSpinLockFromDpcLevel(&lock_);
+        return;
+    }
+
+    RtlCopyMemory(
+        buffer_ + static_cast<SIZE_T>(write_plan.first_offset),
+        scheduler_frame_,
+        static_cast<SIZE_T>(write_plan.first_bytes));
+    if (write_plan.second_bytes != 0u) {
+        RtlCopyMemory(
+            buffer_ + static_cast<SIZE_T>(write_plan.second_offset),
+            scheduler_frame_ + static_cast<SIZE_T>(write_plan.first_bytes),
+            static_cast<SIZE_T>(write_plan.second_bytes));
+    }
+
+    uint64_t notifications_due = 0u;
+    const WaveRtStreamStatus advance_status = AdvanceWaveRtCapturePosition(
+        &runtime_,
+        kWaveRtSchedulerFrameBytes,
+        &notifications_due);
+    if (advance_status == WaveRtStreamStatus::kOk &&
+        notifications_due != 0u &&
+        notification_event_ != nullptr) {
+        KeSetEvent(notification_event_, IO_NO_INCREMENT, FALSE);
+    }
+
+    KeReleaseSpinLockFromDpcLevel(&lock_);
+}
+
+_Use_decl_annotations_
+VOID VsnWaveRtSchedulerTimer(
+    PEX_TIMER timer,
+    PVOID context) {
+    UNREFERENCED_PARAMETER(timer);
+
+    auto* stream = static_cast<VsnVirtualMicWaveRtStream*>(context);
+    if (stream != nullptr) {
+        stream->OnSchedulerTick();
+    }
+}
 
 #pragma code_seg("PAGE")
 STDMETHODIMP VsnVirtualMicWaveRtStream::NonDelegatingQueryInterface(
@@ -168,12 +330,12 @@ STDMETHODIMP VsnVirtualMicWaveRtStream::AllocateAudioBuffer(
 
     if (audio_buffer_mdl == nullptr || actual_size == nullptr ||
         offset_from_first_page == nullptr || cache_type == nullptr ||
-        requested_size < kWaveRtBlockAlign || buffer_mdl_ != nullptr) {
+        requested_size < kWaveRtSchedulerFrameBytes || buffer_mdl_ != nullptr) {
         return STATUS_INVALID_PARAMETER;
     }
 
     requested_size -= requested_size % kWaveRtBlockAlign;
-    if (requested_size == 0u) {
+    if (requested_size < kWaveRtSchedulerFrameBytes) {
         return STATUS_INVALID_PARAMETER;
     }
 
@@ -194,8 +356,9 @@ STDMETHODIMP VsnVirtualMicWaveRtStream::AllocateAudioBuffer(
 
     RtlZeroMemory(mapped, requested_size);
 
+    WaveRtStreamRuntime initialized{};
     const WaveRtStreamStatus init_status = InitializeWaveRtStreamRuntime(
-        &runtime_,
+        &initialized,
         requested_size,
         kWaveRtBlockAlign,
         requested_size);
@@ -205,10 +368,14 @@ STDMETHODIMP VsnVirtualMicWaveRtStream::AllocateAudioBuffer(
         return STATUS_INVALID_PARAMETER;
     }
 
+    KIRQL old_irql;
+    KeAcquireSpinLock(&lock_, &old_irql);
     buffer_mdl_ = mdl;
     buffer_ = mapped;
     buffer_size_ = requested_size;
     notifications_per_buffer_ = 0u;
+    runtime_ = initialized;
+    KeReleaseSpinLock(&lock_, old_irql);
 
     *audio_buffer_mdl = mdl;
     *actual_size = requested_size;
@@ -223,20 +390,35 @@ STDMETHODIMP_(VOID) VsnVirtualMicWaveRtStream::FreeAudioBuffer(
     PAGED_CODE();
     UNREFERENCED_PARAMETER(size);
 
-    if (mdl == nullptr || mdl != buffer_mdl_) {
+    if (mdl == nullptr) {
         return;
     }
 
-    if (buffer_ != nullptr) {
-        port_stream_->UnmapAllocatedPages(buffer_, buffer_mdl_);
+    CancelSchedulerAndFlush();
+
+    BYTE* mapped = nullptr;
+    PMDL owned_mdl = nullptr;
+    KIRQL old_irql;
+    KeAcquireSpinLock(&lock_, &old_irql);
+    if (mdl == buffer_mdl_) {
+        mapped = buffer_;
+        owned_mdl = buffer_mdl_;
         buffer_ = nullptr;
+        buffer_mdl_ = nullptr;
+        buffer_size_ = 0u;
+        notifications_per_buffer_ = 0u;
+        notification_event_ = nullptr;
+        RtlZeroMemory(&runtime_, sizeof(runtime_));
     }
-    port_stream_->FreePagesFromMdl(buffer_mdl_);
-    buffer_mdl_ = nullptr;
-    buffer_size_ = 0u;
-    notifications_per_buffer_ = 0u;
-    notification_event_ = nullptr;
-    RtlZeroMemory(&runtime_, sizeof(runtime_));
+    KeReleaseSpinLock(&lock_, old_irql);
+
+    if (owned_mdl == nullptr) {
+        return;
+    }
+    if (mapped != nullptr) {
+        port_stream_->UnmapAllocatedPages(mapped, owned_mdl);
+    }
+    port_stream_->FreePagesFromMdl(owned_mdl);
 }
 
 STDMETHODIMP VsnVirtualMicWaveRtStream::AllocateBufferWithNotification(
@@ -249,7 +431,7 @@ STDMETHODIMP VsnVirtualMicWaveRtStream::AllocateBufferWithNotification(
     PAGED_CODE();
 
     if (notification_count == 0u ||
-        requested_size == 0u ||
+        requested_size < kWaveRtSchedulerFrameBytes ||
         requested_size % notification_count != 0u ||
         requested_size % kWaveRtBlockAlign != 0u ||
         buffer_mdl_ != nullptr) {
@@ -274,23 +456,23 @@ STDMETHODIMP VsnVirtualMicWaveRtStream::AllocateBufferWithNotification(
         return status;
     }
 
-    status = STATUS_SUCCESS;
+    WaveRtStreamRuntime initialized{};
     if (InitializeWaveRtStreamRuntime(
-            &runtime_,
+            &initialized,
             *actual_size,
             kWaveRtBlockAlign,
             notification_bytes) != WaveRtStreamStatus::kOk) {
-        status = STATUS_INVALID_PARAMETER;
-    }
-
-    if (!NT_SUCCESS(status)) {
         FreeAudioBuffer(*audio_buffer_mdl, *actual_size);
         *audio_buffer_mdl = nullptr;
         *actual_size = 0u;
-        return status;
+        return STATUS_INVALID_PARAMETER;
     }
 
+    KIRQL old_irql;
+    KeAcquireSpinLock(&lock_, &old_irql);
+    runtime_ = initialized;
     notifications_per_buffer_ = notification_count;
+    KeReleaseSpinLock(&lock_, old_irql);
     return STATUS_SUCCESS;
 }
 
@@ -380,20 +562,60 @@ STDMETHODIMP VsnVirtualMicWaveRtStream::SetFormat(PKSDATAFORMAT data_format) {
 #pragma code_seg()
 
 STDMETHODIMP VsnVirtualMicWaveRtStream::SetState(KSSTATE state) {
+    if (KeGetCurrentIrql() != PASSIVE_LEVEL) {
+        return STATUS_INVALID_DEVICE_STATE;
+    }
+
     const WaveRtStreamState next_state = ToRuntimeState(state);
     if (!IsValidWaveRtStreamState(next_state)) {
         return STATUS_INVALID_PARAMETER;
     }
 
+    WaveRtStreamState current_state = WaveRtStreamState::kStop;
     KIRQL old_irql;
     KeAcquireSpinLock(&lock_, &old_irql);
+    current_state = runtime_.state;
+    const bool buffer_ready = buffer_mdl_ != nullptr &&
+        buffer_ != nullptr &&
+        buffer_size_ >= kWaveRtSchedulerFrameBytes;
+    const bool transition_allowed = IsAllowedWaveRtTransition(current_state, next_state);
+    KeReleaseSpinLock(&lock_, old_irql);
+
+    if (next_state != WaveRtStreamState::kStop && !buffer_ready) {
+        return STATUS_INVALID_DEVICE_STATE;
+    }
+    if (!transition_allowed) {
+        return STATUS_INVALID_DEVICE_STATE;
+    }
+
+    if (current_state == WaveRtStreamState::kRun && next_state != WaveRtStreamState::kRun) {
+        CancelSchedulerAndFlush();
+    }
+
+    bool start_scheduler = false;
+    KeAcquireSpinLock(&lock_, &old_irql);
     NTSTATUS status = STATUS_SUCCESS;
-    if (buffer_mdl_ == nullptr && next_state != WaveRtStreamState::kStop) {
+    if (SetWaveRtStreamState(&runtime_, next_state) != WaveRtStreamStatus::kOk) {
         status = STATUS_INVALID_DEVICE_STATE;
-    } else if (SetWaveRtStreamState(&runtime_, next_state) != WaveRtStreamStatus::kOk) {
-        status = STATUS_INVALID_DEVICE_STATE;
+    } else if (current_state != WaveRtStreamState::kRun &&
+               next_state == WaveRtStreamState::kRun) {
+        if (scheduler_timer_ == nullptr || scheduler_frame_ == nullptr) {
+            status = STATUS_INVALID_DEVICE_STATE;
+            runtime_.state = current_state;
+        } else {
+            scheduler_started_ = TRUE;
+            start_scheduler = true;
+        }
     }
     KeReleaseSpinLock(&lock_, old_irql);
+
+    if (NT_SUCCESS(status) && start_scheduler) {
+        ExSetTimer(
+            scheduler_timer_,
+            -kVsnWaveRtSchedulerPeriod100ns,
+            kVsnWaveRtSchedulerPeriod100ns,
+            nullptr);
+    }
     return status;
 }
 
@@ -429,6 +651,12 @@ extern "C" NTSTATUS VsnCreateVirtualMicWaveRtStream(
     auto* stream = new VsnVirtualMicWaveRtStream(unknown_outer, port_stream);
     if (stream == nullptr) {
         return STATUS_INSUFFICIENT_RESOURCES;
+    }
+
+    NTSTATUS status = stream->InitializeScheduler();
+    if (!NT_SUCCESS(status)) {
+        delete stream;
+        return status;
     }
 
     stream->AddRef();
