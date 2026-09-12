@@ -51,8 +51,8 @@ export default function WorkspacePage() {
       </header>
 
       <div className="workspace-grid">
-        <aside className="sidebar" aria-label="Workspace navigation">
-          <nav>
+        <aside className="sidebar">
+          <nav aria-label="Workspace navigation">
             <ul className="nav-list">
               {workspaceNavigation.map((item) => (
                 <li key={item.href}>

@@ -21,7 +21,7 @@ test('workspace shell exposes baseline keyboard and semantic accessibility affor
   assert.match(layoutSource, /Skip to main content/);
   assert.match(layoutSource, /href="#main-content"/);
   assert.match(pageSource, /<main id="main-content"/);
-  assert.match(pageSource, /<nav>/);
+  assert.match(pageSource, /<nav aria-label="Workspace navigation">/);
   assert.match(pageSource, /aria-live="polite"/);
   assert.match(cssSource, /:focus-visible/);
   assert.match(cssSource, /prefers-reduced-motion: reduce/);

@@ -14,7 +14,7 @@ permissions:
 jobs:
   web:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
     env:
       NEXT_TELEMETRY_DISABLED: '1'
     steps:
@@ -43,3 +43,11 @@ jobs:
       - name: Build web workspace
         working-directory: apps/web
         run: npm run build
+
+      - name: Install pinned Chromium runtime
+        working-directory: apps/web
+        run: npx playwright install --with-deps chromium
+
+      - name: Run browser E2E and responsive checks
+        working-directory: apps/web
+        run: npm run e2e
