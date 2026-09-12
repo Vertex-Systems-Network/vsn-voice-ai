@@ -42,9 +42,8 @@ extern "C" NTSTATUS VsnPortClsInstallSubdevice(
         status = PcRegisterSubdevice(device_object, name, port);
     }
     if (NT_SUCCESS(status) && out_port_unknown != nullptr) {
-        status = port->QueryInterface(
-            IID_IUnknown,
-            reinterpret_cast<PVOID*>(out_port_unknown));
+        *out_port_unknown = PUNKNOWN(port);
+        (*out_port_unknown)->AddRef();
     }
 
     port->Release();
