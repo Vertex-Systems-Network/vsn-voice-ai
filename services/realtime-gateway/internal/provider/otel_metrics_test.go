@@ -12,12 +12,12 @@ func TestBuildRoutingMetricPointsUsesClosedContentSafeAttributes(t *testing.T) {
 		NoEligibleCount: 1,
 		ByProvider: map[string]ProviderRoutingMetrics{
 			"primary": {
-				ProviderID:                  "primary",
-				SelectionCount:              2,
-				LatencyP95Milliseconds:      42,
-				CostMicrounitsPerMinute:     125,
-				Health:                      HealthHealthy,
-				RateLimit:                   RateLimitAvailable,
+				ProviderID:              "primary",
+				SelectionCount:          2,
+				LatencyP95Milliseconds:  42,
+				CostMicrounitsPerMinute: 125,
+				Health:                  HealthHealthy,
+				RateLimit:               RateLimitAvailable,
 			},
 		},
 	}
@@ -46,11 +46,11 @@ func TestBuildRoutingMetricPointsCarriesOperationalValues(t *testing.T) {
 		NoEligibleCount: 3,
 		ByProvider: map[string]ProviderRoutingMetrics{
 			"primary": {
-				SelectionCount:              7,
-				LatencyP95Milliseconds:      51,
-				CostMicrounitsPerMinute:     900,
-				Health:                      HealthDegraded,
-				RateLimit:                   RateLimitConstrained,
+				SelectionCount:          7,
+				LatencyP95Milliseconds:  51,
+				CostMicrounitsPerMinute: 900,
+				Health:                  HealthDegraded,
+				RateLimit:               RateLimitConstrained,
 			},
 		},
 	}
