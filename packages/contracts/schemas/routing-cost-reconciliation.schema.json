@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vsn.internal/schemas/routing-cost-reconciliation.schema.json",
+  "title": "RoutingCostReconciliation",
+  "description": "Content-safe integrity result for estimated provider routing cost analytics. This is not an accrued-spend or billing-ledger contract.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "status",
+    "total_issue_count",
+    "truncated",
+    "issues"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "status": {"enum": ["consistent", "inconsistent"]},
+    "total_issue_count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4294967295
+    },
+    "truncated": {"type": "boolean"},
+    "issues": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {"$ref": "#/$defs/issue"}
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {"status": {"const": "consistent"}},
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "total_issue_count": {"const": 0},
+          "truncated": {"const": false},
+          "issues": {"maxItems": 0}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"status": {"const": "inconsistent"}},
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "total_issue_count": {"minimum": 1},
+          "issues": {"minItems": 1}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"truncated": {"const": true}},
+        "required": ["truncated"]
+      },
+      "then": {
+        "properties": {
+          "status": {"const": "inconsistent"},
+          "total_issue_count": {"minimum": 257},
+          "issues": {"minItems": 256, "maxItems": 256}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {"total_issue_count": {"maximum": 256}},
+        "required": ["total_issue_count"]
+      },
+      "then": {
+        "properties": {"truncated": {"const": false}}
+      }
+    }
+  ],
+  "$defs": {
+    "issue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code"],
+      "properties": {
+        "code": {
+          "enum": [
+            "snapshot.provider_id_mismatch",
+            "snapshot.cost_rate_invalid",
+            "snapshot.selection_total_mismatch",
+            "summary.total_selections_mismatch",
+            "summary.no_eligible_count_mismatch",
+            "summary.no_eligible_basis_points_mismatch",
+            "summary.average_cost_mismatch",
+            "summary.provider_duplicate",
+            "summary.provider_unexpected",
+            "summary.provider_missing",
+            "summary.provider_selection_count_mismatch",
+            "summary.provider_selection_share_mismatch",
+            "summary.provider_cost_rate_mismatch",
+            "summary.provider_weighted_contribution_mismatch",
+            "summary.provider_latency_p95_mismatch",
+            "summary.provider_health_mismatch",
+            "summary.provider_rate_limit_mismatch"
+          ]
+        },
+        "provider_id": {"type": "string", "minLength": 1},
+        "expected": {"type": "string", "minLength": 1},
+        "observed": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}
