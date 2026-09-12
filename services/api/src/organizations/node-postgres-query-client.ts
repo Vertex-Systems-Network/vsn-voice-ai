@@ -41,7 +41,7 @@ export class NodePostgresQueryClient implements ClosablePostgresQueryClient {
     values: readonly unknown[],
   ): Promise<PostgresQueryResult<Row>> {
     const result = await this.pool.query(text, [...values]);
-    return { rows: result.rows as readonly Row[] };
+    return { rows: result.rows as unknown as readonly Row[] };
   }
 
   public async close(): Promise<void> {
