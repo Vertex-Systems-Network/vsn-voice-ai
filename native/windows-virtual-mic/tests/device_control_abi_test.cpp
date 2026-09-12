@@ -22,12 +22,12 @@ ProtocolHeader ReferenceHeader() {
         kProtocolVersion,
         static_cast<uint16_t>(sizeof(ProtocolHeader)),
         31u,
-        48'000u,
-        1u,
+        kWaveRtSampleRateHz,
+        kWaveRtChannels,
         kSampleFormatF32Le,
-        10'000u,
+        kWaveRtSchedulerFrameDurationMicros,
         4u,
-        480u,
+        kWaveRtSchedulerSamplesPerFrame,
         0u,
     };
 }
@@ -123,8 +123,7 @@ int main() {
     }
 
     // The generic protocol permits other integral F32 geometries, but the live
-    // VSN WaveRT endpoint is deliberately fixed at 48 kHz mono. CONNECT must
-    // fail closed instead of silently implying a resampler/channel converter.
+    // WaveRT endpoint/scheduler deliberately supports one exact geometry.
     bad_connect = connect;
     bad_connect.protocol.sample_rate_hz = 44'100u;
     bad_connect.protocol.samples_per_frame = 441u;
@@ -137,6 +136,13 @@ int main() {
     bad_connect.protocol.samples_per_frame = 960u;
     if (Require(ValidateHeader(bad_connect.protocol) == ContractStatus::kOk, "stereo regression input is not generically valid") ||
         Require(ValidateConnectRequest(bad_connect) == DeviceControlContractStatus::kEndpointFormatMismatch, "stereo CONNECT accepted")) {
+        return 1;
+    }
+    bad_connect = connect;
+    bad_connect.protocol.frame_duration_micros = 20'000u;
+    bad_connect.protocol.samples_per_frame = 960u;
+    if (Require(ValidateHeader(bad_connect.protocol) == ContractStatus::kOk, "20 ms regression input is not generically valid") ||
+        Require(ValidateConnectRequest(bad_connect) == DeviceControlContractStatus::kEndpointFormatMismatch, "non-10 ms CONNECT accepted")) {
         return 1;
     }
 

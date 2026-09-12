@@ -71,6 +71,7 @@
     <ClInclude Include="..\include\vsn_virtual_mic_topology_miniport.h" />
     <ClInclude Include="..\include\vsn_virtual_mic_wavert_contract.h" />
     <ClInclude Include="..\include\vsn_virtual_mic_wavert_miniport.h" />
+    <ClInclude Include="..\include\vsn_virtual_mic_wavert_scheduler.h" />
     <ClInclude Include="..\include\vsn_virtual_mic_wavert_stream.h" />
     <ClInclude Include="..\include\vsn_virtual_mic_wavert_stream_contract.h" />
   </ItemGroup>
