@@ -15,6 +15,14 @@ SCHEMA_PATH = (
 )
 
 
+def issue(code: str = "snapshot.provider_id_mismatch") -> dict:
+    return {
+        "code": code,
+        "expected": "expected-value",
+        "observed": "observed-value",
+    }
+
+
 class RoutingCostReconciliationContractTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -62,10 +70,7 @@ class RoutingCostReconciliationContractTests(unittest.TestCase):
             "status": "inconsistent",
             "total_issue_count": 300,
             "truncated": True,
-            "issues": [
-                {"code": "snapshot.provider_id_mismatch"}
-                for _ in range(256)
-            ],
+            "issues": [issue() for _ in range(256)],
         }
         self.validator.validate(payload)
 
@@ -78,16 +83,38 @@ class RoutingCostReconciliationContractTests(unittest.TestCase):
         with self.assertRaises(ValidationError):
             self.validator.validate(payload)
 
+    def test_more_than_retained_capacity_requires_truncated_state(self) -> None:
+        payload = {
+            "schema_version": 1,
+            "status": "inconsistent",
+            "total_issue_count": 257,
+            "truncated": False,
+            "issues": [issue() for _ in range(256)],
+        }
+        with self.assertRaises(ValidationError):
+            self.validator.validate(payload)
+
     def test_consistency_status_invariants_are_fail_closed(self) -> None:
         payload = self.consistent_payload()
         payload["total_issue_count"] = 1
-        payload["issues"] = [{"code": "snapshot.cost_rate_invalid"}]
+        payload["issues"] = [issue("snapshot.cost_rate_invalid")]
         with self.assertRaises(ValidationError):
             self.validator.validate(payload)
 
         payload = self.inconsistent_payload()
         payload["total_issue_count"] = 0
         payload["issues"] = []
+        with self.assertRaises(ValidationError):
+            self.validator.validate(payload)
+
+    def test_each_issue_requires_expected_and_observed_evidence(self) -> None:
+        payload = self.inconsistent_payload()
+        del payload["issues"][0]["expected"]
+        with self.assertRaises(ValidationError):
+            self.validator.validate(payload)
+
+        payload = self.inconsistent_payload()
+        del payload["issues"][0]["observed"]
         with self.assertRaises(ValidationError):
             self.validator.validate(payload)
 
@@ -114,12 +141,13 @@ class RoutingCostReconciliationContractTests(unittest.TestCase):
         with self.assertRaises(ValidationError):
             self.validator.validate(payload)
 
-        payload = self.inconsistent_payload()
-        payload["total_issue_count"] = 257
-        payload["issues"] = [
-            {"code": "snapshot.provider_id_mismatch"}
-            for _ in range(257)
-        ]
+        payload = {
+            "schema_version": 1,
+            "status": "inconsistent",
+            "total_issue_count": 257,
+            "truncated": True,
+            "issues": [issue() for _ in range(257)],
+        }
         with self.assertRaises(ValidationError):
             self.validator.validate(payload)
 
