@@ -8,6 +8,7 @@
 
 #include "../include/vsn_virtual_mic_wavert_contract.h"
 #include "../include/vsn_virtual_mic_wavert_miniport.h"
+#include "../include/vsn_virtual_mic_wavert_stream.h"
 
 extern "C" const PCFILTER_DESCRIPTOR* VsnVirtualMicWaveFilterDescriptor() noexcept;
 extern "C" const KSDATAFORMAT_WAVEFORMATEXTENSIBLE* VsnVirtualMicCaptureFormat() noexcept;
@@ -79,7 +80,7 @@ public:
     IMP_IMiniportWaveRT;
 
     explicit VsnVirtualMicWaveRtMiniport(PUNKNOWN unknown_outer) noexcept
-        : CUnknown(unknown_outer), stream_gate_(0) {}
+        : CUnknown(unknown_outer) {}
 
     static void* operator new(size_t size) noexcept {
         return ExAllocatePool2(POOL_FLAG_NON_PAGED, size, kVsnWaveRtPoolTag);
@@ -94,9 +95,6 @@ public:
     static void operator delete(void* memory, size_t) noexcept {
         operator delete(memory);
     }
-
-private:
-    volatile LONG stream_gate_;
 };
 
 #pragma code_seg("PAGE")
@@ -181,7 +179,6 @@ STDMETHODIMP VsnVirtualMicWaveRtMiniport::Init(
     UNREFERENCED_PARAMETER(unknown_adapter);
     UNREFERENCED_PARAMETER(resource_list);
 
-    stream_gate_ = 0;
     return port != nullptr ? STATUS_SUCCESS : STATUS_INVALID_PARAMETER;
 }
 
@@ -193,9 +190,7 @@ STDMETHODIMP VsnVirtualMicWaveRtMiniport::NewStream(
     PKSDATAFORMAT data_format) {
     PAGED_CODE();
 
-    UNREFERENCED_PARAMETER(outer_unknown);
-
-    if (out_stream == nullptr || data_format == nullptr) {
+    if (out_stream == nullptr || outer_unknown == nullptr || data_format == nullptr) {
         return STATUS_INVALID_PARAMETER;
     }
     *out_stream = nullptr;
@@ -204,15 +199,15 @@ STDMETHODIMP VsnVirtualMicWaveRtMiniport::NewStream(
         return STATUS_NOT_SUPPORTED;
     }
 
-    if (InterlockedCompareExchange(&stream_gate_, 1, 0) != 0) {
-        return STATUS_INSUFFICIENT_RESOURCES;
-    }
-
-    // SLOT-004 owns the concrete IMiniportWaveRTStream implementation. Release
-    // the reservation before failing closed so this shell can never leak the
-    // single-stream capacity while no stream object exists yet.
-    InterlockedExchange(&stream_gate_, 0);
-    return STATUS_NOT_SUPPORTED;
+    // The capture pin descriptor advertises exactly one possible/global stream,
+    // so PortCls owns single-stream admission. Mirror Microsoft's WaveRT sample
+    // pattern by keeping the stream CUnknown non-aggregated while passing the
+    // PortCls stream interface to the concrete stream for buffer operations.
+    return VsnCreateVirtualMicWaveRtStream(
+        out_stream,
+        nullptr,
+        outer_unknown,
+        data_format);
 }
 
 STDMETHODIMP VsnVirtualMicWaveRtMiniport::GetDeviceDescription(
