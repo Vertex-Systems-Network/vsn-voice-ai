@@ -65,15 +65,35 @@ def load(path: Path) -> dict[str, Any]:
 
 
 def dependency_ready(slot: dict[str, Any], slots: list[dict[str, Any]]) -> bool:
-    deps = set(slot.get("dependencies") or [])
+    deps = {str(dep) for dep in (slot.get("dependencies") or []) if dep}
     if not deps:
         return True
-    completed = {
-        str(s.get("work_unit_id"))
-        for s in slots
-        if s.get("status") in {"merged", "completed"} and s.get("work_unit_id")
+
+    terminal_states = {"merged", "completed"}
+    completed_slot_ids = {
+        str(item.get("id"))
+        for item in slots
+        if item.get("status") in terminal_states and item.get("id")
     }
-    return deps.issubset(completed)
+    completed_work_unit_ids = {
+        str(item.get("work_unit_id"))
+        for item in slots
+        if item.get("status") in terminal_states and item.get("work_unit_id")
+    }
+
+    for dep in deps:
+        if dep.startswith("SLOT-"):
+            if dep not in completed_slot_ids:
+                return False
+            continue
+        if dep.startswith("WU-"):
+            if dep not in completed_work_unit_ids:
+                return False
+            continue
+        # Fail closed for unknown dependency namespaces instead of accidentally
+        # treating a typo or future identifier as satisfied.
+        return False
+    return True
 
 
 def enforce_budgets(queue: dict[str, Any], slot: dict[str, Any]) -> None:
