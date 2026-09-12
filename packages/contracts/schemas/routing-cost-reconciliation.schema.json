@@ -68,6 +68,18 @@
     },
     {
       "if": {
+        "properties": {"total_issue_count": {"minimum": 257}},
+        "required": ["total_issue_count"]
+      },
+      "then": {
+        "properties": {
+          "truncated": {"const": true},
+          "issues": {"minItems": 256, "maxItems": 256}
+        }
+      }
+    },
+    {
+      "if": {
         "properties": {"total_issue_count": {"maximum": 256}},
         "required": ["total_issue_count"]
       },
@@ -80,7 +92,7 @@
     "issue": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["code"],
+      "required": ["code", "expected", "observed"],
       "properties": {
         "code": {
           "enum": [
