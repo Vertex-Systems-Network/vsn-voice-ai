@@ -1,5 +1,7 @@
 package provider
 
+import "sort"
+
 const (
 	RoutingMetricSelectionsName = "vsn.provider.routing.selections"
 	RoutingMetricNoEligibleName = "vsn.provider.routing.no_eligible"
@@ -35,7 +37,14 @@ func BuildRoutingMetricPoints(snapshot RoutingMetricsSnapshot) []RoutingMetricPo
 		Value: uint64ToInt64Saturated(snapshot.NoEligibleCount),
 	})
 
-	for providerID, metrics := range snapshot.ByProvider {
+	providerIDs := make([]string, 0, len(snapshot.ByProvider))
+	for providerID := range snapshot.ByProvider {
+		providerIDs = append(providerIDs, providerID)
+	}
+	sort.Strings(providerIDs)
+
+	for _, providerID := range providerIDs {
+		metrics := snapshot.ByProvider[providerID]
 		attributes := routingProviderAttributes(providerID, metrics)
 		points = append(points,
 			RoutingMetricPoint{
