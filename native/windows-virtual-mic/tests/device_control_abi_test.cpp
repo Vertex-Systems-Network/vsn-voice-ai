@@ -86,7 +86,8 @@ int main() {
 
     ConnectRequest connect = MakeConnectRequest(protocol);
     if (Require(ValidateConnectRequest(connect) == DeviceControlContractStatus::kOk, "valid connect request rejected") ||
-        Require(connect.protocol.session_generation == 31u, "connect protocol generation mismatch")) {
+        Require(connect.protocol.session_generation == 31u, "connect protocol generation mismatch") ||
+        Require(ProtocolMatchesWaveRtEndpoint(connect.protocol), "reference protocol does not match WaveRT endpoint")) {
         return 1;
     }
 
@@ -120,6 +121,25 @@ int main() {
     if (Require(ValidateConnectRequest(bad_connect) == DeviceControlContractStatus::kProtocolHeaderInvalid, "bad transport protocol accepted")) {
         return 1;
     }
+
+    // The generic protocol permits other integral F32 geometries, but the live
+    // VSN WaveRT endpoint is deliberately fixed at 48 kHz mono. CONNECT must
+    // fail closed instead of silently implying a resampler/channel converter.
+    bad_connect = connect;
+    bad_connect.protocol.sample_rate_hz = 44'100u;
+    bad_connect.protocol.samples_per_frame = 441u;
+    if (Require(ValidateHeader(bad_connect.protocol) == ContractStatus::kOk, "44.1 kHz regression input is not generically valid") ||
+        Require(ValidateConnectRequest(bad_connect) == DeviceControlContractStatus::kEndpointFormatMismatch, "non-48 kHz CONNECT accepted")) {
+        return 1;
+    }
+    bad_connect = connect;
+    bad_connect.protocol.channels = 2u;
+    bad_connect.protocol.samples_per_frame = 960u;
+    if (Require(ValidateHeader(bad_connect.protocol) == ContractStatus::kOk, "stereo regression input is not generically valid") ||
+        Require(ValidateConnectRequest(bad_connect) == DeviceControlContractStatus::kEndpointFormatMismatch, "stereo CONNECT accepted")) {
+        return 1;
+    }
+
     bad_connect = connect;
     bad_connect.flags = 1u;
     if (Require(ValidateConnectRequest(bad_connect) == DeviceControlContractStatus::kUnsupportedFlags, "unknown connect flag accepted")) {
