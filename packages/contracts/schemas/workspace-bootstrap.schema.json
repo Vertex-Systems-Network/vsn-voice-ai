@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.vsn.local/workspace-bootstrap.schema.json",
+  "title": "VSN Workspace Bootstrap Response",
+  "description": "Tenant-authorized read-only workspace bootstrap payload. Resource areas remain explicitly unloaded until their repositories and authorization contracts are wired.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "authorization",
+    "meetings",
+    "devices",
+    "team",
+    "settings"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "authorization": {
+      "$ref": "https://schemas.vsn.local/authorization-context.schema.json"
+    },
+    "meetings": {
+      "$ref": "#/$defs/unloadedArea"
+    },
+    "devices": {
+      "$ref": "#/$defs/unloadedArea"
+    },
+    "team": {
+      "$ref": "#/$defs/unloadedArea"
+    },
+    "settings": {
+      "$ref": "#/$defs/unloadedArea"
+    }
+  },
+  "$defs": {
+    "unloadedArea": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "items"
+      ],
+      "properties": {
+        "status": {
+          "const": "unloaded"
+        },
+        "items": {
+          "type": "array",
+          "maxItems": 0
+        }
+      }
+    }
+  }
+}
