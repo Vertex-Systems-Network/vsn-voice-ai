@@ -6,14 +6,14 @@ const RoutingOperationalSnapshotSchemaVersion uint32 = 1
 // admin/observability surfaces. It composes already-approved routing metadata;
 // it is not a billing ledger, request log, or customer-content container.
 type RoutingOperationalSnapshot struct {
-	SchemaVersion  uint32                    `json:"schema_version"`
-	RouteAttempts  uint64                    `json:"route_attempts"`
-	TotalSelections uint64                   `json:"total_selections"`
-	NoEligibleCount uint64                   `json:"no_eligible_count"`
-	WarningCount   uint32                    `json:"warning_count"`
-	CriticalCount  uint32                    `json:"critical_count"`
-	CostControl    RoutingCostControlSummary `json:"cost_control"`
-	Alerts         []RoutingOperationalAlert `json:"alerts"`
+	SchemaVersion   uint32                    `json:"schema_version"`
+	RouteAttempts   uint64                    `json:"route_attempts"`
+	TotalSelections uint64                    `json:"total_selections"`
+	NoEligibleCount uint64                    `json:"no_eligible_count"`
+	WarningCount    uint32                    `json:"warning_count"`
+	CriticalCount   uint32                    `json:"critical_count"`
+	CostControl     RoutingCostControlSummary `json:"cost_control"`
+	Alerts          []RoutingOperationalAlert `json:"alerts"`
 }
 
 // BuildRoutingOperationalSnapshot composes the existing metrics, cost-control,
