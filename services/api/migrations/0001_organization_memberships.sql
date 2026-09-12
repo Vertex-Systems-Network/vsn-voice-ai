@@ -29,7 +29,4 @@ CREATE TABLE organization_memberships (
     UNIQUE (organization_id, subject_id)
 );
 
-CREATE INDEX organization_memberships_subject_lookup_idx
-  ON organization_memberships (subject_id, organization_id);
-
 COMMIT;
