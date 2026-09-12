@@ -101,7 +101,7 @@ func TestReconcileRoutingCostControlDetectsTamperedSummary(t *testing.T) {
 		providerA,
 		providerA,
 		{
-			ProviderID:    "provider-x",
+			ProviderID:     "provider-x",
 			SelectionCount: 1,
 		},
 	}
