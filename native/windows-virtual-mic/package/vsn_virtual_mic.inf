@@ -1,0 +1,101 @@
+[Version]
+Signature   = "$Windows NT$"
+Class       = MEDIA
+ClassGuid   = {4d36e96c-e325-11ce-bfc1-08002be10318}
+Provider    = %ProviderName%
+DriverVer   = 09/12/2026,0.1.0.0
+CatalogFile = vsn_virtual_mic.cat
+PnpLockDown = 1
+
+[SourceDisksNames]
+1 = %DiskName%,,,
+
+[SourceDisksFiles]
+vsn_virtual_mic_control.sys = 1
+
+[Manufacturer]
+%MfgName% = VSN,NTamd64
+
+[VSN.NTamd64]
+%VSNVirtualMic.DeviceDesc% = VSNVirtualMic, ROOT\VSNVIRTUALMIC
+
+[DestinationDirs]
+VSNVirtualMic.CopyList = 13
+
+[VSNVirtualMic.CopyList]
+vsn_virtual_mic_control.sys
+
+[VSNVirtualMic.AddReg]
+HKR,,AssociatedFilters,,"wdmaud"
+HKR,,Driver,,vsn_virtual_mic_control.sys
+HKR,Drivers,SubClasses,,"wave,mixer"
+HKR,Drivers\wave\wdmaud.drv,Driver,,wdmaud.drv
+HKR,Drivers\mixer\wdmaud.drv,Driver,,wdmaud.drv
+HKR,Drivers\wave\wdmaud.drv,Description,,%VSNVirtualMic.DeviceDesc%
+HKR,Drivers\mixer\wdmaud.drv,Description,,%VSNVirtualMic.DeviceDesc%
+
+[VSNVirtualMic.NT]
+Include = ks.inf,wdmaudio.inf
+Needs   = KS.Registration,WDMAUDIO.Registration
+CopyFiles = VSNVirtualMic.CopyList
+AddReg    = VSNVirtualMic.AddReg
+
+[VSNVirtualMic.NT.Interfaces]
+AddInterface = %KSCATEGORY_AUDIO%,    %KSNAME_VSNWave%,     VSN.I.Wave
+AddInterface = %KSCATEGORY_REALTIME%, %KSNAME_VSNWave%,     VSN.I.Wave
+AddInterface = %KSCATEGORY_CAPTURE%,  %KSNAME_VSNWave%,     VSN.I.Wave
+AddInterface = %KSCATEGORY_AUDIO%,    %KSNAME_VSNTopology%, VSN.I.Topology
+AddInterface = %KSCATEGORY_TOPOLOGY%, %KSNAME_VSNTopology%, VSN.I.Topology
+
+[VSN.I.Wave]
+AddReg = VSN.I.Wave.AddReg
+
+[VSN.I.Wave.AddReg]
+HKR,,CLSID,,%Proxy.CLSID%
+HKR,,FriendlyName,,%VSNVirtualMic.WaveName%
+
+[VSN.I.Topology]
+AddReg = VSN.I.Topology.AddReg
+
+[VSN.I.Topology.AddReg]
+HKR,,CLSID,,%Proxy.CLSID%
+HKR,,FriendlyName,,%VSNVirtualMic.TopologyName%
+HKR,EP\0,%PKEY_AudioEndpoint_Association%,,%KSNODETYPE_ANY%
+HKR,EP\0,%PKEY_AudioEndpoint_Supports_EventDriven_Mode%,0x00010001,0x1
+
+[VSNVirtualMic.NT.Services]
+AddService = VsnVirtualMic,0x00000002,VsnVirtualMic.Service
+
+[VsnVirtualMic.Service]
+DisplayName   = %VSNVirtualMic.ServiceDesc%
+ServiceType   = 1
+StartType     = 3
+ErrorControl  = 1
+ServiceBinary = %13%\vsn_virtual_mic_control.sys
+
+[VSNVirtualMic.NT.Wdf]
+KmdfService = VsnVirtualMic,VSNVirtualMic.Wdf
+
+[VSNVirtualMic.Wdf]
+KmdfLibraryVersion = 1.21
+
+[Strings]
+ProviderName = "Vertex Systems Network"
+MfgName = "Vertex Systems Network"
+DiskName = "VSN Virtual Microphone Test Package"
+VSNVirtualMic.DeviceDesc = "VSN Virtual Microphone"
+VSNVirtualMic.ServiceDesc = "VSN Virtual Microphone Driver"
+VSNVirtualMic.WaveName = "VSN Virtual Microphone Wave"
+VSNVirtualMic.TopologyName = "VSN Virtual Microphone Topology"
+
+KSNAME_VSNWave = "VSNWave"
+KSNAME_VSNTopology = "VSNTopology"
+
+Proxy.CLSID = "{17CCA71B-ECD7-11D0-B908-00A0C9223196}"
+KSCATEGORY_AUDIO = "{6994AD04-93EF-11D0-A3CC-00A0C9223196}"
+KSCATEGORY_CAPTURE = "{65E8773D-8F56-11D0-A3B9-00A0C9223196}"
+KSCATEGORY_REALTIME = "{EB115FFC-10C8-4964-831D-6DCB02E6F23F}"
+KSCATEGORY_TOPOLOGY = "{DDA54A40-1E4C-11D1-A050-405705C10000}"
+KSNODETYPE_ANY = "{00000000-0000-0000-0000-000000000000}"
+PKEY_AudioEndpoint_Association = "{1DA5D803-D492-4EDD-8C23-E0C0FFEE7F0E},2"
+PKEY_AudioEndpoint_Supports_EventDriven_Mode = "{1DA5D803-D492-4EDD-8C23-E0C0FFEE7F0E},7"
