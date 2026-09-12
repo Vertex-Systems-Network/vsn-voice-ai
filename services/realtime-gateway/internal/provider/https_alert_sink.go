@@ -18,11 +18,11 @@ import (
 )
 
 const (
-	RoutingAlertWebhookSchemaVersion                    uint32        = 1
-	MaxRoutingAlertWebhookPayloadBytes                                = 64 * 1024
-	MinRoutingAlertWebhookSecretBytes                                 = 32
-	defaultRoutingAlertWebhookTimeout                   time.Duration = 5 * time.Second
-	maxRoutingAlertWebhookTimeout                       time.Duration = 15 * time.Second
+	RoutingAlertWebhookSchemaVersion   uint32        = 1
+	MaxRoutingAlertWebhookPayloadBytes               = 64 * 1024
+	MinRoutingAlertWebhookSecretBytes                = 32
+	defaultRoutingAlertWebhookTimeout  time.Duration = 5 * time.Second
+	maxRoutingAlertWebhookTimeout      time.Duration = 15 * time.Second
 )
 
 var (
