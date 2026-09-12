@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vsn_virtual_mic_protocol.h"
+#include "vsn_virtual_mic_wavert_contract.h"
 
 #if !defined(_WIN32)
 #error "VSN virtual microphone device-control ABI is Windows-only"
@@ -150,6 +151,7 @@ enum class DeviceControlContractStatus : uint32_t {
     kStructSizeMismatch,
     kInvalidSessionGeneration,
     kProtocolHeaderInvalid,
+    kEndpointFormatMismatch,
     kInvalidSectionHandle,
     kInvalidSectionSize,
     kUnexpectedSectionMetadata,
@@ -176,6 +178,12 @@ constexpr DeviceControlContractStatus ValidateControlPrefix(
     return DeviceControlContractStatus::kOk;
 }
 
+constexpr bool ProtocolMatchesWaveRtEndpoint(const ProtocolHeader& protocol) noexcept {
+    return protocol.sample_rate_hz == kWaveRtSampleRateHz &&
+        protocol.channels == kWaveRtChannels &&
+        protocol.sample_format == kSampleFormatF32Le;
+}
+
 constexpr DeviceControlContractStatus ValidateConnectRequest(
     const ConnectRequest& request) noexcept {
     const DeviceControlContractStatus prefix = ValidateControlPrefix(
@@ -188,6 +196,9 @@ constexpr DeviceControlContractStatus ValidateConnectRequest(
     }
     if (ValidateHeader(request.protocol) != ContractStatus::kOk) {
         return DeviceControlContractStatus::kProtocolHeaderInvalid;
+    }
+    if (!ProtocolMatchesWaveRtEndpoint(request.protocol)) {
+        return DeviceControlContractStatus::kEndpointFormatMismatch;
     }
     if (request.flags != 0u) {
         return DeviceControlContractStatus::kUnsupportedFlags;
