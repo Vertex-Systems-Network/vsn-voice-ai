@@ -25,7 +25,9 @@ static_assert(sizeof(TransportGeometry) == 24u, "TransportGeometry ABI size drif
 static_assert(alignof(TransportGeometry) == 8u, "TransportGeometry ABI alignment drifted");
 
 // Returns the currently published validated transport geometry without exposing
-// the raw shared mapping or control-device extension to the WaveRT stream.
+// the raw shared mapping or control-device extension to the WaveRT stream. The
+// published geometry comes only from a CONNECT request accepted by the device-
+// control contract, which is now fixed to the live 48 kHz mono F32 endpoint.
 // This function is safe at IRQL <= DISPATCH_LEVEL and performs no allocation,
 // wait, retry or user-mode access.
 extern "C" TransportBridgeStatus VsnWdmControlGetTransportGeometry(
