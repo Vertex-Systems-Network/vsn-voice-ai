@@ -1,5 +1,6 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Inject } from '@nestjs/common';
 
+import { RUNTIME_CONFIG } from '../config/runtime-config.js';
 import type { RuntimeConfig } from '../config/runtime-config.js';
 
 export interface HealthResponse {
@@ -10,7 +11,9 @@ export interface HealthResponse {
 
 @Controller('health')
 export class HealthController {
-  public constructor(private readonly runtimeConfig: RuntimeConfig) {}
+  public constructor(
+    @Inject(RUNTIME_CONFIG) private readonly runtimeConfig: RuntimeConfig,
+  ) {}
 
   @Get()
   public getHealth(): HealthResponse {
