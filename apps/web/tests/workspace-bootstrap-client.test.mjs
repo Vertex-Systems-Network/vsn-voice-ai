@@ -4,7 +4,8 @@ import { createRequire } from 'node:module';
 import test from 'node:test';
 
 const require = createRequire(import.meta.url);
-const ts = require('typescript');
+const typescriptModule = require('typescript');
+const ts = typescriptModule.default ?? typescriptModule;
 
 const sourceUrl = new URL('../lib/workspace-bootstrap-client.ts', import.meta.url);
 const source = await readFile(sourceUrl, 'utf8');
