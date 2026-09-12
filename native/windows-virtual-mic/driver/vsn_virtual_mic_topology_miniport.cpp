@@ -1,6 +1,9 @@
 #include <ntifs.h>
 #include <portcls.h>
+#pragma warning(push)
+#pragma warning(disable : 4996)
 #include <stdunk.h>
+#pragma warning(pop)
 
 #include "../include/vsn_virtual_mic_topology_miniport.h"
 
@@ -33,10 +36,6 @@ public:
     static void operator delete(void* memory, size_t) noexcept {
         operator delete(memory);
     }
-
-    STDMETHODIMP NonDelegatingQueryInterface(
-        REFIID interface_id,
-        PVOID* object) override;
 };
 
 #pragma code_seg("PAGE")
