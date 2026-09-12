@@ -1,24 +1,9 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import test from 'node:test';
 
 const require = createRequire(import.meta.url);
-const typescriptModule = require('typescript');
-const ts = typescriptModule.default ?? typescriptModule;
-
-const sourceUrl = new URL('../lib/workspace-bootstrap-client.ts', import.meta.url);
-const source = await readFile(sourceUrl, 'utf8');
-const transpiled = ts.transpileModule(source, {
-  compilerOptions: {
-    module: ts.ModuleKind.ESNext,
-    target: ts.ScriptTarget.ES2022,
-  },
-  fileName: 'workspace-bootstrap-client.ts',
-});
-const client = await import(
-  `data:text/javascript;base64,${Buffer.from(transpiled.outputText).toString('base64')}`
-);
+const client = require('../.test-dist/workspace-bootstrap-client.js');
 
 function validPayload(organizationId = 'org_456') {
   const unloaded = { status: 'unloaded', items: [] };
