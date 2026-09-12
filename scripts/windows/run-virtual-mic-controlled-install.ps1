@@ -109,7 +109,7 @@ function Get-SafeSmokePayload {
         return $null
     }
 
-    $systemError = 0
+    [uint32]$systemError = 0
     if (-not [uint32]::TryParse([string]$payload.system_error, [ref]$systemError)) {
         return $null
     }
