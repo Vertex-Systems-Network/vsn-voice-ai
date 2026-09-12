@@ -10,6 +10,7 @@ on:
       - "native/audio-core/**"
       - "native/windows-audio/**"
       - "native/windows-virtual-mic/**"
+      - "scripts/windows/**"
       - ".github/workflows/windows-audio.yml"
   push:
     branches:
@@ -20,6 +21,7 @@ on:
       - "native/audio-core/**"
       - "native/windows-audio/**"
       - "native/windows-virtual-mic/**"
+      - "scripts/windows/**"
       - ".github/workflows/windows-audio.yml"
   workflow_dispatch:
 
@@ -89,6 +91,20 @@ jobs:
             throw "KMDF build completed without producing vsn_virtual_mic_control.sys"
           }
           Write-Host "Built control-driver skeleton: $($driver.FullName)"
+
+      - name: Build and verify virtual microphone test package
+        shell: pwsh
+        run: |
+          $driver = Get-ChildItem "native\windows-virtual-mic\driver" -Recurse -Filter "vsn_virtual_mic_control.sys" | Select-Object -First 1
+          if (-not $driver) {
+            throw "WDK build output was not found for package verification"
+          }
+
+          ./scripts/windows/build-virtual-mic-test-package.ps1 -DriverBinary $driver.FullName
+
+          if (-not (Test-Path "artifacts\vsn-virtual-mic-test-package\vsn_virtual_mic.cat")) {
+            throw "Verified driver package did not contain the generated catalog"
+          }
 
       - name: Validate C++ virtual microphone transport contracts
         shell: pwsh
