@@ -9,13 +9,13 @@ const RoutingOperationalExportSchemaVersion uint32 = 1
 // range are encoded as base-10 strings so consumers cannot silently lose
 // precision when decoding JSON.
 type RoutingOperationalExport struct {
-	SchemaVersion   uint32                         `json:"schema_version"`
-	RouteAttempts   string                         `json:"route_attempts"`
-	TotalSelections string                         `json:"total_selections"`
-	NoEligibleCount string                         `json:"no_eligible_count"`
-	WarningCount    uint32                         `json:"warning_count"`
-	CriticalCount   uint32                         `json:"critical_count"`
-	CostControl     RoutingCostControlExport       `json:"cost_control"`
+	SchemaVersion   uint32                          `json:"schema_version"`
+	RouteAttempts   string                          `json:"route_attempts"`
+	TotalSelections string                          `json:"total_selections"`
+	NoEligibleCount string                          `json:"no_eligible_count"`
+	WarningCount    uint32                          `json:"warning_count"`
+	CriticalCount   uint32                          `json:"critical_count"`
+	CostControl     RoutingCostControlExport        `json:"cost_control"`
 	Alerts          []RoutingOperationalAlertExport `json:"alerts"`
 }
 
