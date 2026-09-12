@@ -18,18 +18,18 @@ import (
 )
 
 const (
-	RoutingAlertWebhookSchemaVersion uint32        = 1
-	MaxRoutingAlertWebhookPayloadBytes             = 64 * 1024
-	MinRoutingAlertWebhookSecretBytes              = 32
-	defaultRoutingAlertWebhookTimeout time.Duration = 5 * time.Second
-	maxRoutingAlertWebhookTimeout     time.Duration = 15 * time.Second
+	RoutingAlertWebhookSchemaVersion                    uint32        = 1
+	MaxRoutingAlertWebhookPayloadBytes                                = 64 * 1024
+	MinRoutingAlertWebhookSecretBytes                                 = 32
+	defaultRoutingAlertWebhookTimeout                   time.Duration = 5 * time.Second
+	maxRoutingAlertWebhookTimeout                       time.Duration = 15 * time.Second
 )
 
 var (
-	ErrInvalidRoutingAlertWebhookConfig = errors.New("invalid routing alert webhook configuration")
+	ErrInvalidRoutingAlertWebhookConfig   = errors.New("invalid routing alert webhook configuration")
 	ErrRoutingAlertWebhookPayloadTooLarge = errors.New("routing alert webhook payload too large")
-	ErrRoutingAlertWebhookDeliveryFailed = errors.New("routing alert webhook delivery failed")
-	ErrRoutingAlertWebhookRejected       = errors.New("routing alert webhook rejected")
+	ErrRoutingAlertWebhookDeliveryFailed  = errors.New("routing alert webhook delivery failed")
+	ErrRoutingAlertWebhookRejected        = errors.New("routing alert webhook rejected")
 )
 
 type HTTPSRoutingAlertSinkConfig struct {
