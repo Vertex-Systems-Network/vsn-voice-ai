@@ -1,6 +1,7 @@
 #include <ntifs.h>
 #include <portcls.h>
 #include <wdf.h>
+#include <wdfminiport.h>
 
 extern "C" NTSTATUS VsnPortClsInitializeAdapterScaffold(
     PDRIVER_OBJECT driver_object,
