@@ -3,7 +3,7 @@
   "status": "template_blueprint",
   "activation_scope": "child_project_only",
   "limits": {
-    "max_parallel_agents": 4,
+    "max_parallel_agents": 11,
     "max_delegation_depth": 2,
     "max_same_error_retries": 3,
     "max_tool_retry_attempts": 4,
@@ -20,5 +20,5 @@
     "require_owner_approval_to_raise_material_cost_limits": true,
     "never_recursively_delegate_without_bounded_depth": true
   },
-  "notes": "Null monetary/token values mean the child project must set a limit when cost-sensitive autonomous execution is enabled; they do not mean unlimited budget."
+  "notes": "Parallel agent capacity is set to 11 per explicit owner request. This cap is only an authorization ceiling: workers still require live Supervisor coordination, verified runtime identity, valid leases/fencing tokens, path/tool authorization, and applicable cost limits. Null monetary/token values mean the child project must set a limit when cost-sensitive autonomous execution is enabled; they do not mean unlimited budget."
 }
