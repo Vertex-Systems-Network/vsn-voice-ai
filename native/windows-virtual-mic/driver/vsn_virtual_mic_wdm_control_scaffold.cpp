@@ -5,6 +5,7 @@
 #include "../include/vsn_virtual_mic_cursor_sync.h"
 #include "../include/vsn_virtual_mic_device_control.h"
 #include "../include/vsn_virtual_mic_region_layout.h"
+#include "../include/vsn_virtual_mic_transport_bridge.h"
 
 extern "C" DRIVER_DISPATCH VsnWdmControlDispatchCreateClose;
 extern "C" DRIVER_DISPATCH VsnWdmControlDispatchDeviceControl;
@@ -35,6 +36,8 @@ struct VSN_WDM_CONTROL_CONTEXT final {
 
 PDEVICE_OBJECT g_vsn_control_device = nullptr;
 BOOLEAN g_vsn_symbolic_link_created = FALSE;
+KSPIN_LOCK g_vsn_control_access_lock;
+BOOLEAN g_vsn_control_access_lock_initialized = FALSE;
 
 NTSTATUS CompleteControlIrp(
     PIRP irp,
@@ -84,20 +87,33 @@ void ResetConnectionLocked(VSN_WDM_CONTROL_CONTEXT* context) noexcept {
         return;
     }
 
-    if (context->kernel_view != nullptr) {
-        MmUnmapViewInSystemSpace(context->kernel_view);
-        context->kernel_view = nullptr;
-    }
-    if (context->section_object != nullptr) {
-        ObDereferenceObject(context->section_object);
-        context->section_object = nullptr;
-    }
+    PVOID kernel_view = nullptr;
+    PVOID section_object = nullptr;
 
+    // The state mutex serializes control-plane ownership changes. The spin lock
+    // additionally fences the bounded realtime consume path so no WaveRT DPC
+    // can retain the mapping while it is detached and subsequently unmapped.
+    KIRQL old_irql;
+    KeAcquireSpinLock(&g_vsn_control_access_lock, &old_irql);
+    kernel_view = context->kernel_view;
+    section_object = context->section_object;
+    context->kernel_view = nullptr;
+    context->section_object = nullptr;
     context->section_bytes = 0u;
     context->owner_process_id = 0u;
     context->owner_file = nullptr;
     RtlZeroMemory(&context->protocol, sizeof(context->protocol));
     context->connected = FALSE;
+    KeReleaseSpinLock(&g_vsn_control_access_lock, old_irql);
+
+    // Potentially blocking teardown remains outside the spin-locked realtime
+    // boundary and runs only from PASSIVE-level control cleanup paths.
+    if (kernel_view != nullptr) {
+        MmUnmapViewInSystemSpace(kernel_view);
+    }
+    if (section_object != nullptr) {
+        ObDereferenceObject(section_object);
+    }
 }
 
 bool RequestOwnsConnection(
@@ -306,6 +322,11 @@ NTSTATUS CompleteConnect(
         return CompleteControlIrp(irp, status);
     }
 
+    // Publish the immutable transport geometry and mapping atomically with
+    // respect to the realtime bridge. No realtime caller can observe a partly
+    // initialized connection.
+    KIRQL old_irql;
+    KeAcquireSpinLock(&g_vsn_control_access_lock, &old_irql);
     context->section_object = section_object;
     context->kernel_view = kernel_view;
     context->section_bytes = static_cast<SIZE_T>(layout.total_bytes);
@@ -313,6 +334,7 @@ NTSTATUS CompleteConnect(
     context->owner_file = stack->FileObject;
     context->protocol = connect.protocol;
     context->connected = TRUE;
+    KeReleaseSpinLock(&g_vsn_control_access_lock, old_irql);
 
     const ConnectResponse response = MakeConnectResponse(
         connect.protocol.session_generation,
@@ -461,6 +483,102 @@ NTSTATUS CleanupOwnerConnection(
 
 } // namespace
 
+namespace vsn::virtual_mic {
+
+extern "C" TransportBridgeStatus VsnWdmControlGetTransportGeometry(
+    TransportGeometry* geometry) noexcept {
+    if (geometry == nullptr) {
+        return TransportBridgeStatus::kInvalidOutput;
+    }
+    *geometry = TransportGeometry{};
+
+    if (KeGetCurrentIrql() > DISPATCH_LEVEL || g_vsn_control_access_lock_initialized == FALSE) {
+        return TransportBridgeStatus::kUnavailable;
+    }
+
+    KIRQL old_irql;
+    KeAcquireSpinLock(&g_vsn_control_access_lock, &old_irql);
+
+    TransportBridgeStatus status = TransportBridgeStatus::kUnavailable;
+    PDEVICE_OBJECT device_object = g_vsn_control_device;
+    VSN_WDM_CONTROL_CONTEXT* context = GetControlContext(device_object);
+    if (context != nullptr && context->connected != FALSE && context->kernel_view != nullptr) {
+        SharedRegionLayout layout{};
+        if (PlanSharedRegionLayout(context->protocol, &layout) == SharedRegionStatus::kOk &&
+            layout.total_bytes <= context->section_bytes) {
+            *geometry = TransportGeometry{
+                context->protocol.session_generation,
+                layout.frame_bytes,
+                context->protocol.frame_duration_micros,
+                context->protocol.samples_per_frame,
+            };
+            status = TransportBridgeStatus::kOk;
+        }
+    }
+
+    KeReleaseSpinLock(&g_vsn_control_access_lock, old_irql);
+    return status;
+}
+
+extern "C" TransportBridgeStatus VsnWdmControlConsumeFrame(
+    void* output_frame,
+    uint64_t output_frame_bytes,
+    RingConsumeResult* result) noexcept {
+    if (output_frame == nullptr || output_frame_bytes == 0u || result == nullptr) {
+        return TransportBridgeStatus::kInvalidOutput;
+    }
+    *result = RingConsumeResult{};
+
+    if (KeGetCurrentIrql() > DISPATCH_LEVEL || g_vsn_control_access_lock_initialized == FALSE) {
+        ZeroRingBytes(output_frame, output_frame_bytes);
+        return TransportBridgeStatus::kUnavailable;
+    }
+
+    KIRQL old_irql;
+    KeAcquireSpinLock(&g_vsn_control_access_lock, &old_irql);
+
+    TransportBridgeStatus bridge_status = TransportBridgeStatus::kUnavailable;
+    PDEVICE_OBJECT device_object = g_vsn_control_device;
+    VSN_WDM_CONTROL_CONTEXT* context = GetControlContext(device_object);
+    if (context != nullptr && context->connected != FALSE && context->kernel_view != nullptr) {
+        SharedRegionLayout layout{};
+        if (PlanSharedRegionLayout(context->protocol, &layout) == SharedRegionStatus::kOk &&
+            layout.total_bytes <= context->section_bytes &&
+            output_frame_bytes == layout.frame_bytes) {
+            const RingConsumeStatus ring_status = ConsumeOneRingFrame(
+                context->protocol,
+                context->protocol.session_generation,
+                context->kernel_view,
+                static_cast<uint64_t>(context->section_bytes),
+                output_frame,
+                output_frame_bytes,
+                result);
+            if (ring_status == RingConsumeStatus::kOk) {
+                bridge_status = TransportBridgeStatus::kOk;
+            } else if (ring_status == RingConsumeStatus::kUnderrun ||
+                       ring_status == RingConsumeStatus::kSlotUnstable) {
+                bridge_status = TransportBridgeStatus::kSilence;
+            } else {
+                ZeroRingBytes(output_frame, output_frame_bytes);
+                bridge_status = TransportBridgeStatus::kRingFailure;
+            }
+        } else if (output_frame_bytes != layout.frame_bytes) {
+            ZeroRingBytes(output_frame, output_frame_bytes);
+            bridge_status = TransportBridgeStatus::kInvalidOutput;
+        } else {
+            ZeroRingBytes(output_frame, output_frame_bytes);
+            bridge_status = TransportBridgeStatus::kRingFailure;
+        }
+    } else {
+        ZeroRingBytes(output_frame, output_frame_bytes);
+    }
+
+    KeReleaseSpinLock(&g_vsn_control_access_lock, old_irql);
+    return bridge_status;
+}
+
+} // namespace vsn::virtual_mic
+
 extern "C" NTSTATUS VsnWdmControlCreateScaffold(
     PDRIVER_OBJECT driver_object) noexcept {
     if (driver_object == nullptr) {
@@ -468,6 +586,11 @@ extern "C" NTSTATUS VsnWdmControlCreateScaffold(
     }
     if (g_vsn_control_device != nullptr) {
         return STATUS_DEVICE_BUSY;
+    }
+
+    if (g_vsn_control_access_lock_initialized == FALSE) {
+        KeInitializeSpinLock(&g_vsn_control_access_lock);
+        g_vsn_control_access_lock_initialized = TRUE;
     }
 
     DECLARE_CONST_UNICODE_STRING(device_name, L"\\Device\\VsnVirtualMicControl");
@@ -508,9 +631,13 @@ extern "C" NTSTATUS VsnWdmControlCreateScaffold(
     }
 
     // Publish only after the secure named object, extension state and user-
-    // visible link are complete. The dispatch wrappers remain disconnected
-    // from the current live DriverEntry until this secure IRP port is CI green.
+    // visible link are complete. The global spin lock also makes this device
+    // pointer lifetime safe for the bounded realtime transport bridge.
+    KIRQL old_irql;
+    KeAcquireSpinLock(&g_vsn_control_access_lock, &old_irql);
     g_vsn_control_device = device_object;
+    KeReleaseSpinLock(&g_vsn_control_access_lock, old_irql);
+
     g_vsn_symbolic_link_created = TRUE;
     device_object->Flags &= ~DO_DEVICE_INITIALIZING;
     return STATUS_SUCCESS;
@@ -533,7 +660,15 @@ extern "C" void VsnWdmControlDeleteScaffold() noexcept {
         }
     }
 
-    g_vsn_control_device = nullptr;
+    if (g_vsn_control_access_lock_initialized != FALSE) {
+        KIRQL old_irql;
+        KeAcquireSpinLock(&g_vsn_control_access_lock, &old_irql);
+        g_vsn_control_device = nullptr;
+        KeReleaseSpinLock(&g_vsn_control_access_lock, old_irql);
+    } else {
+        g_vsn_control_device = nullptr;
+    }
+
     if (device_object != nullptr) {
         IoDeleteDevice(device_object);
     }
