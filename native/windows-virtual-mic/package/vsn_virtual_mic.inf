@@ -14,9 +14,9 @@ PnpLockDown = 1
 vsn_virtual_mic_control.sys = 1
 
 [Manufacturer]
-%MfgName% = VSN,NTamd64
+%MfgName% = VSN,NTamd64.10.0...16299
 
-[VSN.NTamd64]
+[VSN.NTamd64.10.0...16299]
 %VSNVirtualMic.DeviceDesc% = VSNVirtualMic, ROOT\VSNVIRTUALMIC
 
 [DestinationDirs]
