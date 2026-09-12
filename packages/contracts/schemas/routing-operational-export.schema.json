@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vsn.internal/schemas/routing-operational-export.schema.json",
+  "title": "RoutingOperationalExport",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "route_attempts",
+    "total_selections",
+    "no_eligible_count",
+    "warning_count",
+    "critical_count",
+    "cost_control",
+    "alerts"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "route_attempts": {"$ref": "#/$defs/unsignedDecimal"},
+    "total_selections": {"$ref": "#/$defs/unsignedDecimal"},
+    "no_eligible_count": {"$ref": "#/$defs/unsignedDecimal"},
+    "warning_count": {"type": "integer", "minimum": 0, "maximum": 4294967295},
+    "critical_count": {"type": "integer", "minimum": 0, "maximum": 4294967295},
+    "cost_control": {"$ref": "#/$defs/costControl"},
+    "alerts": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/alert"}
+    }
+  },
+  "$defs": {
+    "unsignedDecimal": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)$"
+    },
+    "signedDecimal": {
+      "type": "string",
+      "pattern": "^(0|-?[1-9][0-9]*)$"
+    },
+    "basisPoints": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000
+    },
+    "provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider_id",
+        "selection_count",
+        "selection_share_basis_points",
+        "cost_microunits_per_minute",
+        "weighted_cost_contribution_microunits_per_minute",
+        "latency_p95_ms",
+        "health",
+        "rate_limit"
+      ],
+      "properties": {
+        "provider_id": {"type": "string", "minLength": 1},
+        "selection_count": {"$ref": "#/$defs/unsignedDecimal"},
+        "selection_share_basis_points": {"$ref": "#/$defs/basisPoints"},
+        "cost_microunits_per_minute": {"$ref": "#/$defs/unsignedDecimal"},
+        "weighted_cost_contribution_microunits_per_minute": {"$ref": "#/$defs/unsignedDecimal"},
+        "latency_p95_ms": {"$ref": "#/$defs/signedDecimal"},
+        "health": {"enum": ["healthy", "degraded", "unhealthy", "circuit_open"]},
+        "rate_limit": {"enum": ["unknown", "available", "constrained", "exhausted"]}
+      }
+    },
+    "costControl": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "total_selections",
+        "no_eligible_count",
+        "no_eligible_basis_points",
+        "average_selected_cost_microunits_per_minute",
+        "by_provider"
+      ],
+      "properties": {
+        "total_selections": {"$ref": "#/$defs/unsignedDecimal"},
+        "no_eligible_count": {"$ref": "#/$defs/unsignedDecimal"},
+        "no_eligible_basis_points": {"$ref": "#/$defs/basisPoints"},
+        "average_selected_cost_microunits_per_minute": {"$ref": "#/$defs/unsignedDecimal"},
+        "by_provider": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/provider"}
+        }
+      }
+    },
+    "alert": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "severity", "observed"],
+      "properties": {
+        "code": {"type": "string", "minLength": 1},
+        "severity": {"enum": ["warning", "critical"]},
+        "provider_id": {"type": "string", "minLength": 1},
+        "observed": {"$ref": "#/$defs/signedDecimal"},
+        "threshold": {"$ref": "#/$defs/signedDecimal"}
+      }
+    }
+  }
+}
