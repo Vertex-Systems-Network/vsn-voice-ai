@@ -34,7 +34,7 @@ type RoutingCostReconciliationIssue struct {
 // estimated provider rates, not an accrued-spend or billing-ledger result.
 type RoutingCostReconciliation struct {
 	SchemaVersion   uint32                           `json:"schema_version"`
-	Status          RoutingCostReconciliationStatus `json:"status"`
+	Status          RoutingCostReconciliationStatus  `json:"status"`
 	TotalIssueCount uint32                           `json:"total_issue_count"`
 	Truncated       bool                             `json:"truncated"`
 	Issues          []RoutingCostReconciliationIssue `json:"issues"`
