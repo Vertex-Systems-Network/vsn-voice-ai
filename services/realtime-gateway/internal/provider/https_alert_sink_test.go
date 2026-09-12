@@ -122,11 +122,23 @@ func TestHTTPSRoutingAlertSinkRejectsUnsafeEndpointConfiguration(t *testing.T) {
 		mutate func(*HTTPSRoutingAlertSinkConfig)
 	}{
 		{name: "http", mutate: func(config *HTTPSRoutingAlertSinkConfig) { config.Endpoint = "http://alerts.example.com/hook" }},
-		{name: "userinfo", mutate: func(config *HTTPSRoutingAlertSinkConfig) { config.Endpoint = "https://user:pass@alerts.example.com/hook" }},
-		{name: "query", mutate: func(config *HTTPSRoutingAlertSinkConfig) { config.Endpoint = "https://alerts.example.com/hook?token=secret" }},
-		{name: "fragment", mutate: func(config *HTTPSRoutingAlertSinkConfig) { config.Endpoint = "https://alerts.example.com/hook#fragment" }},
-		{name: "localhost", mutate: func(config *HTTPSRoutingAlertSinkConfig) { config.Endpoint = "https://localhost/hook"; config.AllowedHosts = []string{"localhost"} }},
-		{name: "ip_literal", mutate: func(config *HTTPSRoutingAlertSinkConfig) { config.Endpoint = "https://127.0.0.1/hook"; config.AllowedHosts = []string{"127.0.0.1"} }},
+		{name: "userinfo", mutate: func(config *HTTPSRoutingAlertSinkConfig) {
+			config.Endpoint = "https://user:pass@alerts.example.com/hook"
+		}},
+		{name: "query", mutate: func(config *HTTPSRoutingAlertSinkConfig) {
+			config.Endpoint = "https://alerts.example.com/hook?token=secret"
+		}},
+		{name: "fragment", mutate: func(config *HTTPSRoutingAlertSinkConfig) {
+			config.Endpoint = "https://alerts.example.com/hook#fragment"
+		}},
+		{name: "localhost", mutate: func(config *HTTPSRoutingAlertSinkConfig) {
+			config.Endpoint = "https://localhost/hook"
+			config.AllowedHosts = []string{"localhost"}
+		}},
+		{name: "ip_literal", mutate: func(config *HTTPSRoutingAlertSinkConfig) {
+			config.Endpoint = "https://127.0.0.1/hook"
+			config.AllowedHosts = []string{"127.0.0.1"}
+		}},
 		{name: "not_allowlisted", mutate: func(config *HTTPSRoutingAlertSinkConfig) { config.Endpoint = "https://other.example.com/hook" }},
 		{name: "weak_secret", mutate: func(config *HTTPSRoutingAlertSinkConfig) { config.Secret = []byte("too-short") }},
 		{name: "excessive_timeout", mutate: func(config *HTTPSRoutingAlertSinkConfig) { config.Timeout = 16 * time.Second }},
