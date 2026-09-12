@@ -39,7 +39,6 @@ WHERE subject_id = $1
 LIMIT 2
 `.trim();
 
-const identifierPattern = /^[A-Za-z0-9][A-Za-z0-9._:@/-]*$/;
 const authorityTokenPattern = /^[a-z][a-z0-9._:-]*$/;
 const membershipStatuses = new Set<MembershipStatus>([
   'active',
@@ -51,8 +50,7 @@ function isBoundedIdentifier(value: unknown): value is string {
   return typeof value === 'string' &&
     value.length >= 1 &&
     value.length <= 128 &&
-    value.trim() === value &&
-    identifierPattern.test(value);
+    value.trim() === value;
 }
 
 function isMembershipStatus(value: unknown): value is MembershipStatus {
