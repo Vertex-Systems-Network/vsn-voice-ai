@@ -11,7 +11,7 @@
     "start": "node dist/src/main.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "node scripts/lint.mjs",
-    "test": "npm run build --silent && node --test dist/test/runtime-config.test.js dist/test/health.controller.test.js",
+    "test": "npm run build --silent && node --test dist/test/runtime-config.test.js dist/test/health.controller.test.js dist/test/tenant-authorization.test.js",
     "check": "npm run lint && npm run typecheck && npm test"
   },
   "dependencies": {
