@@ -41,7 +41,7 @@
       <AdditionalOptions>/std:c++17 /Zc:strictStrings- %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>%(AdditionalDependencies);$(DDK_LIB_PATH)\portcls.lib;$(DDK_LIB_PATH)\stdunk.lib;$(DDK_LIB_PATH)\libcntpr.lib;$(DDK_LIB_PATH)\wdmsec.lib</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies);$(DDK_LIB_PATH)\portcls.lib;$(DDK_LIB_PATH)\stdunk.lib;$(DDK_LIB_PATH)\libcntpr.lib;$(DDK_LIB_PATH)\wdmsec.lib;uuid.lib</AdditionalDependencies>
     </Link>
     <DriverSign>
       <FileDigestAlgorithm>sha256</FileDigestAlgorithm>
@@ -54,6 +54,7 @@
     <ClCompile Include="vsn_virtual_mic_wavert_scaffold.cpp" />
     <ClCompile Include="vsn_virtual_mic_portcls_lifecycle.cpp" />
     <ClCompile Include="vsn_virtual_mic_portcls_install.cpp" />
+    <ClCompile Include="vsn_virtual_mic_topology_miniport.cpp" />
     <ClCompile Include="vsn_virtual_mic_wavert_stream_contract.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -64,6 +65,7 @@
     <ClInclude Include="..\include\vsn_virtual_mic_ring_consumer.h" />
     <ClInclude Include="..\include\vsn_virtual_mic_device_control.h" />
     <ClInclude Include="..\include\vsn_virtual_mic_portcls_install.h" />
+    <ClInclude Include="..\include\vsn_virtual_mic_topology_miniport.h" />
     <ClInclude Include="..\include\vsn_virtual_mic_wavert_contract.h" />
     <ClInclude Include="..\include\vsn_virtual_mic_wavert_stream_contract.h" />
   </ItemGroup>
