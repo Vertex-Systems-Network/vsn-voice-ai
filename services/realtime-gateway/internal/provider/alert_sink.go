@@ -3,7 +3,7 @@ package provider
 import "context"
 
 const (
-	MaxRoutingAlertSinks       = 8
+	MaxRoutingAlertSinks        = 8
 	MaxRoutingAlertsPerDispatch = 128
 )
 
