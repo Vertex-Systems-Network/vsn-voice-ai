@@ -13,6 +13,10 @@ param(
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
+$restoredWdkRoot = Join-Path $repoRoot "native\windows-virtual-mic\driver\packages"
+$systemKitsRoot = Join-Path ${env:ProgramFiles(x86)} "Windows Kits\10\bin"
+
 function Resolve-WindowsKitTool {
     param([Parameter(Mandatory = $true)][string]$Name)
 
@@ -21,22 +25,38 @@ function Resolve-WindowsKitTool {
         return $command.Source
     }
 
-    $kitsRoot = Join-Path ${env:ProgramFiles(x86)} "Windows Kits\10\bin"
-    if (-not (Test-Path $kitsRoot)) {
-        throw "Windows Kits bin directory was not found: $kitsRoot"
+    $searchRoots = @($restoredWdkRoot, $systemKitsRoot)
+    foreach ($root in $searchRoots) {
+        if (-not (Test-Path $root)) {
+            continue
+        }
+
+        $candidates = @(Get-ChildItem $root -Recurse -File -Filter $Name -ErrorAction SilentlyContinue)
+        if ($candidates.Count -eq 0) {
+            continue
+        }
+
+        # Prefer an x64-hosted tool when the package exposes architecture-specific
+        # copies. Fall back to any restored SDK/WDK copy so NuGet layouts that use
+        # a neutral tools directory remain supported.
+        $candidate = $candidates |
+            Where-Object { $_.FullName -match "\\x64\\" } |
+            Sort-Object FullName -Descending |
+            Select-Object -First 1
+        if ($null -eq $candidate) {
+            $candidate = $candidates |
+                Sort-Object FullName -Descending |
+                Select-Object -First 1
+        }
+        if ($null -ne $candidate) {
+            Write-Host "Resolved $Name from $($candidate.FullName)"
+            return $candidate.FullName
+        }
     }
 
-    $candidate = Get-ChildItem $kitsRoot -Recurse -File -Filter $Name |
-        Where-Object { $_.FullName -match "\\x64\\|\\x86\\" } |
-        Sort-Object FullName -Descending |
-        Select-Object -First 1
-    if ($null -eq $candidate) {
-        throw "$Name was not found under $kitsRoot"
-    }
-    return $candidate.FullName
+    throw "$Name was not found in PATH or search roots: $($searchRoots -join '; ')"
 }
 
-$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 $driverPath = (Resolve-Path $DriverBinary).Path
 $infPath = Join-Path $repoRoot "native\windows-virtual-mic\package\vsn_virtual_mic.inf"
 if (-not (Test-Path $infPath)) {
