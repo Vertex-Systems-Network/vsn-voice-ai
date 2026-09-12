@@ -66,6 +66,7 @@
     <ClInclude Include="..\include\vsn_virtual_mic_region_layout.h" />
     <ClInclude Include="..\include\vsn_virtual_mic_ring_consumer.h" />
     <ClInclude Include="..\include\vsn_virtual_mic_device_control.h" />
+    <ClInclude Include="..\include\vsn_virtual_mic_transport_bridge.h" />
     <ClInclude Include="..\include\vsn_virtual_mic_portcls_install.h" />
     <ClInclude Include="..\include\vsn_virtual_mic_topology_miniport.h" />
     <ClInclude Include="..\include\vsn_virtual_mic_wavert_contract.h" />
