@@ -76,7 +76,7 @@ func NewHTTPSRoutingAlertSink(
 		return nil, ErrInvalidRoutingAlertWebhookConfig
 	}
 	if transport == nil {
-		transport = http.DefaultTransport
+		transport = newRoutingAlertWebhookTransport(endpoint.Hostname())
 	}
 
 	client := &http.Client{
@@ -174,7 +174,7 @@ func validateRoutingAlertWebhookEndpoint(
 		return nil, ErrInvalidRoutingAlertWebhookConfig
 	}
 
-	hostname := strings.ToLower(endpoint.Hostname())
+	hostname := normalizeRoutingAlertHostname(endpoint.Hostname())
 	if hostname == "" || hostname == "localhost" || strings.HasSuffix(hostname, ".localhost") {
 		return nil, ErrInvalidRoutingAlertWebhookConfig
 	}
@@ -184,7 +184,7 @@ func validateRoutingAlertWebhookEndpoint(
 
 	allowed := false
 	for _, candidate := range allowedHosts {
-		normalized := strings.ToLower(strings.TrimSpace(candidate))
+		normalized := normalizeRoutingAlertHostname(candidate)
 		if normalized == "" || strings.ContainsAny(normalized, "/:@?#") {
 			continue
 		}
