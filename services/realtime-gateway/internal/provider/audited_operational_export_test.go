@@ -1,30 +1,30 @@
 package provider
 
 import (
-	"math"
 	"reflect"
 	"testing"
 )
 
 func TestExportRoutingAuditedOperationalSnapshotPreservesPrecisionAndReconciliation(t *testing.T) {
+	maxUint64 := ^uint64(0)
 	source := RoutingAuditedOperationalSnapshot{
 		SchemaVersion: RoutingAuditedOperationalSnapshotSchemaVersion,
 		Operational: RoutingOperationalSnapshot{
 			SchemaVersion:   RoutingOperationalSnapshotSchemaVersion,
-			RouteAttempts:   math.MaxUint64,
-			TotalSelections: math.MaxUint64 - 1,
+			RouteAttempts:   maxUint64,
+			TotalSelections: maxUint64 - 1,
 			NoEligibleCount: 1,
 			WarningCount:    2,
 			CriticalCount:   3,
 			CostControl: RoutingCostControlSummary{
-				TotalSelections:                        math.MaxUint64 - 1,
+				TotalSelections:                        maxUint64 - 1,
 				NoEligibleCount:                        1,
 				NoEligibleBasisPoints:                  1,
 				AverageSelectedCostMicrounitsPerMinute: 250,
 				ByProvider: []ProviderCostControl{
 					{
 						ProviderID:                         "provider-a",
-						SelectionCount:                     math.MaxUint64 - 1,
+						SelectionCount:                     maxUint64 - 1,
 						SelectionShareBasisPoints:          10000,
 						CostMicrounitsPerMinute:            250,
 						WeightedCostContributionMicrounits: 250,
