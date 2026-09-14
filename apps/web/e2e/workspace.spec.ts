@@ -13,6 +13,18 @@ test('workspace renders explicit tenant-safe empty states', async ({ page }) => 
   await expect(page.getByText('Settings are not connected yet')).toBeVisible();
 });
 
+test('workspace sends baseline browser security headers', async ({ request }) => {
+  const response = await request.get('/');
+
+  expect(response.ok()).toBe(true);
+  expect(response.headers()['x-content-type-options']).toBe('nosniff');
+  expect(response.headers()['referrer-policy']).toBe('strict-origin-when-cross-origin');
+  expect(response.headers()['x-frame-options']).toBe('DENY');
+  expect(response.headers()['permissions-policy']).toBe(
+    'camera=(), geolocation=(), microphone=(self)',
+  );
+});
+
 test('keyboard can reach and activate the skip link', async ({ page }) => {
   await page.goto('/');
   await page.keyboard.press('Tab');
