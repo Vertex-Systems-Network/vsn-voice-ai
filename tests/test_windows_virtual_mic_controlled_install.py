@@ -95,7 +95,11 @@ class WindowsVirtualMicControlledInstallTests(unittest.TestCase):
 
     def test_security_trust_failures_have_closed_reason_codes(self) -> None:
         for reason in (
+            "package_path_not_allowed",
+            "evidence_path_not_allowed",
             "devcon_identity_not_valid",
+            "package_inf_mismatch",
+            "driver_hash_mismatch",
             "smoke_hash_mismatch",
             "system_pnputil_missing",
         ):
@@ -147,16 +151,24 @@ class WindowsVirtualMicControlledInstallTests(unittest.TestCase):
             "[ValidateRange(1, 30)]",
             "[ValidateRange(0, 5)]",
             "[ValidatePattern('^[A-Fa-f0-9]{64}$')]",
+            "DriverBinarySha256",
             "SmokeExecutableSha256",
+            "Resolve-ContainedArtifactPath",
+            "GetRelativePath($artifactsRoot, $candidate)",
             "Test-MicrosoftDevConIdentity",
-            'VersionInfo.OriginalFilename',
+            "VersionInfo.OriginalFilename",
             "O=Microsoft Corporation",
             "SpecialFolder]::System",
             'Join-Path $systemDirectory "pnputil.exe"',
+            "Get-Sha256 $canonicalInf",
             "& $devcon install $inf $hardwareId",
             "& $devcon remove $hardwareId",
             "finally {",
+            'Set-Failure "package_path_not_allowed"',
+            'Set-Failure "evidence_path_not_allowed"',
             'Set-Failure "devcon_identity_not_valid"',
+            'Set-Failure "package_inf_mismatch"',
+            'Set-Failure "driver_hash_mismatch"',
             'Set-Failure "smoke_hash_mismatch"',
             'Set-Failure "system_pnputil_missing"',
             'Set-VerificationRequired "restart_required"',
@@ -168,6 +180,11 @@ class WindowsVirtualMicControlledInstallTests(unittest.TestCase):
 
         self.assertNotIn('Get-Command "pnputil.exe"', self.source)
         self.assertNotIn("AllowVerificationRequired", self.source)
+
+    def test_evidence_output_stays_inside_artifacts_and_json_only(self) -> None:
+        self.assertIn('Join-Path $repoRoot "artifacts"', self.source)
+        self.assertIn('".json"', self.source)
+        self.assertNotIn("GetFullPath($EvidencePath)\n", self.source)
 
     def test_script_evidence_does_not_emit_machine_or_user_identity(self) -> None:
         lowered = self.source.lower()
