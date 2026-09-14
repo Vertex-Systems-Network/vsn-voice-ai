@@ -56,7 +56,18 @@ type HTTPSRoutingAlertSink struct {
 	now      func() time.Time
 }
 
+// NewHTTPSRoutingAlertSink always installs the hardened public-only transport.
+// Custom transports are intentionally unavailable through the exported API so
+// production callers cannot accidentally bypass DNS/IP egress validation.
 func NewHTTPSRoutingAlertSink(
+	config HTTPSRoutingAlertSinkConfig,
+) (*HTTPSRoutingAlertSink, error) {
+	return newHTTPSRoutingAlertSink(config, nil)
+}
+
+// newHTTPSRoutingAlertSink permits package-local transport injection for unit
+// tests only. A nil transport selects the production public-only transport.
+func newHTTPSRoutingAlertSink(
 	config HTTPSRoutingAlertSinkConfig,
 	transport http.RoundTripper,
 ) (*HTTPSRoutingAlertSink, error) {
