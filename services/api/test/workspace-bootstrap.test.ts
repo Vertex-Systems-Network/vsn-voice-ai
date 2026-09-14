@@ -20,7 +20,7 @@ const membership: OrganizationMembership = {
   permissions: ['conversation.read', 'device.link'],
 };
 
-test('authorized workspace bootstrap contains only tenant context and unloaded areas', () => {
+test('authorized workspace bootstrap exposes only browser-safe tenant context', () => {
   const bootstrap = createWorkspaceBootstrap({
     principal,
     membership,
@@ -34,13 +34,17 @@ test('authorized workspace bootstrap contains only tenant context and unloaded a
     membership_id: 'membership_789',
     roles: ['member'],
     permissions: ['conversation.read', 'device.link'],
-    session_id: 'session_abc',
   });
+  assert.equal(Object.hasOwn(bootstrap.authorization, 'session_id'), false);
+  assert.equal(JSON.stringify(bootstrap).includes('session_abc'), false);
   assert.deepEqual(bootstrap.meetings, { status: 'unloaded', items: [] });
   assert.deepEqual(bootstrap.devices, { status: 'unloaded', items: [] });
   assert.deepEqual(bootstrap.team, { status: 'unloaded', items: [] });
   assert.deepEqual(bootstrap.settings, { status: 'unloaded', items: [] });
   assert.equal(Object.isFrozen(bootstrap), true);
+  assert.equal(Object.isFrozen(bootstrap.authorization), true);
+  assert.equal(Object.isFrozen(bootstrap.authorization.roles), true);
+  assert.equal(Object.isFrozen(bootstrap.authorization.permissions), true);
 });
 
 test('workspace bootstrap fails closed for cross-tenant membership', () => {
