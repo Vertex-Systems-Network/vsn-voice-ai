@@ -18,10 +18,10 @@ interface QueryCall {
 
 class FakeQueryClient implements PostgresQueryClient {
   public readonly calls: QueryCall[] = [];
-  private readonly responses: readonly unknown[][][];
+  private readonly responses: readonly (readonly unknown[])[];
   private responseIndex = 0;
 
-  public constructor(responses: readonly unknown[][][] = []) {
+  public constructor(responses: readonly (readonly unknown[])[] = []) {
     this.responses = responses;
   }
 
@@ -32,7 +32,7 @@ class FakeQueryClient implements PostgresQueryClient {
     this.calls.push({ text, values: [...values] });
     const rows = this.responses[this.responseIndex] ?? [];
     this.responseIndex += 1;
-    return { rows: rows as readonly Row[] };
+    return { rows: rows as unknown as readonly Row[] };
   }
 }
 
