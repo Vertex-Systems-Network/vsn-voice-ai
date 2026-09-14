@@ -93,6 +93,17 @@ class WindowsVirtualMicControlledInstallTests(unittest.TestCase):
         self.assertNotIn("username", payload)
         self.assertNotIn("package_path", payload)
 
+    def test_security_trust_failures_have_closed_reason_codes(self) -> None:
+        for reason in (
+            "devcon_identity_not_valid",
+            "smoke_hash_mismatch",
+            "system_pnputil_missing",
+        ):
+            payload = self.passed_evidence()
+            payload.update(status="failed", reason=reason)
+            with self.subTest(reason=reason):
+                self.validator.validate(payload)
+
     def test_passed_status_requires_valid_catalog_and_runtime_smoke(self) -> None:
         payload = self.passed_evidence()
         payload["catalog"]["signature_status"] = "NotSigned"
@@ -135,10 +146,19 @@ class WindowsVirtualMicControlledInstallTests(unittest.TestCase):
             "SignatureStatus]::Valid",
             "[ValidateRange(1, 30)]",
             "[ValidateRange(0, 5)]",
-            'Get-Command "pnputil.exe"',
+            "[ValidatePattern('^[A-Fa-f0-9]{64}$')]",
+            "SmokeExecutableSha256",
+            "Test-MicrosoftDevConIdentity",
+            'VersionInfo.OriginalFilename',
+            "O=Microsoft Corporation",
+            "SpecialFolder]::System",
+            'Join-Path $systemDirectory "pnputil.exe"',
             "& $devcon install $inf $hardwareId",
             "& $devcon remove $hardwareId",
             "finally {",
+            'Set-Failure "devcon_identity_not_valid"',
+            'Set-Failure "smoke_hash_mismatch"',
+            'Set-Failure "system_pnputil_missing"',
             'Set-VerificationRequired "restart_required"',
             'Set-VerificationRequired "installed_runtime_not_ready"',
         )
@@ -146,6 +166,7 @@ class WindowsVirtualMicControlledInstallTests(unittest.TestCase):
             with self.subTest(fragment=fragment):
                 self.assertIn(fragment, self.source)
 
+        self.assertNotIn('Get-Command "pnputil.exe"', self.source)
         self.assertNotIn("AllowVerificationRequired", self.source)
 
     def test_script_evidence_does_not_emit_machine_or_user_identity(self) -> None:
