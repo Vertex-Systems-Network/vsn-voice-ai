@@ -11,6 +11,15 @@ export interface WorkspaceBootstrapRequest {
   readonly organizationId: string;
 }
 
+export interface WorkspaceAuthorizationSummary {
+  readonly schema_version: 1;
+  readonly subject_id: string;
+  readonly organization_id: string;
+  readonly membership_id: string;
+  readonly roles: readonly string[];
+  readonly permissions: readonly string[];
+}
+
 export interface WorkspaceAreaState {
   readonly status: 'unloaded';
   readonly items: readonly never[];
@@ -18,7 +27,7 @@ export interface WorkspaceAreaState {
 
 export interface WorkspaceBootstrapResponse {
   readonly schema_version: 1;
-  readonly authorization: AuthorizationContext;
+  readonly authorization: WorkspaceAuthorizationSummary;
   readonly meetings: WorkspaceAreaState;
   readonly devices: WorkspaceAreaState;
   readonly team: WorkspaceAreaState;
@@ -32,12 +41,25 @@ function unloadedArea(): WorkspaceAreaState {
   });
 }
 
+function toWorkspaceAuthorizationSummary(
+  authorization: AuthorizationContext,
+): WorkspaceAuthorizationSummary {
+  return Object.freeze({
+    schema_version: 1 as const,
+    subject_id: authorization.subject_id,
+    organization_id: authorization.organization_id,
+    membership_id: authorization.membership_id,
+    roles: Object.freeze([...authorization.roles]),
+    permissions: Object.freeze([...authorization.permissions]),
+  });
+}
+
 /**
  * Produces the minimum tenant-bound bootstrap payload needed by the current web
- * workspace. The boundary deliberately contains no repository lookup and no
- * invented tenant data: downstream resource stores must replace individual
- * unloaded areas only after their own authorization and persistence contracts
- * exist.
+ * workspace. Internal authentication/session identifiers deliberately do not
+ * cross this browser-facing boundary. Downstream resource stores must replace
+ * individual unloaded areas only after their own authorization and persistence
+ * contracts exist.
  */
 export function createWorkspaceBootstrap(
   request: WorkspaceBootstrapRequest,
@@ -55,7 +77,7 @@ export function createWorkspaceBootstrap(
 
   return Object.freeze({
     schema_version: 1 as const,
-    authorization,
+    authorization: toWorkspaceAuthorizationSummary(authorization),
     meetings: unloadedArea(),
     devices: unloadedArea(),
     team: unloadedArea(),
