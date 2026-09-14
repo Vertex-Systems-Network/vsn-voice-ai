@@ -131,7 +131,7 @@ jobs:
             exit $LASTEXITCODE
           }
 
-      - name: Compile installed endpoint runtime smoke harness
+      - name: Compile installed endpoint runtime smoke harness and collect evidence
         shell: pwsh
         run: |
           $vswhere = Join-Path ${env:ProgramFiles(x86)} "Microsoft Visual Studio\Installer\vswhere.exe"
@@ -156,4 +156,20 @@ jobs:
             exit $LASTEXITCODE
           }
 
-          ./scripts/windows/run-virtual-mic-installed-smoke.ps1 -Executable artifacts/virtual_mic_installed_runtime_smoke.exe -AllowVerificationRequired
+          ./scripts/windows/collect-virtual-mic-verification-evidence.ps1 `
+            -SmokeExecutable artifacts/virtual_mic_installed_runtime_smoke.exe `
+            -PackageDirectory artifacts/vsn-virtual-mic-test-package `
+            -OutputFile artifacts/windows-audio-verification-evidence.json `
+            -RepositorySha "${{ github.sha }}" `
+            -AllowVerificationRequired
+
+          Get-Content -LiteralPath artifacts/windows-audio-verification-evidence.json
+
+      - name: Retain Windows audio verification evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: windows-audio-verification-${{ github.run_id }}
+          path: artifacts/windows-audio-verification-evidence.json
+          if-no-files-found: warn
+          retention-days: 14
