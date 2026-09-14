@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vsn.internal/schemas/routing-audited-operational-export.schema.json",
+  "title": "RoutingAuditedOperationalExport",
+  "description": "Browser/cross-service-safe routing observability export that combines canonical operational metrics with bounded cost reconciliation integrity state. It is not an accrued-spend or billing-ledger contract.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "operational", "reconciliation"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "operational": {
+      "$ref": "https://vsn.internal/schemas/routing-operational-export.schema.json"
+    },
+    "reconciliation": {
+      "$ref": "https://vsn.internal/schemas/routing-cost-reconciliation.schema.json"
+    }
+  }
+}
