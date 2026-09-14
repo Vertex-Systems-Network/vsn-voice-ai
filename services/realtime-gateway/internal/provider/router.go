@@ -21,7 +21,10 @@ func (r *Router) Select(request RoutingRequest) (RoutingDecision, error) {
 	if request.Mode == "" {
 		request.Mode = RoutingAuto
 	}
-	if request.Capability == "" || !validRoutingMode(request.Mode) {
+	if request.Capability == "" ||
+		!validRoutingMode(request.Mode) ||
+		request.MaxLatencyMilliseconds < 0 ||
+		request.MinQualityScore < 0 {
 		return RoutingDecision{}, ErrInvalidRoutingRequest
 	}
 
