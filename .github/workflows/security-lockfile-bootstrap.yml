@@ -1,0 +1,53 @@
+name: Security Lockfile Bootstrap
+
+on:
+  push:
+    branches:
+      - security/cyber-audit-hardening
+
+permissions:
+  contents: write
+
+concurrency:
+  group: security-lockfile-bootstrap
+  cancel-in-progress: false
+
+jobs:
+  bootstrap-lockfiles:
+    if: >-
+      github.actor == 'wpessential' &&
+      github.ref == 'refs/heads/security/cyber-audit-hardening' &&
+      !contains(github.event.head_commit.message, '[lockfile-bootstrap]')
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout exact security branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: security/cyber-audit-hardening
+          persist-credentials: true
+
+      - name: Set up pinned Node.js
+        uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903
+        with:
+          node-version: '22.23.2'
+
+      - name: Generate API and web package locks
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm --prefix services/api install --package-lock-only --ignore-scripts --no-audit --no-fund
+          npm --prefix apps/web install --package-lock-only --ignore-scripts --no-audit --no-fund
+
+      - name: Commit only generated npm lockfiles
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add -- services/api/package-lock.json apps/web/package-lock.json
+          if git diff --cached --quiet; then
+            echo 'Lockfiles already match generated dependency graphs.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'chore(security): pin npm dependency graphs [lockfile-bootstrap]'
+          git push origin HEAD:security/cyber-audit-hardening
