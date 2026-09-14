@@ -107,6 +107,21 @@ jobs:
             throw "Verified driver package did not contain the generated catalog"
           }
 
+      - name: Parse controlled install evidence harness
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path "scripts\windows\run-virtual-mic-controlled-install.ps1"),
+            [ref]$tokens,
+            [ref]$errors
+          ) | Out-Null
+          if ($errors.Count -ne 0) {
+            $errors | ForEach-Object { Write-Error $_.Message }
+            throw "Controlled install PowerShell harness contains parse errors."
+          }
+
       - name: Validate C++ virtual microphone transport contracts
         shell: pwsh
         run: |
