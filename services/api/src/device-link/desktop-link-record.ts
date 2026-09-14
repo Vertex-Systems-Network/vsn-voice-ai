@@ -14,34 +14,34 @@ export interface DesktopLinkRecord {
 }
 
 export interface DesktopLinkRecordStore {
-  put(record: DesktopLinkRecord): void;
-  get(recordId: string): DesktopLinkRecord | undefined;
+  put(record: DesktopLinkRecord): Promise<void>;
+  get(recordId: string): Promise<DesktopLinkRecord | undefined>;
   consumeIfIssued(
     recordId: string,
     expectedDigest: string,
     consumedAt: string,
-  ): DesktopLinkRecord | undefined;
+  ): Promise<DesktopLinkRecord | undefined>;
 }
 
 export class InMemoryDesktopLinkRecordStore implements DesktopLinkRecordStore {
   private readonly records = new Map<string, DesktopLinkRecord>();
 
-  public put(record: DesktopLinkRecord): void {
+  public async put(record: DesktopLinkRecord): Promise<void> {
     if (this.records.has(record.record_id)) {
       throw new Error('desktop link record already exists');
     }
     this.records.set(record.record_id, Object.freeze({ ...record }));
   }
 
-  public get(recordId: string): DesktopLinkRecord | undefined {
+  public async get(recordId: string): Promise<DesktopLinkRecord | undefined> {
     return this.records.get(recordId);
   }
 
-  public consumeIfIssued(
+  public async consumeIfIssued(
     recordId: string,
     expectedDigest: string,
     consumedAt: string,
-  ): DesktopLinkRecord | undefined {
+  ): Promise<DesktopLinkRecord | undefined> {
     const current = this.records.get(recordId);
     if (
       current === undefined ||
