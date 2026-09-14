@@ -18,15 +18,22 @@ class WorkspaceBootstrapContractTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.authorization_schema = load_schema("authorization-context.schema.json")
+        cls.workspace_authorization_schema = load_schema(
+            "workspace-authorization-summary.schema.json"
+        )
         cls.schema = load_schema("workspace-bootstrap.schema.json")
         Draft202012Validator.check_schema(cls.authorization_schema)
+        Draft202012Validator.check_schema(cls.workspace_authorization_schema)
         Draft202012Validator.check_schema(cls.schema)
 
         registry = Registry().with_resource(
-            cls.authorization_schema["$id"],
-            Resource.from_contents(cls.authorization_schema),
+            cls.workspace_authorization_schema["$id"],
+            Resource.from_contents(cls.workspace_authorization_schema),
         )
         cls.validator = Draft202012Validator(cls.schema, registry=registry)
+        cls.internal_authorization_validator = Draft202012Validator(
+            cls.authorization_schema
+        )
 
     def valid_payload(self) -> dict:
         unloaded = {"status": "unloaded", "items": []}
@@ -39,7 +46,6 @@ class WorkspaceBootstrapContractTests(unittest.TestCase):
                 "membership_id": "membership_789",
                 "roles": ["member"],
                 "permissions": ["conversation.read"],
-                "session_id": "session_abc",
             },
             "meetings": dict(unloaded),
             "devices": dict(unloaded),
@@ -65,11 +71,28 @@ class WorkspaceBootstrapContractTests(unittest.TestCase):
         with self.assertRaises(ValidationError):
             self.validator.validate(payload)
 
-    def test_authorization_context_still_rejects_secrets(self) -> None:
+    def test_workspace_authorization_summary_rejects_session_ids(self) -> None:
         payload = self.valid_payload()
-        payload["authorization"]["session_secret"] = "must-not-cross-boundary"
+        payload["authorization"]["session_id"] = "must-stay-behind-trusted-boundary"
         with self.assertRaises(ValidationError):
             self.validator.validate(payload)
+
+    def test_internal_authorization_context_keeps_session_correlation_but_rejects_secrets(
+        self,
+    ) -> None:
+        internal_context = {
+            "schema_version": 1,
+            "subject_id": "user_123",
+            "organization_id": "org_456",
+            "membership_id": "membership_789",
+            "roles": ["member"],
+            "permissions": ["conversation.read"],
+            "session_id": "session_abc",
+        }
+        self.internal_authorization_validator.validate(internal_context)
+        internal_context["session_secret"] = "must-not-cross-any-contract-boundary"
+        with self.assertRaises(ValidationError):
+            self.internal_authorization_validator.validate(internal_context)
 
     def test_cross_boundary_unknown_fields_are_rejected(self) -> None:
         payload = self.valid_payload()
