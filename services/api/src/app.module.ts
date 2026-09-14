@@ -1,6 +1,12 @@
 import { Module } from '@nestjs/common';
 
 import { loadRuntimeConfig, RUNTIME_CONFIG } from './config/runtime-config.js';
+import {
+  DESKTOP_LINK_RECORD_STORE,
+  type DesktopLinkRecordStore,
+} from './device-link/desktop-link-record.js';
+import { DesktopLinkService } from './device-link/desktop-link.service.js';
+import { createRuntimeDesktopLinkRecordStore } from './device-link/runtime-desktop-link-record-store.js';
 import { HealthController } from './health/health.controller.js';
 import {
   RejectingTrustedPrincipalResolver,
@@ -24,6 +30,15 @@ import { WorkspaceController } from './workspace/workspace.controller.js';
     {
       provide: ORGANIZATION_MEMBERSHIP_RESOLVER,
       useFactory: () => createRuntimeOrganizationMembershipResolver(process.env),
+    },
+    {
+      provide: DESKTOP_LINK_RECORD_STORE,
+      useFactory: () => createRuntimeDesktopLinkRecordStore(process.env),
+    },
+    {
+      provide: DesktopLinkService,
+      inject: [DESKTOP_LINK_RECORD_STORE],
+      useFactory: (store: DesktopLinkRecordStore) => new DesktopLinkService(store),
     },
   ],
 })

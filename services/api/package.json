@@ -11,7 +11,7 @@
     "start": "node dist/src/main.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "node scripts/lint.mjs",
-    "test": "npm run build --silent && node --test dist/test/runtime-config.test.js dist/test/postgres-runtime-config.test.js dist/test/health.controller.test.js dist/test/tenant-authorization.test.js dist/test/desktop-link.service.test.js dist/test/postgres-desktop-link-record-store.test.js dist/test/workspace-bootstrap.test.js dist/test/workspace.controller.test.js dist/test/postgres-organization-membership-resolver.test.js dist/test/runtime-organization-membership-resolver.test.js dist/test/node-postgres-query-client.test.js",
+    "test": "npm run build --silent && node --test dist/test/runtime-config.test.js dist/test/postgres-runtime-config.test.js dist/test/health.controller.test.js dist/test/tenant-authorization.test.js dist/test/desktop-link.service.test.js dist/test/postgres-desktop-link-record-store.test.js dist/test/runtime-desktop-link-record-store.test.js dist/test/workspace-bootstrap.test.js dist/test/workspace.controller.test.js dist/test/postgres-organization-membership-resolver.test.js dist/test/runtime-organization-membership-resolver.test.js dist/test/node-postgres-query-client.test.js",
     "check": "npm run lint && npm run typecheck && npm test"
   },
   "dependencies": {
