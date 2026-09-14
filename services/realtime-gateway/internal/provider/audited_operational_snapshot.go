@@ -7,9 +7,9 @@ const RoutingAuditedOperationalSnapshotSchemaVersion uint32 = 1
 // summary. The canonical snapshot is always rebuilt from routing metrics; the
 // reported summary can add integrity alerts but cannot replace canonical values.
 type RoutingAuditedOperationalSnapshot struct {
-	SchemaVersion   uint32                    `json:"schema_version"`
-	Operational     RoutingOperationalSnapshot `json:"operational"`
-	Reconciliation  RoutingCostReconciliation  `json:"reconciliation"`
+	SchemaVersion  uint32                     `json:"schema_version"`
+	Operational    RoutingOperationalSnapshot `json:"operational"`
+	Reconciliation RoutingCostReconciliation  `json:"reconciliation"`
 }
 
 // BuildRoutingAuditedOperationalSnapshot keeps cost reconciliation on the
