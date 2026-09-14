@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.vsn.local/desktop-link-issue-request.schema.json",
+  "title": "VSN Desktop Link Issue Request",
+  "description": "Closed tenant-bound request for issuing a short-lived single-use desktop link exchange.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["device_id"],
+  "properties": {
+    "device_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": ".*\\S.*"
+    },
+    "ttl_ms": {
+      "type": "integer",
+      "minimum": 30000,
+      "maximum": 600000
+    }
+  }
+}
