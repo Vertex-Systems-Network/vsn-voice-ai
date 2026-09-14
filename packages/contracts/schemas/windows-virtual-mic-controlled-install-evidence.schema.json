@@ -25,8 +25,12 @@
       "enum": [
         "windows_required",
         "administrator_required",
+        "package_path_not_allowed",
+        "evidence_path_not_allowed",
         "required_file_missing",
         "devcon_identity_not_valid",
+        "package_inf_mismatch",
+        "driver_hash_mismatch",
         "smoke_hash_mismatch",
         "catalog_signature_not_valid",
         "system_pnputil_missing",
