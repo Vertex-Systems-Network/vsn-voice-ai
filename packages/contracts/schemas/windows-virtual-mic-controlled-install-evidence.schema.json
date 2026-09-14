@@ -1,0 +1,166 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vsn.internal/schemas/windows-virtual-mic-controlled-install-evidence.schema.json",
+  "title": "WindowsVirtualMicControlledInstallEvidence",
+  "description": "Content-safe evidence emitted by the controlled Windows VSN virtual microphone install and runtime smoke harness.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "status",
+    "reason",
+    "observed_at_utc",
+    "hardware_id",
+    "package_hashes",
+    "catalog",
+    "staging",
+    "install",
+    "smoke",
+    "cleanup"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "status": {"enum": ["passed", "failed", "verification_required"]},
+    "reason": {
+      "enum": [
+        "windows_required",
+        "administrator_required",
+        "package_path_not_allowed",
+        "evidence_path_not_allowed",
+        "required_file_missing",
+        "devcon_identity_not_valid",
+        "package_inf_mismatch",
+        "driver_hash_mismatch",
+        "smoke_hash_mismatch",
+        "catalog_signature_not_valid",
+        "system_pnputil_missing",
+        "driver_store_staging_failed",
+        "restart_required",
+        "root_device_install_failed",
+        "smoke_payload_invalid",
+        "installed_runtime_verified",
+        "installed_runtime_not_ready",
+        "installed_runtime_smoke_failed",
+        "controlled_install_exception",
+        "cleanup_failed"
+      ]
+    },
+    "observed_at_utc": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{3}Z$"
+    },
+    "hardware_id": {"const": "ROOT\\VSNVIRTUALMIC"},
+    "package_hashes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["inf_sha256", "sys_sha256", "cat_sha256", "smoke_sha256"],
+      "properties": {
+        "inf_sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+        "sys_sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+        "cat_sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+        "smoke_sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"}
+      }
+    },
+    "catalog": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["signature_status", "signer_thumbprint"],
+      "properties": {
+        "signature_status": {
+          "type": ["string", "null"],
+          "enum": [null, "UnknownError", "Valid", "NotSigned", "HashMismatch", "NotTrusted", "NotSupported"]
+        },
+        "signer_thumbprint": {
+          "type": ["string", "null"],
+          "pattern": "^[A-Fa-f0-9]{40}$"
+        }
+      }
+    },
+    "staging": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["exit_code"],
+      "properties": {
+        "exit_code": {"type": ["integer", "null"], "minimum": 0}
+      }
+    },
+    "install": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["exit_code", "restart_required"],
+      "properties": {
+        "exit_code": {"type": ["integer", "null"], "minimum": 0},
+        "restart_required": {"type": "boolean"}
+      }
+    },
+    "smoke": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["attempts", "status", "reason", "system_error"],
+      "properties": {
+        "attempts": {"type": "integer", "minimum": 0, "maximum": 30},
+        "status": {"type": ["string", "null"], "enum": [null, "passed", "failed", "verification_required"]},
+        "reason": {"type": ["string", "null"], "pattern": "^[a-z0-9_]{1,64}$"},
+        "system_error": {"type": ["integer", "null"], "minimum": 0, "maximum": 4294967295}
+      }
+    },
+    "cleanup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requested", "attempted", "succeeded", "exit_code"],
+      "properties": {
+        "requested": {"type": "boolean"},
+        "attempted": {"type": "boolean"},
+        "succeeded": {"type": ["boolean", "null"]},
+        "exit_code": {"type": ["integer", "null"], "minimum": 0}
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"const": "passed"}}, "required": ["status"]},
+      "then": {
+        "properties": {
+          "reason": {"const": "installed_runtime_verified"},
+          "catalog": {
+            "properties": {"signature_status": {"const": "Valid"}}
+          },
+          "staging": {"properties": {"exit_code": {"const": 0}}},
+          "install": {
+            "properties": {
+              "exit_code": {"const": 0},
+              "restart_required": {"const": false}
+            }
+          },
+          "smoke": {
+            "properties": {
+              "attempts": {"minimum": 1},
+              "status": {"const": "passed"}
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"status": {"const": "verification_required"}}, "required": ["status"]},
+      "then": {
+        "properties": {
+          "reason": {"enum": ["restart_required", "installed_runtime_not_ready"]}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"reason": {"const": "restart_required"}}, "required": ["reason"]},
+      "then": {
+        "properties": {
+          "install": {
+            "properties": {
+              "exit_code": {"const": 1},
+              "restart_required": {"const": true}
+            }
+          }
+        }
+      }
+    }
+  ]
+}
