@@ -21,7 +21,7 @@ From an elevated PowerShell prompt with the Windows SDK/WDK installed:
   -DriverBinary <path-to-vsn_virtual_mic_control.sys>
 ```
 
-The script copies the driver and INF to an isolated staging directory, runs `InfVerif /w`, and runs Inf2Cat for the declared x64 Windows targets. CI executes the same package build without a signing certificate.
+The script copies the driver and INF to an isolated staging directory, runs `InfVerif /w`, and runs Inf2Cat for the declared x64 Windows targets. Package output is constrained to a child of the repository `artifacts` directory. CI restores the exact WDK package versions from nuget.org, validates Microsoft-signed tools, and SHA-256 pins the upstream unsigned Inf2Cat binary used by the pinned WDK package.
 
 ## Optional local test signing
 
@@ -56,4 +56,33 @@ Use a disposable Windows test machine or VM. Do not install development packages
 5. Verify Device Manager and Windows audio endpoint enumeration. Only after the endpoint is visible should the runtime `DeviceIoControl` handshake and approved calling-application routing smoke tests be executed.
 6. Remove the development device/package after testing using the test environment's device/package cleanup procedure.
 
-Production signing, release distribution, hardware compatibility certification, and customer installation remain separate release-gated work.
+### Controlled install evidence harness
+
+For a repeatable install → endpoint/control smoke → cleanup run, use `scripts/windows/run-virtual-mic-controlled-install.ps1` from an elevated PowerShell prompt on the disposable test machine.
+
+Before running it, calculate SHA-256 digests for the exact packaged driver and compiled installed-runtime smoke executable:
+
+```powershell
+$driverHash = (Get-FileHash -Algorithm SHA256 artifacts\vsn-virtual-mic-test-package\vsn_virtual_mic_control.sys).Hash
+$smokeHash = (Get-FileHash -Algorithm SHA256 artifacts\virtual_mic_installed_runtime_smoke.exe).Hash
+
+./scripts/windows/run-virtual-mic-controlled-install.ps1 `
+  -DevConPath <path-to-Microsoft-signed-devcon.exe> `
+  -DriverBinarySha256 $driverHash `
+  -SmokeExecutableSha256 $smokeHash
+```
+
+The controlled harness fails closed unless all of the following hold:
+
+- it is running on Windows with Administrator rights;
+- the package and evidence paths stay under the repository `artifacts` directory;
+- the staged INF matches the repository's canonical `vsn_virtual_mic.inf` exactly;
+- the packaged driver and smoke executable match the supplied SHA-256 values;
+- DevCon is a valid Microsoft-signed `devcon.exe` binary;
+- the package catalog has a valid Authenticode signature;
+- the canonical System32 `pnputil.exe` is available;
+- the installed endpoint/runtime smoke reports a real pass.
+
+By default the development device is removed after the run. The resulting `artifacts/virtual-mic-controlled-install-evidence.json` is deliberately content-safe: it records hashes, bounded status/error fields, catalog signer metadata and cleanup results, but no username, hostname, credential, audio content or private key material. `verification_required` is not treated as a pass.
+
+This harness proves only the bounded installed-driver smoke that it actually executes. Approved calling-application routing, latency/jitter measurements, production signing, release distribution, hardware compatibility certification, and customer installation remain separate evidence/release gates.
