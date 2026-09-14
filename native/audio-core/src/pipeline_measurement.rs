@@ -141,11 +141,8 @@ mod tests {
         let mut pipeline = AudioPipeline::new();
         let clock = SequenceClock::new(1_000, 1_275);
 
-        let measured = process_with_measurement(
-            &mut pipeline,
-            frame(7).expect("valid frame"),
-            &clock,
-        );
+        let measured =
+            process_with_measurement(&mut pipeline, frame(7).expect("valid frame"), &clock);
 
         assert_eq!(measured.result.state, ProcessingState::Active);
         assert_eq!(
@@ -166,18 +163,17 @@ mod tests {
         pipeline.push_stage(FailingStage);
         let clock = SequenceClock::new(10_000, 10_090);
 
-        let measured = process_with_measurement(
-            &mut pipeline,
-            frame(9).expect("valid frame"),
-            &clock,
-        );
+        let measured =
+            process_with_measurement(&mut pipeline, frame(9).expect("valid frame"), &clock);
 
         assert_eq!(measured.result.state, ProcessingState::Bypassed);
-        assert!(measured
-            .result
-            .bypass_reason
-            .as_deref()
-            .is_some_and(|reason| reason.contains("unsafe free-form detail")));
+        assert!(
+            measured
+                .result
+                .bypass_reason
+                .as_deref()
+                .is_some_and(|reason| reason.contains("unsafe free-form detail"))
+        );
         assert_eq!(measured.measurement.state, ProcessingState::Bypassed);
         assert_eq!(measured.measurement.processing_elapsed_micros, 90);
         assert!(!format!("{:?}", measured.measurement).contains("unsafe free-form detail"));
@@ -188,11 +184,8 @@ mod tests {
         let mut pipeline = AudioPipeline::new();
         let clock = SequenceClock::new(500, 400);
 
-        let measured = process_with_measurement(
-            &mut pipeline,
-            frame(11).expect("valid frame"),
-            &clock,
-        );
+        let measured =
+            process_with_measurement(&mut pipeline, frame(11).expect("valid frame"), &clock);
 
         assert_eq!(measured.measurement.processing_elapsed_micros, 0);
     }
