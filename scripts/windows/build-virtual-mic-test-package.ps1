@@ -55,7 +55,8 @@ function Resolve-WindowsKitTool {
         )
         foreach ($candidate in $orderedCandidates) {
             if (-not (Test-MicrosoftSignedExecutable -Path $candidate.FullName)) {
-                Write-Warning "Rejected unsigned or non-Microsoft $Name candidate under trusted root."
+                $digest = (Get-FileHash -Algorithm SHA256 -LiteralPath $candidate.FullName).Hash.ToLowerInvariant()
+                Write-Warning "Rejected unsigned or non-Microsoft $Name candidate under trusted root (sha256=$digest)."
                 continue
             }
             Write-Host "Resolved $Name from Microsoft-signed WDK tool: $($candidate.FullName)"
