@@ -7,6 +7,10 @@ param(
 
     [string]$SmokeExecutable = "artifacts/virtual_mic_installed_runtime_smoke.exe",
 
+    [Parameter(Mandatory = $true)]
+    [ValidatePattern('^[A-Fa-f0-9]{64}$')]
+    [string]$SmokeExecutableSha256,
+
     [string]$EvidencePath = "artifacts/virtual-mic-controlled-install-evidence.json",
 
     [ValidateRange(1, 30)]
@@ -84,6 +88,37 @@ function Get-Sha256 {
     return (Get-FileHash -Algorithm SHA256 -LiteralPath $Path).Hash.ToLowerInvariant()
 }
 
+function Test-MicrosoftDevConIdentity {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    if (-not [string]::Equals(
+        [System.IO.Path]::GetFileName($Path),
+        "devcon.exe",
+        [System.StringComparison]::OrdinalIgnoreCase
+    )) {
+        return $false
+    }
+
+    $file = Get-Item -LiteralPath $Path -ErrorAction Stop
+    if (-not [string]::Equals(
+        [string]$file.VersionInfo.OriginalFilename,
+        "devcon.exe",
+        [System.StringComparison]::OrdinalIgnoreCase
+    )) {
+        return $false
+    }
+
+    $signature = Get-AuthenticodeSignature -LiteralPath $Path
+    if (
+        $signature.Status -ne [System.Management.Automation.SignatureStatus]::Valid -or
+        $null -eq $signature.SignerCertificate
+    ) {
+        return $false
+    }
+
+    return [string]$signature.SignerCertificate.Subject -match '(?i)(?:^|,\s*)O=Microsoft Corporation(?:,|$)'
+}
+
 function Get-SafeSmokePayload {
     param([Parameter(Mandatory = $true)][object[]]$Output)
 
@@ -150,10 +185,19 @@ try {
         }
     }
 
+    if (-not (Test-MicrosoftDevConIdentity $devcon)) {
+        Set-Failure "devcon_identity_not_valid"
+        throw [System.InvalidOperationException]::new("controlled_install_stopped")
+    }
+
     $evidence.package_hashes.inf_sha256 = Get-Sha256 $inf
     $evidence.package_hashes.sys_sha256 = Get-Sha256 $sys
     $evidence.package_hashes.cat_sha256 = Get-Sha256 $cat
     $evidence.package_hashes.smoke_sha256 = Get-Sha256 $smoke
+    if ($evidence.package_hashes.smoke_sha256 -ne $SmokeExecutableSha256.ToLowerInvariant()) {
+        Set-Failure "smoke_hash_mismatch"
+        throw [System.InvalidOperationException]::new("controlled_install_stopped")
+    }
 
     $catalogSignature = Get-AuthenticodeSignature -LiteralPath $cat
     $evidence.catalog.signature_status = [string]$catalogSignature.Status
@@ -165,7 +209,13 @@ try {
         throw [System.InvalidOperationException]::new("controlled_install_stopped")
     }
 
-    $pnputil = (Get-Command "pnputil.exe" -ErrorAction Stop).Source
+    $systemDirectory = [System.Environment]::GetFolderPath([System.Environment+SpecialFolder]::System)
+    $pnputil = Join-Path $systemDirectory "pnputil.exe"
+    if (-not (Test-Path -LiteralPath $pnputil -PathType Leaf)) {
+        Set-Failure "system_pnputil_missing"
+        throw [System.InvalidOperationException]::new("controlled_install_stopped")
+    }
+
     & $pnputil /add-driver $inf
     $evidence.staging.exit_code = $LASTEXITCODE
     if ($LASTEXITCODE -ne 0) {
