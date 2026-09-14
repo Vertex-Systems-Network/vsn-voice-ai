@@ -10,3 +10,69 @@ updates:
     open-pull-requests-limit: 10
     commit-message:
       prefix: chore(actions)
+
+  - package-ecosystem: npm
+    directory: /services/api
+    schedule:
+      interval: weekly
+      day: monday
+      time: "03:15"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: chore(api-deps)
+
+  - package-ecosystem: npm
+    directory: /apps/web
+    schedule:
+      interval: weekly
+      day: monday
+      time: "03:30"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: chore(web-deps)
+
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "03:45"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: chore(rust-deps)
+
+  - package-ecosystem: gomod
+    directory: /services/realtime-gateway
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:00"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: chore(go-deps)
+
+  - package-ecosystem: nuget
+    directory: /native/windows-virtual-mic/driver
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:15"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: chore(wdk-deps)
+
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "04:30"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: chore(py-deps)

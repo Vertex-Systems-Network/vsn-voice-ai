@@ -30,9 +30,12 @@ jobs:
         uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903
         with:
           node-version: "22.23.2"
-      - name: Install exact top-level dependencies
+      - name: Install dependencies from committed lockfile
         working-directory: services/api
-        run: npm install --ignore-scripts --no-audit --no-fund --save=false
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Audit resolved API dependency tree
+        working-directory: services/api
+        run: npm audit --audit-level=high
       - name: Verify direct dependency pins
         working-directory: services/api
         run: npm ls --depth=0

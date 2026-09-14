@@ -36,6 +36,7 @@ jobs:
   windows-audio:
     name: windows-audio
     runs-on: windows-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -48,20 +49,20 @@ jobs:
 
       - name: Compile Windows audio crate
         shell: pwsh
-        run: cargo +1.98.1 check -p vsn-windows-audio --all-targets
+        run: cargo +1.98.1 check --locked -p vsn-windows-audio --all-targets
 
       - name: Lint Windows audio crate
         shell: pwsh
-        run: cargo +1.98.1 clippy -p vsn-windows-audio --all-targets -- -D warnings
+        run: cargo +1.98.1 clippy --locked -p vsn-windows-audio --all-targets -- -D warnings
 
       - name: Test Windows audio crate
         shell: pwsh
-        run: cargo +1.98.1 test -p vsn-windows-audio
+        run: cargo +1.98.1 test --locked -p vsn-windows-audio
 
       - name: Restore pinned Windows Driver Kit packages
         shell: pwsh
         working-directory: native/windows-virtual-mic/driver
-        run: nuget restore packages.config -PackagesDirectory packages -NonInteractive
+        run: nuget restore packages.config -PackagesDirectory packages -Source "https://api.nuget.org/v3/index.json" -NonInteractive
 
       - name: Build KMDF virtual microphone control skeleton
         shell: pwsh

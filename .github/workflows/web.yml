@@ -28,9 +28,13 @@ jobs:
         with:
           node-version: '22.23.2'
 
-      - name: Install exact web dependencies
+      - name: Install dependencies from committed lockfile
         working-directory: apps/web
-        run: npm install --ignore-scripts --no-audit --no-fund
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Audit resolved web dependency tree
+        working-directory: apps/web
+        run: npm audit --audit-level=high
 
       - name: Typecheck web workspace
         working-directory: apps/web

@@ -56,7 +56,18 @@ type HTTPSRoutingAlertSink struct {
 	now      func() time.Time
 }
 
+// NewHTTPSRoutingAlertSink always installs the hardened public-only transport.
+// Custom transports are intentionally unavailable through the exported API so
+// production callers cannot accidentally bypass DNS/IP egress validation.
 func NewHTTPSRoutingAlertSink(
+	config HTTPSRoutingAlertSinkConfig,
+) (*HTTPSRoutingAlertSink, error) {
+	return newHTTPSRoutingAlertSink(config, nil)
+}
+
+// newHTTPSRoutingAlertSink permits package-local transport injection for unit
+// tests only. A nil transport selects the production public-only transport.
+func newHTTPSRoutingAlertSink(
 	config HTTPSRoutingAlertSinkConfig,
 	transport http.RoundTripper,
 ) (*HTTPSRoutingAlertSink, error) {
@@ -76,7 +87,7 @@ func NewHTTPSRoutingAlertSink(
 		return nil, ErrInvalidRoutingAlertWebhookConfig
 	}
 	if transport == nil {
-		transport = http.DefaultTransport
+		transport = newRoutingAlertWebhookTransport(endpoint.Hostname())
 	}
 
 	client := &http.Client{
@@ -174,7 +185,7 @@ func validateRoutingAlertWebhookEndpoint(
 		return nil, ErrInvalidRoutingAlertWebhookConfig
 	}
 
-	hostname := strings.ToLower(endpoint.Hostname())
+	hostname := normalizeRoutingAlertHostname(endpoint.Hostname())
 	if hostname == "" || hostname == "localhost" || strings.HasSuffix(hostname, ".localhost") {
 		return nil, ErrInvalidRoutingAlertWebhookConfig
 	}
@@ -184,7 +195,7 @@ func validateRoutingAlertWebhookEndpoint(
 
 	allowed := false
 	for _, candidate := range allowedHosts {
-		normalized := strings.ToLower(strings.TrimSpace(candidate))
+		normalized := normalizeRoutingAlertHostname(candidate)
 		if normalized == "" || strings.ContainsAny(normalized, "/:@?#") {
 			continue
 		}
