@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.vsn.local/windows-audio-verification-evidence.schema.json",
+  "title": "VSN Windows Audio Verification Evidence",
+  "description": "Content-safe evidence emitted by the Windows audio verification collector. completion_claim is permanently false; work-unit completion remains a separate reviewed decision.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "generated_at",
+    "scope",
+    "evidence_state",
+    "repository_sha",
+    "host",
+    "runtime_smoke",
+    "package",
+    "controlled_checks",
+    "acceptance_evidence_candidate",
+    "completion_claim"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "generated_at": {
+      "type": "string",
+      "minLength": 20,
+      "maxLength": 64
+    },
+    "scope": {
+      "enum": ["hosted_ci", "controlled_machine", "local_unattested"]
+    },
+    "evidence_state": {
+      "enum": [
+        "verification_required",
+        "runtime_smoke_passed",
+        "controlled_checks_passed",
+        "failed"
+      ]
+    },
+    "repository_sha": {
+      "type": ["string", "null"],
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "host": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "os_description",
+        "os_architecture",
+        "process_architecture",
+        "github_actions"
+      ],
+      "properties": {
+        "os_description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "os_architecture": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "process_architecture": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "github_actions": { "type": "boolean" }
+      }
+    },
+    "runtime_smoke": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "reason", "system_error"],
+      "properties": {
+        "status": {
+          "enum": ["passed", "failed", "verification_required"]
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 96,
+          "pattern": "^[a-z0-9_]+$"
+        },
+        "system_error": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295
+        }
+      }
+    },
+    "package": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["inf", "driver", "catalog"],
+      "properties": {
+        "inf": { "$ref": "#/$defs/packageFile" },
+        "driver": { "$ref": "#/$defs/packageFile" },
+        "catalog": { "$ref": "#/$defs/packageFile" }
+      }
+    },
+    "controlled_checks": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "https://schemas.vsn.local/windows-audio-controlled-checks.schema.json" }
+      ]
+    },
+    "acceptance_evidence_candidate": { "type": "boolean" },
+    "completion_claim": { "const": false }
+  },
+  "$defs": {
+    "packageFile": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["present"],
+          "properties": {
+            "present": { "const": false }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["present", "sha256", "signature_status"],
+          "properties": {
+            "present": { "const": true },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "signature_status": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            }
+          }
+        }
+      ]
+    }
+  }
+}
