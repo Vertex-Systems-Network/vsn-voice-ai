@@ -28,19 +28,7 @@ jobs:
         with:
           node-version: '22.23.2'
 
-      - name: Generate deterministic web lockfile
-        working-directory: apps/web
-        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-
-      - name: Upload web lockfile for security pinning
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: security-web-package-lock
-          path: apps/web/package-lock.json
-          if-no-files-found: error
-          retention-days: 1
-
-      - name: Install dependencies from generated lockfile
+      - name: Install dependencies from committed lockfile
         working-directory: apps/web
         run: npm ci --ignore-scripts --no-audit --no-fund
 
