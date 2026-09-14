@@ -15,9 +15,19 @@ func NewRouter(registry *Registry, observers ...RoutingObserver) *Router {
 }
 
 func (r *Router) Select(request RoutingRequest) (RoutingDecision, error) {
+	if r == nil || r.registry == nil {
+		return RoutingDecision{}, ErrInvalidRoutingRequest
+	}
 	if request.Mode == "" {
 		request.Mode = RoutingAuto
 	}
+	if request.Capability == "" ||
+		!validRoutingMode(request.Mode) ||
+		request.MaxLatencyMilliseconds < 0 ||
+		request.MinQualityScore < 0 {
+		return RoutingDecision{}, ErrInvalidRoutingRequest
+	}
+
 	candidates := make([]ProviderManifest, 0)
 	for _, manifest := range r.registry.Snapshot() {
 		if eligible(manifest, request) {
@@ -72,10 +82,12 @@ func eligible(manifest ProviderManifest, request RoutingRequest) bool {
 	if request.RequireVerifiedAccess && !manifest.VerifiedAccess {
 		return false
 	}
-	if manifest.Health == HealthUnhealthy || manifest.Health == HealthOpen {
+	if manifest.Health != HealthHealthy && manifest.Health != HealthDegraded {
 		return false
 	}
-	if manifest.RateLimit == RateLimitExhausted {
+	if manifest.RateLimit != RateLimitUnknown &&
+		manifest.RateLimit != RateLimitAvailable &&
+		manifest.RateLimit != RateLimitConstrained {
 		return false
 	}
 	if len(request.AllowedProviders) > 0 && !containsString(request.AllowedProviders, manifest.ID) {
@@ -135,8 +147,6 @@ func sortCandidates(candidates []ProviderManifest, mode RoutingMode) {
 			if a.CostMicrounitsPerMinute != b.CostMicrounitsPerMinute {
 				return lowerPositive64(a.CostMicrounitsPerMinute, b.CostMicrounitsPerMinute)
 			}
-		default:
-			return a.ID < b.ID
 		}
 		return a.ID < b.ID
 	})

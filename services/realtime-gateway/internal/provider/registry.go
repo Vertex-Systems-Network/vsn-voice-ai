@@ -21,14 +21,26 @@ func (r *Registry) Register(manifest ProviderManifest) error {
 	if manifest.ID == "" || manifest.Version == "" || len(manifest.Capabilities) == 0 {
 		return ErrInvalidProvider
 	}
+	if !validAccessMode(manifest.AccessMode) {
+		return ErrInvalidProvider
+	}
 	if manifest.Health == "" {
 		manifest.Health = HealthHealthy
+	}
+	if !validHealthState(manifest.Health) {
+		return ErrInvalidProvider
 	}
 	if manifest.RateLimit == "" {
 		manifest.RateLimit = RateLimitUnknown
 	}
+	if !validRateLimitState(manifest.RateLimit) {
+		return ErrInvalidProvider
+	}
 
 	manifest.Capabilities = uniqueCapabilities(manifest.Capabilities)
+	if len(manifest.Capabilities) == 0 {
+		return ErrInvalidProvider
+	}
 	manifest.Regions = uniqueStrings(manifest.Regions)
 
 	r.mu.Lock()
@@ -60,6 +72,10 @@ func (r *Registry) Snapshot() []ProviderManifest {
 }
 
 func (r *Registry) SetHealth(id string, state HealthState) error {
+	if !validHealthState(state) {
+		return ErrInvalidProvider
+	}
+
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	manifest, ok := r.providers[id]
@@ -72,6 +88,10 @@ func (r *Registry) SetHealth(id string, state HealthState) error {
 }
 
 func (r *Registry) SetRateLimit(id string, state RateLimitState, remainingMicrounits int64) error {
+	if !validRateLimitState(state) {
+		return ErrInvalidProvider
+	}
+
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	manifest, ok := r.providers[id]

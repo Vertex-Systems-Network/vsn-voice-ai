@@ -112,7 +112,44 @@ type RoutingDecision struct {
 }
 
 var (
-	ErrInvalidProvider    = errors.New("invalid provider manifest")
-	ErrProviderNotFound   = errors.New("provider not found")
-	ErrNoEligibleProvider = errors.New("no eligible provider")
+	ErrInvalidProvider       = errors.New("invalid provider manifest")
+	ErrProviderNotFound      = errors.New("provider not found")
+	ErrInvalidRoutingRequest = errors.New("invalid routing request")
+	ErrNoEligibleProvider    = errors.New("no eligible provider")
 )
+
+func validAccessMode(mode AccessMode) bool {
+	switch mode {
+	case AccessAPI, AccessSDK, AccessLocal, AccessOnPrem, AccessInternal:
+		return true
+	default:
+		return false
+	}
+}
+
+func validHealthState(state HealthState) bool {
+	switch state {
+	case HealthHealthy, HealthDegraded, HealthUnhealthy, HealthOpen:
+		return true
+	default:
+		return false
+	}
+}
+
+func validRateLimitState(state RateLimitState) bool {
+	switch state {
+	case RateLimitUnknown, RateLimitAvailable, RateLimitConstrained, RateLimitExhausted:
+		return true
+	default:
+		return false
+	}
+}
+
+func validRoutingMode(mode RoutingMode) bool {
+	switch mode {
+	case RoutingAuto, RoutingLowestLatency, RoutingBestQuality, RoutingBestPrivacy, RoutingLowestCost:
+		return true
+	default:
+		return false
+	}
+}
