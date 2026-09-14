@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://schemas.vsn.local/workspace-bootstrap.schema.json",
   "title": "VSN Workspace Bootstrap Response",
-  "description": "Tenant-authorized read-only workspace bootstrap payload. Resource areas remain explicitly unloaded until their repositories and authorization contracts are wired.",
+  "description": "Tenant-authorized read-only browser workspace bootstrap payload. Resource areas remain explicitly unloaded until their repositories and authorization contracts are wired.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -18,7 +18,7 @@
       "const": 1
     },
     "authorization": {
-      "$ref": "https://schemas.vsn.local/authorization-context.schema.json"
+      "$ref": "https://schemas.vsn.local/workspace-authorization-summary.schema.json"
     },
     "meetings": {
       "$ref": "#/$defs/unloadedArea"

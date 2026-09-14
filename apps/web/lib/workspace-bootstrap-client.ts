@@ -1,11 +1,10 @@
-export interface AuthorizationContext {
+export interface WorkspaceAuthorizationSummary {
   readonly schema_version: 1;
   readonly subject_id: string;
   readonly organization_id: string;
   readonly membership_id: string;
   readonly roles: readonly string[];
   readonly permissions: readonly string[];
-  readonly session_id?: string;
 }
 
 export interface UnloadedWorkspaceArea {
@@ -15,7 +14,7 @@ export interface UnloadedWorkspaceArea {
 
 export interface WorkspaceBootstrapResponse {
   readonly schema_version: 1;
-  readonly authorization: AuthorizationContext;
+  readonly authorization: WorkspaceAuthorizationSummary;
   readonly meetings: UnloadedWorkspaceArea;
   readonly devices: UnloadedWorkspaceArea;
   readonly team: UnloadedWorkspaceArea;
@@ -75,8 +74,10 @@ function isStringArray(value: unknown): value is readonly string[] {
   return Array.isArray(value) && value.every(isNonEmptyString);
 }
 
-function isAuthorizationContext(value: unknown): value is AuthorizationContext {
-  if (!isRecord(value) || !hasExactKeys(value, authorizationRequiredKeys, ['session_id'])) {
+function isWorkspaceAuthorizationSummary(
+  value: unknown,
+): value is WorkspaceAuthorizationSummary {
+  if (!isRecord(value) || !hasExactKeys(value, authorizationRequiredKeys)) {
     return false;
   }
 
@@ -85,8 +86,7 @@ function isAuthorizationContext(value: unknown): value is AuthorizationContext {
     isNonEmptyString(value.organization_id) &&
     isNonEmptyString(value.membership_id) &&
     isStringArray(value.roles) &&
-    isStringArray(value.permissions) &&
-    (value.session_id === undefined || isNonEmptyString(value.session_id));
+    isStringArray(value.permissions);
 }
 
 function isUnloadedArea(value: unknown): value is UnloadedWorkspaceArea {
@@ -104,7 +104,10 @@ export function isWorkspaceBootstrapResponse(
     return false;
   }
 
-  if (value.schema_version !== 1 || !isAuthorizationContext(value.authorization)) {
+  if (
+    value.schema_version !== 1 ||
+    !isWorkspaceAuthorizationSummary(value.authorization)
+  ) {
     return false;
   }
 
