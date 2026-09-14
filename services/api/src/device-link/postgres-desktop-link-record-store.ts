@@ -135,7 +135,7 @@ function toDesktopLinkRecord(
     return undefined;
   }
 
-  return Object.freeze({
+  const record = {
     schema_version: 1 as const,
     record_id: row.record_id,
     token_digest: row.token_digest,
@@ -145,6 +145,13 @@ function toDesktopLinkRecord(
     issued_at: issuedAt,
     expires_at: expiresAt,
     status: row.status,
+  };
+
+  if (consumedAt === null) {
+    return Object.freeze(record);
+  }
+  return Object.freeze({
+    ...record,
     consumed_at: consumedAt,
   });
 }
