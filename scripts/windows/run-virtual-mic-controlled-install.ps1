@@ -3,6 +3,10 @@ param(
     [string]$PackageDirectory = "artifacts/vsn-virtual-mic-test-package",
 
     [Parameter(Mandatory = $true)]
+    [ValidatePattern('^[A-Fa-f0-9]{64}$')]
+    [string]$DriverBinarySha256,
+
+    [Parameter(Mandatory = $true)]
     [string]$DevConPath,
 
     [string]$SmokeExecutable = "artifacts/virtual_mic_installed_runtime_smoke.exe",
@@ -25,9 +29,13 @@ param(
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
+$artifactsRoot = [System.IO.Path]::GetFullPath((Join-Path $repoRoot "artifacts"))
+$canonicalInf = Join-Path $repoRoot "native\windows-virtual-mic\package\vsn_virtual_mic.inf"
 $hardwareId = "ROOT\VSNVIRTUALMIC"
 $deviceInstallAttempted = $false
 $finalExitCode = 1
+$evidenceFile = Join-Path $artifactsRoot "virtual-mic-controlled-install-evidence.json"
 
 $evidence = [ordered]@{
     schema_version = 1
@@ -86,6 +94,31 @@ function Get-Sha256 {
     param([Parameter(Mandatory = $true)][string]$Path)
 
     return (Get-FileHash -Algorithm SHA256 -LiteralPath $Path).Hash.ToLowerInvariant()
+}
+
+function Resolve-ContainedArtifactPath {
+    param([Parameter(Mandatory = $true)][string]$Value)
+
+    $candidate = if ([System.IO.Path]::IsPathRooted($Value)) {
+        [System.IO.Path]::GetFullPath($Value)
+    }
+    else {
+        [System.IO.Path]::GetFullPath((Join-Path $repoRoot $Value))
+    }
+
+    $relative = [System.IO.Path]::GetRelativePath($artifactsRoot, $candidate)
+    $parentPrefix = "..$([System.IO.Path]::DirectorySeparatorChar)"
+    $altParentPrefix = "..$([System.IO.Path]::AltDirectorySeparatorChar)"
+    if (
+        $relative -eq "." -or
+        $relative -eq ".." -or
+        [System.IO.Path]::IsPathRooted($relative) -or
+        $relative.StartsWith($parentPrefix, [System.StringComparison]::OrdinalIgnoreCase) -or
+        $relative.StartsWith($altParentPrefix, [System.StringComparison]::OrdinalIgnoreCase)
+    ) {
+        throw [System.ArgumentException]::new("path_outside_artifacts")
+    }
+    return $candidate
 }
 
 function Test-MicrosoftDevConIdentity {
@@ -169,16 +202,37 @@ try {
         throw [System.InvalidOperationException]::new("controlled_install_stopped")
     }
 
-    $packagePath = [System.IO.Path]::GetFullPath($PackageDirectory)
+    try {
+        $packagePath = Resolve-ContainedArtifactPath -Value $PackageDirectory
+    }
+    catch {
+        Set-Failure "package_path_not_allowed"
+        throw [System.InvalidOperationException]::new("controlled_install_stopped")
+    }
+    try {
+        $requestedEvidencePath = Resolve-ContainedArtifactPath -Value $EvidencePath
+        if (-not [string]::Equals(
+            [System.IO.Path]::GetExtension($requestedEvidencePath),
+            ".json",
+            [System.StringComparison]::OrdinalIgnoreCase
+        )) {
+            throw [System.ArgumentException]::new("evidence_extension_not_json")
+        }
+        $evidenceFile = $requestedEvidencePath
+    }
+    catch {
+        Set-Failure "evidence_path_not_allowed"
+        throw [System.InvalidOperationException]::new("controlled_install_stopped")
+    }
+
     $devcon = [System.IO.Path]::GetFullPath($DevConPath)
     $smoke = [System.IO.Path]::GetFullPath($SmokeExecutable)
-    $evidenceFile = [System.IO.Path]::GetFullPath($EvidencePath)
 
     $inf = Join-Path $packagePath "vsn_virtual_mic.inf"
     $sys = Join-Path $packagePath "vsn_virtual_mic_control.sys"
     $cat = Join-Path $packagePath "vsn_virtual_mic.cat"
 
-    foreach ($requiredFile in @($inf, $sys, $cat, $devcon, $smoke)) {
+    foreach ($requiredFile in @($canonicalInf, $inf, $sys, $cat, $devcon, $smoke)) {
         if (-not (Test-Path -LiteralPath $requiredFile -PathType Leaf)) {
             Set-Failure "required_file_missing"
             throw [System.InvalidOperationException]::new("controlled_install_stopped")
@@ -194,6 +248,14 @@ try {
     $evidence.package_hashes.sys_sha256 = Get-Sha256 $sys
     $evidence.package_hashes.cat_sha256 = Get-Sha256 $cat
     $evidence.package_hashes.smoke_sha256 = Get-Sha256 $smoke
+    if ($evidence.package_hashes.inf_sha256 -ne (Get-Sha256 $canonicalInf)) {
+        Set-Failure "package_inf_mismatch"
+        throw [System.InvalidOperationException]::new("controlled_install_stopped")
+    }
+    if ($evidence.package_hashes.sys_sha256 -ne $DriverBinarySha256.ToLowerInvariant()) {
+        Set-Failure "driver_hash_mismatch"
+        throw [System.InvalidOperationException]::new("controlled_install_stopped")
+    }
     if ($evidence.package_hashes.smoke_sha256 -ne $SmokeExecutableSha256.ToLowerInvariant()) {
         Set-Failure "smoke_hash_mismatch"
         throw [System.InvalidOperationException]::new("controlled_install_stopped")
@@ -295,7 +357,6 @@ finally {
     }
 
     $evidence.observed_at_utc = [DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
-    $evidenceFile = [System.IO.Path]::GetFullPath($EvidencePath)
     $evidenceDirectory = Split-Path -Parent $evidenceFile
     if (-not [string]::IsNullOrWhiteSpace($evidenceDirectory)) {
         New-Item -ItemType Directory -Force -Path $evidenceDirectory | Out-Null
