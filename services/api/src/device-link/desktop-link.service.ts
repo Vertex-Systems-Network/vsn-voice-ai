@@ -80,11 +80,11 @@ export class DesktopLinkService {
     private readonly clock: DesktopLinkClock = new SystemDesktopLinkClock(),
   ) {}
 
-  public issue(
+  public async issue(
     authorization: AuthorizationContext,
     deviceId: string,
     ttlMs?: number,
-  ): DesktopLinkIssue {
+  ): Promise<DesktopLinkIssue> {
     requireNonEmpty(deviceId, 'device id');
     if (!authorization.permissions.includes(REQUIRED_PERMISSION)) {
       throw new DesktopLinkDeniedError('device.link permission is required');
@@ -106,7 +106,7 @@ export class DesktopLinkService {
       expires_at: expiresAt.toISOString(),
       status: 'issued',
     };
-    this.store.put(record);
+    await this.store.put(record);
 
     return Object.freeze({
       recordId,
@@ -115,20 +115,20 @@ export class DesktopLinkService {
     });
   }
 
-  public consume(
+  public async consume(
     principal: AuthenticatedPrincipal,
     organizationId: string,
     deviceId: string,
     recordId: string,
     exchangeToken: string,
-  ): DesktopLinkBinding {
+  ): Promise<DesktopLinkBinding> {
     requireNonEmpty(principal.subjectId, 'subject id');
     requireNonEmpty(organizationId, 'organization id');
     requireNonEmpty(deviceId, 'device id');
     requireNonEmpty(recordId, 'record id');
     requireNonEmpty(exchangeToken, 'exchange token');
 
-    const record = this.store.get(recordId);
+    const record = await this.store.get(recordId);
     const suppliedDigest = digestToken(exchangeToken);
     if (
       record === undefined ||
@@ -153,7 +153,7 @@ export class DesktopLinkService {
     }
 
     const consumedAt = now.toISOString();
-    const consumed = this.store.consumeIfIssued(recordId, suppliedDigest, consumedAt);
+    const consumed = await this.store.consumeIfIssued(recordId, suppliedDigest, consumedAt);
     if (consumed === undefined) {
       throw new DesktopLinkDeniedError('desktop link exchange lost single-use race');
     }
