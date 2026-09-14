@@ -37,6 +37,23 @@ func successResponse(status int, body string) *http.Response {
 	}
 }
 
+func TestHTTPSRoutingAlertSinkPublicConstructorAlwaysUsesHardenedTransport(t *testing.T) {
+	sink, err := NewHTTPSRoutingAlertSink(validWebhookConfig())
+	if err != nil {
+		t.Fatalf("construct sink: %v", err)
+	}
+	transport, ok := sink.client.Transport.(*http.Transport)
+	if !ok {
+		t.Fatalf("production transport has unexpected type %T", sink.client.Transport)
+	}
+	if transport.Proxy != nil {
+		t.Fatal("production webhook transport must not inherit ambient proxy configuration")
+	}
+	if transport.DialContext == nil {
+		t.Fatal("production webhook transport must install the public-only dial policy")
+	}
+}
+
 func TestHTTPSRoutingAlertSinkDeliversSignedBoundedEnvelope(t *testing.T) {
 	config := validWebhookConfig()
 	originalSecret := append([]byte(nil), config.Secret...)
@@ -52,7 +69,7 @@ func TestHTTPSRoutingAlertSinkDeliversSignedBoundedEnvelope(t *testing.T) {
 		return successResponse(http.StatusNoContent, "ok"), nil
 	})
 
-	sink, err := NewHTTPSRoutingAlertSink(config, transport)
+	sink, err := newHTTPSRoutingAlertSink(config, transport)
 	if err != nil {
 		t.Fatalf("construct sink: %v", err)
 	}
@@ -148,7 +165,7 @@ func TestHTTPSRoutingAlertSinkRejectsUnsafeEndpointConfiguration(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			config := validWebhookConfig()
 			testCase.mutate(&config)
-			_, err := NewHTTPSRoutingAlertSink(config, nil)
+			_, err := NewHTTPSRoutingAlertSink(config)
 			if !errors.Is(err, ErrInvalidRoutingAlertWebhookConfig) {
 				t.Fatalf("expected invalid config error, got %v", err)
 			}
@@ -160,7 +177,7 @@ func TestHTTPSRoutingAlertSinkReturnsStableErrorsWithoutResponseOrTransportConte
 	transportFailure := routingAlertRoundTripperFunc(func(*http.Request) (*http.Response, error) {
 		return nil, errors.New("dial failed with credential=must-not-propagate")
 	})
-	failedSink, err := NewHTTPSRoutingAlertSink(validWebhookConfig(), transportFailure)
+	failedSink, err := newHTTPSRoutingAlertSink(validWebhookConfig(), transportFailure)
 	if err != nil {
 		t.Fatalf("construct failed sink: %v", err)
 	}
@@ -171,7 +188,7 @@ func TestHTTPSRoutingAlertSinkReturnsStableErrorsWithoutResponseOrTransportConte
 	rejectedTransport := routingAlertRoundTripperFunc(func(*http.Request) (*http.Response, error) {
 		return successResponse(http.StatusInternalServerError, "credential=must-not-propagate"), nil
 	})
-	rejectedSink, err := NewHTTPSRoutingAlertSink(validWebhookConfig(), rejectedTransport)
+	rejectedSink, err := newHTTPSRoutingAlertSink(validWebhookConfig(), rejectedTransport)
 	if err != nil {
 		t.Fatalf("construct rejected sink: %v", err)
 	}
@@ -188,7 +205,7 @@ func TestHTTPSRoutingAlertSinkDoesNotFollowRedirects(t *testing.T) {
 		response.Header.Set("Location", "https://other.example.com/collect")
 		return response, nil
 	})
-	sink, err := NewHTTPSRoutingAlertSink(validWebhookConfig(), transport)
+	sink, err := newHTTPSRoutingAlertSink(validWebhookConfig(), transport)
 	if err != nil {
 		t.Fatalf("construct sink: %v", err)
 	}
@@ -207,7 +224,7 @@ func TestHTTPSRoutingAlertSinkEnforcesContextAndPayloadBounds(t *testing.T) {
 		calls++
 		return successResponse(http.StatusNoContent, ""), nil
 	})
-	sink, err := NewHTTPSRoutingAlertSink(validWebhookConfig(), transport)
+	sink, err := newHTTPSRoutingAlertSink(validWebhookConfig(), transport)
 	if err != nil {
 		t.Fatalf("construct sink: %v", err)
 	}
