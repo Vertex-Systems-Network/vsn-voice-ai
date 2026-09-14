@@ -1,5 +1,7 @@
 export type DesktopLinkStatus = 'issued' | 'consumed' | 'revoked' | 'expired';
 
+export const DESKTOP_LINK_RECORD_STORE = Symbol('DESKTOP_LINK_RECORD_STORE');
+
 export interface DesktopLinkRecord {
   readonly schema_version: 1;
   readonly record_id: string;
