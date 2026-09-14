@@ -43,14 +43,14 @@ function setup() {
   return { store, clock, service };
 }
 
-function expectDenied(run: () => unknown): void {
-  assert.throws(run, DesktopLinkDeniedError);
+async function expectDenied(run: () => Promise<unknown>): Promise<void> {
+  await assert.rejects(run, DesktopLinkDeniedError);
 }
 
-test('issued exchange is opaque, short-lived and persisted as digest only', () => {
+test('issued exchange is opaque, short-lived and persisted as digest only', async () => {
   const { store, service } = setup();
-  const issued = service.issue(authorization, 'device_abc');
-  const record = store.get(issued.recordId);
+  const issued = await service.issue(authorization, 'device_abc');
+  const record = await store.get(issued.recordId);
 
   assert.equal(typeof issued.exchangeToken, 'string');
   assert.ok(issued.exchangeToken.length >= 40);
@@ -67,11 +67,11 @@ test('issued exchange is opaque, short-lived and persisted as digest only', () =
   );
 });
 
-test('valid exchange consumes once and returns no browser session secret', () => {
+test('valid exchange consumes once and returns no browser session secret', async () => {
   const { store, service } = setup();
-  const issued = service.issue(authorization, 'device_abc');
+  const issued = await service.issue(authorization, 'device_abc');
 
-  const binding = service.consume(
+  const binding = await service.consume(
     principal,
     'org_456',
     'device_abc',
@@ -88,31 +88,49 @@ test('valid exchange consumes once and returns no browser session secret', () =>
     'subjectId',
   ]);
   assert.equal(binding.linked, true);
-  assert.equal(store.get(issued.recordId)?.status, 'consumed');
+  assert.equal((await store.get(issued.recordId))?.status, 'consumed');
   assert.equal(JSON.stringify(binding).includes('browser_session_never_exported'), false);
 });
 
-test('replay of a consumed exchange fails closed', () => {
+test('replay of a consumed exchange fails closed', async () => {
   const { service } = setup();
-  const issued = service.issue(authorization, 'device_abc');
+  const issued = await service.issue(authorization, 'device_abc');
 
-  service.consume(principal, 'org_456', 'device_abc', issued.recordId, issued.exchangeToken);
-  expectDenied(() =>
-    service.consume(principal, 'org_456', 'device_abc', issued.recordId, issued.exchangeToken),
+  await service.consume(
+    principal,
+    'org_456',
+    'device_abc',
+    issued.recordId,
+    issued.exchangeToken,
+  );
+  await expectDenied(() =>
+    service.consume(
+      principal,
+      'org_456',
+      'device_abc',
+      issued.recordId,
+      issued.exchangeToken,
+    ),
   );
 });
 
-test('expired exchange fails closed', () => {
+test('expired exchange fails closed', async () => {
   const { clock, service } = setup();
-  const issued = service.issue(authorization, 'device_abc', 30_000);
+  const issued = await service.issue(authorization, 'device_abc', 30_000);
   clock.advance(30_000);
 
-  expectDenied(() =>
-    service.consume(principal, 'org_456', 'device_abc', issued.recordId, issued.exchangeToken),
+  await expectDenied(() =>
+    service.consume(
+      principal,
+      'org_456',
+      'device_abc',
+      issued.recordId,
+      issued.exchangeToken,
+    ),
   );
 });
 
-test('wrong tenant, subject, device or token fail closed without consuming', () => {
+test('wrong tenant, subject, device or token fail closed without consuming', async () => {
   const variants: Array<{
     principal: AuthenticatedPrincipal;
     organizationId: string;
@@ -127,8 +145,8 @@ test('wrong tenant, subject, device or token fail closed without consuming', () 
 
   for (const variant of variants) {
     const { store, service } = setup();
-    const issued = service.issue(authorization, 'device_abc');
-    expectDenied(() =>
+    const issued = await service.issue(authorization, 'device_abc');
+    await expectDenied(() =>
       service.consume(
         variant.principal,
         variant.organizationId,
@@ -137,15 +155,15 @@ test('wrong tenant, subject, device or token fail closed without consuming', () 
         variant.token(issued.exchangeToken),
       ),
     );
-    assert.equal(store.get(issued.recordId)?.status, 'issued');
+    assert.equal((await store.get(issued.recordId))?.status, 'issued');
   }
 });
 
-test('issuing requires device.link permission and bounded ttl', () => {
+test('issuing requires device.link permission and bounded ttl', async () => {
   const { service } = setup();
-  expectDenied(() =>
+  await expectDenied(() =>
     service.issue({ ...authorization, permissions: ['conversation.read'] }, 'device_abc'),
   );
-  expectDenied(() => service.issue(authorization, 'device_abc', 29_999));
-  expectDenied(() => service.issue(authorization, 'device_abc', 600_001));
+  await expectDenied(() => service.issue(authorization, 'device_abc', 29_999));
+  await expectDenied(() => service.issue(authorization, 'device_abc', 600_001));
 });
