@@ -11,6 +11,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
   group: ai-native-quality-${{ github.workflow }}-${{ github.ref }}
@@ -27,6 +28,12 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
+
+      - name: Verify main integration provenance
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: node scripts/verify-main-integration-provenance.mjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
 
       - name: Set up pinned Go toolchain
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
