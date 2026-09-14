@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.vsn.local/desktop-link-consume-request.schema.json",
+  "title": "VSN Desktop Link Consume Request",
+  "description": "Closed request for consuming a single-use desktop link exchange while binding the exact device identifier.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["device_id", "exchange_token"],
+  "properties": {
+    "device_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": ".*\\S.*"
+    },
+    "exchange_token": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{43}$"
+    }
+  }
+}

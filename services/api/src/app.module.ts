@@ -5,6 +5,7 @@ import {
   DESKTOP_LINK_RECORD_STORE,
   type DesktopLinkRecordStore,
 } from './device-link/desktop-link-record.js';
+import { DesktopLinkController } from './device-link/desktop-link.controller.js';
 import { DesktopLinkService } from './device-link/desktop-link.service.js';
 import { createRuntimeDesktopLinkRecordStore } from './device-link/runtime-desktop-link-record-store.js';
 import { HealthController } from './health/health.controller.js';
@@ -17,7 +18,7 @@ import { createRuntimeOrganizationMembershipResolver } from './organizations/run
 import { WorkspaceController } from './workspace/workspace.controller.js';
 
 @Module({
-  controllers: [HealthController, WorkspaceController],
+  controllers: [HealthController, WorkspaceController, DesktopLinkController],
   providers: [
     {
       provide: RUNTIME_CONFIG,
