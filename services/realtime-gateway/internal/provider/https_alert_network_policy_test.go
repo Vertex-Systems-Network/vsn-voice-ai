@@ -26,14 +26,14 @@ func TestRoutingAlertHostnameNormalizationClosesLocalhostTrailingDotBypass(t *te
 	config := validWebhookConfig()
 	config.Endpoint = "https://localhost./hook"
 	config.AllowedHosts = []string{"localhost."}
-	if _, err := NewHTTPSRoutingAlertSink(config, nil); !errors.Is(err, ErrInvalidRoutingAlertWebhookConfig) {
+	if _, err := NewHTTPSRoutingAlertSink(config); !errors.Is(err, ErrInvalidRoutingAlertWebhookConfig) {
 		t.Fatalf("trailing-dot localhost must be rejected, got %v", err)
 	}
 
 	config = validWebhookConfig()
 	config.Endpoint = "https://service.localhost./hook"
 	config.AllowedHosts = []string{"service.localhost."}
-	if _, err := NewHTTPSRoutingAlertSink(config, nil); !errors.Is(err, ErrInvalidRoutingAlertWebhookConfig) {
+	if _, err := NewHTTPSRoutingAlertSink(config); !errors.Is(err, ErrInvalidRoutingAlertWebhookConfig) {
 		t.Fatalf("trailing-dot localhost subdomain must be rejected, got %v", err)
 	}
 }
