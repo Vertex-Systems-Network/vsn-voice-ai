@@ -66,6 +66,7 @@ func TestDispatchRoutingAuditedOperationalAlertsDoesNotExposeReconciliationIssue
 				Severity: RoutingAlertCritical,
 				Observed: 1,
 			}},
+		},
 		Reconciliation: RoutingCostReconciliation{
 			Status:          RoutingCostReconciliationInconsistent,
 			TotalIssueCount: 1,
