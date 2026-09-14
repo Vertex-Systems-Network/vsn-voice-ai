@@ -16,7 +16,6 @@ function validPayload(organizationId = 'org_456') {
       membership_id: 'membership_789',
       roles: ['member'],
       permissions: ['conversation.read'],
-      session_id: 'session_abc',
     },
     meetings: { ...unloaded },
     devices: { ...unloaded },
@@ -45,12 +44,25 @@ test('valid bootstrap uses same-origin credentialed request and returns ready', 
 
   assert.equal(result.status, 'ready');
   assert.equal(result.data.authorization.organization_id, 'org_456');
+  assert.equal(Object.hasOwn(result.data.authorization, 'session_id'), false);
   assert.equal(seenInput, '/v1/workspaces/org_456/bootstrap');
   assert.equal(seenInit.method, 'GET');
   assert.equal(seenInit.credentials, 'include');
   assert.equal(seenInit.cache, 'no-store');
   assert.deepEqual(seenInit.headers, { accept: 'application/json' });
   assert.equal(Object.hasOwn(seenInit.headers, 'authorization'), false);
+});
+
+test('browser client rejects widened authorization payloads containing session identifiers', async () => {
+  const payload = validPayload();
+  payload.authorization.session_id = 'session_should_not_cross_browser_boundary';
+
+  const result = await client.requestWorkspaceBootstrap(
+    async () => jsonResponse(payload),
+    'org_456',
+  );
+
+  assert.deepEqual(result, { status: 'invalid_response' });
 });
 
 test('organization id is URL encoded and must match response tenant', async () => {
