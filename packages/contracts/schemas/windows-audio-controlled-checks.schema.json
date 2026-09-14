@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.vsn.local/windows-audio-controlled-checks.schema.json",
+  "title": "VSN Windows Audio Controlled Checks",
+  "description": "Content-safe operator attestation input for a controlled Windows verification run. It intentionally excludes operator identity, machine name, audio content, transcripts, credentials and free-form notes.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "test_run_id",
+    "operator_attested",
+    "calling_apps",
+    "recovery_checks"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "test_run_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9._-]+$"
+    },
+    "operator_attested": { "type": "boolean" },
+    "calling_apps": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 16,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "app_id",
+          "processed_audio_received",
+          "safe_bypass_received"
+        ],
+        "properties": {
+          "app_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[a-z0-9._-]+$"
+          },
+          "processed_audio_received": { "type": "boolean" },
+          "safe_bypass_received": { "type": "boolean" }
+        }
+      }
+    },
+    "recovery_checks": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["event_id", "recovered", "safe_bypass_usable"],
+        "properties": {
+          "event_id": {
+            "enum": [
+              "usb_unplug_replug",
+              "default_device_change",
+              "disable_enable",
+              "sleep_wake",
+              "audio_service_restart",
+              "bluetooth_disconnect"
+            ]
+          },
+          "recovered": { "type": "boolean" },
+          "safe_bypass_usable": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}
