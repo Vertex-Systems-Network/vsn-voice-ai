@@ -20,11 +20,10 @@ $systemKitsRoot = Join-Path ${env:ProgramFiles(x86)} "Windows Kits\10\bin"
 function Resolve-WindowsKitTool {
     param([Parameter(Mandatory = $true)][string]$Name)
 
-    $command = Get-Command $Name -ErrorAction SilentlyContinue
-    if ($null -ne $command) {
-        return $command.Source
-    }
-
+    # Security boundary: never trust the ambient PATH for verification/signing
+    # tooling. Resolve only from the exact restored WDK tree or the standard
+    # Windows Kits installation root so a local PATH-precedence attack cannot
+    # substitute InfVerif, Inf2Cat, or SignTool.
     $searchRoots = @($restoredWdkRoot, $systemKitsRoot)
     foreach ($root in $searchRoots) {
         if (-not (Test-Path $root)) {
@@ -49,12 +48,12 @@ function Resolve-WindowsKitTool {
                 Select-Object -First 1
         }
         if ($null -ne $candidate) {
-            Write-Host "Resolved $Name from $($candidate.FullName)"
+            Write-Host "Resolved $Name from trusted WDK root: $($candidate.FullName)"
             return $candidate.FullName
         }
     }
 
-    throw "$Name was not found in PATH or search roots: $($searchRoots -join '; ')"
+    throw "$Name was not found in trusted WDK roots: $($searchRoots -join '; ')"
 }
 
 $driverPath = (Resolve-Path $DriverBinary).Path
