@@ -19,6 +19,7 @@ The realtime-gateway module also contains an in-memory metadata registry at `ser
 - binds verification evidence references to the exact model/version/artifact digest and dataset registry set before a provider candidate can be projected;
 - can project fully verified, evidence-bound model metadata into an explicitly disabled provider-registration candidate without activating routing;
 - can validate a content-safe activation-review packet against one exact disabled provider candidate without authorizing activation;
+- stores validated activation-review packets through an append-only in-memory audit registry with defensive reads and deterministic snapshots;
 - does not register, enable, mutate or otherwise activate anything in the provider routing registry.
 
 A manifest may record only bounded operational metadata:
@@ -158,10 +159,16 @@ The packet intentionally contains no numeric benchmark thresholds. Thresholds re
 
 The activation-review packet is not an approval artifact. It does not verify the truth or sufficiency of the referenced records, mutate the provider registry, grant runtime access, set health/rate-limit state, deploy an artifact or make a provider routable. Any later activation mechanism must remain a separate reviewed control with explicit authorization and operational verification.
 
+### Activation review audit registry
+
+`ActivationReviewRegistry` accepts a review only after `ValidateProviderActivationReview` binds it to the exact disabled candidate. Review IDs are append-only: an existing review cannot be overwritten by a later packet with the same ID. The registry returns defensive copies and deterministic snapshots ordered by review ID.
+
+This registry is an in-memory audit boundary only. It does not persist external evidence, establish evidence truth, record an activation approval, mutate a provider candidate, write to the provider routing registry or make any model routable.
+
 ## Artifact delivery boundary
 
 Production model artifacts belong in the approved encrypted artifact/model store, outside Git. Delivery must eventually satisfy the model/update supply-chain controls from `THREAT-007`, including digest verification, signed artifacts where required, staged rollout and rollback. The manifest SHA-256 is integrity metadata; it is not a substitute for signing or release provenance.
 
 ## Next implementation slice
 
-A later WU-011 slice may add an immutable activation-review registry/audit boundary or a separate reviewed activation-decision contract that still cannot directly mutate routing state. Runtime loading, artifact retrieval/signature verification, production provider activation, datasets and model training remain separate authorization and verification work.
+A later WU-011 slice may define a separately authorized activation-decision/audit contract that still cannot directly mutate routing state, or a persistent review-record storage boundary with explicit operational ownership. Runtime loading, artifact retrieval/signature verification, production provider activation, datasets and model training remain separate authorization and verification work.
