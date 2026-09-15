@@ -17,11 +17,16 @@ class WindowsAudioControlledWorkflowTests(unittest.TestCase):
         self.assertNotIn("push:", self.source)
         self.assertIn("permissions:\n  contents: read", self.source)
 
-    def test_workflow_targets_explicit_controlled_self_hosted_runner(self) -> None:
+    def test_workflow_is_limited_to_main(self) -> None:
+        self.assertIn("if: github.ref == 'refs/heads/main'", self.source)
+
+    def test_workflow_targets_restricted_controlled_runner_group(self) -> None:
+        self.assertIn("group: vsn-controlled-audio-restricted", self.source)
         self.assertIn(
-            "runs-on: [self-hosted, windows, x64, vsn-controlled-audio]",
+            "labels: [self-hosted, windows, x64, vsn-controlled-audio]",
             self.source,
         )
+        self.assertNotIn("runs-on: [self-hosted", self.source)
         self.assertIn('$env:RUNNER_ENVIRONMENT -ne "self-hosted"', self.source)
         self.assertIn('$env:RUNNER_OS -ne "Windows"', self.source)
         self.assertIn('$env:RUNNER_ARCH -ne "X64"', self.source)
