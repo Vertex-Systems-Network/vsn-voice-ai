@@ -14,7 +14,8 @@ The realtime-gateway module also contains an in-memory metadata registry at `ser
 - returns defensive copies so callers cannot mutate registry-owned metadata;
 - exposes a `VerifiedSnapshot` view only for manifests whose lifecycle and all six provenance/verification gates are verified;
 - provides a bounded JSON loader that rejects unknown fields, oversized manifests and trailing JSON values;
-- can project fully verified model metadata into an explicitly disabled provider-registration candidate without activating routing;
+- binds verification evidence references to the exact model/version/artifact digest and dataset registry set before a provider candidate can be projected;
+- can project fully verified, evidence-bound model metadata into an explicitly disabled provider-registration candidate without activating routing;
 - does not register, enable, mutate or otherwise activate anything in the provider routing registry.
 
 A manifest may record only bounded operational metadata:
@@ -80,11 +81,28 @@ The verifier:
 
 A digest match is integrity evidence only. A separate reviewed process must decide whether artifact-integrity evidence is sufficient to update registry metadata, and signing/release provenance remains a separate `THREAT-007` control.
 
+## Verification evidence bundle boundary
+
+`packages/contracts/schemas/vsn-model-verification-evidence.schema.json` defines a content-safe evidence-reference bundle for one exact VSN model artifact. It carries no reports, customer content, datasets, paths, URLs or credentials. It binds:
+
+- model ID and semantic version;
+- artifact ID and SHA-256;
+- the exact set of opaque dataset-registry references;
+- opaque dataset-provenance evidence references;
+- leakage-test evidence;
+- model-regression evidence;
+- benchmark evidence;
+- security-review evidence;
+- rollback evidence;
+- artifact-integrity evidence.
+
+`ValidateVerificationEvidence` rejects malformed evidence identifiers, duplicate/reused gate references, artifact/model identity mismatches and dataset-set mismatches. Evidence references identify reviewed records; their presence does **not** prove that the referenced review was valid, sufficient or approved. This layer only prevents a candidate from being assembled against evidence belonging to another model, version, artifact or dataset set.
+
 ## Disabled provider candidate boundary
 
-`BuildDisabledProviderCandidate` accepts only a fully verified model manifest. Runtime identity choices that are intentionally absent from model metadata—provider ID and access mode—must be supplied explicitly by the caller.
+`BuildDisabledProviderCandidate` accepts only a fully verified model manifest plus a verification-evidence bundle that matches the same model/version/artifact digest and dataset registry set. Runtime identity choices that are intentionally absent from model metadata—provider ID and access mode—must be supplied explicitly by the caller.
 
-The projection copies model/version/artifact provenance plus normalized capabilities, but the generated `ProviderManifest` is always:
+Provider-candidate schema version 2 carries the opaque `verification_evidence_id` for downstream traceability. The projection copies model/version/artifact provenance plus normalized capabilities, but the generated `ProviderManifest` is always:
 
 - `enabled=false`;
 - `verified_access=false`;
@@ -100,4 +118,4 @@ Production model artifacts belong in the approved encrypted artifact/model store
 
 ## Next implementation slice
 
-A later WU-011 slice may define the evidence required to promote a disabled provider candidate toward runtime-access verification, without making activation automatic. Runtime loading, artifact retrieval/signature verification, production provider activation, datasets and model training remain separate authorization and verification work.
+A later WU-011 slice may define a reviewed activation-evidence boundary for runtime access, signature/release provenance, benchmark thresholds and rollback readiness without making activation automatic. Runtime loading, artifact retrieval/signature verification, production provider activation, datasets and model training remain separate authorization and verification work.
