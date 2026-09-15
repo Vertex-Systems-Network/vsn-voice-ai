@@ -38,11 +38,14 @@ type ProviderCandidate struct {
 
 // BuildDisabledProviderCandidate converts fully verified model metadata plus an
 // exact evidence-reference bundle into a fail-closed provider registration
-// candidate. It does not mutate either registry and it does not activate runtime
-// access or evaluate the referenced evidence itself.
+// candidate. Every dataset referenced by the manifest must also resolve through
+// the dataset provenance registry with verified rights and deletion-lineage
+// state. The function does not mutate either registry, grant dataset access,
+// authorize training, activate runtime access or evaluate external evidence.
 func BuildDisabledProviderCandidate(
 	manifest Manifest,
 	evidence ModelVerificationEvidence,
+	datasets *DatasetProvenanceRegistry,
 	config ProviderCandidateConfig,
 ) (ProviderCandidate, error) {
 	if err := validateManifest(manifest); err != nil {
@@ -52,6 +55,9 @@ func BuildDisabledProviderCandidate(
 		return ProviderCandidate{}, ErrModelNotFullyVerified
 	}
 	if err := ValidateVerificationEvidence(manifest, evidence); err != nil {
+		return ProviderCandidate{}, err
+	}
+	if _, err := datasets.VerifiedForManifest(manifest); err != nil {
 		return ProviderCandidate{}, err
 	}
 	if !providerCandidateIDPattern.MatchString(config.ProviderID) || !validCandidateAccessMode(config.AccessMode) {
