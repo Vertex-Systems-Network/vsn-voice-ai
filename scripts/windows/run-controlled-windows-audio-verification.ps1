@@ -30,12 +30,12 @@ if (-not (Test-Path -LiteralPath $collector -PathType Leaf)) {
     throw "Verification evidence collector was not found."
 }
 
+# The summarizer is a PowerShell script and reports validation failures by
+# terminating errors. Do not inspect $LASTEXITCODE here because no native child
+# process is required and that variable may contain a stale value.
 & $summarizer `
     -InputFile $PerformanceSamplesFile `
     -OutputFile $PerformanceSummaryFile
-if ($LASTEXITCODE -ne 0) {
-    exit $LASTEXITCODE
-}
 
 $collectorArguments = @{
     SmokeExecutable = $SmokeExecutable
