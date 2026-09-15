@@ -31,31 +31,31 @@ Before starting a run:
 
 Create `artifacts/windows-audio-controlled-checks.json` using the closed contract in `packages/contracts/schemas/windows-audio-controlled-checks.schema.json`.
 
-Example structure:
+The example below is deliberately fail-closed. Keep every result `false` until the corresponding behavior is actually observed on the controlled machine.
 
 ```json
 {
   "schema_version": 1,
   "test_run_id": "lab-run-20260915-01",
-  "operator_attested": true,
+  "operator_attested": false,
   "calling_apps": [
     {
       "app_id": "approved_calling_app_1",
-      "processed_audio_received": true,
-      "safe_bypass_received": true
+      "processed_audio_received": false,
+      "safe_bypass_received": false
     }
   ],
   "recovery_checks": [
     {
       "event_id": "default_device_change",
-      "recovered": true,
-      "safe_bypass_usable": true
+      "recovered": false,
+      "safe_bypass_usable": false
     }
   ]
 }
 ```
 
-Only set a result to `true` after it is actually observed. Include every lifecycle event applicable to the controlled test profile. Supported event identifiers are:
+Set a result to `true` only after it is actually observed. Set `operator_attested` to `true` only after all entries in the file represent the completed controlled run. Include every lifecycle event applicable to the controlled test profile. Supported event identifiers are:
 
 - `usb_unplug_replug`
 - `default_device_change`
@@ -112,9 +112,10 @@ The runner performs these steps in order:
 3. runs the installed endpoint/control smoke;
 4. collects package hashes/signature status and controlled checks;
 5. binds controlled checks and performance measurements by identical `test_run_id`;
-6. derives `nfr_aud_002_target_met` from the existing `safe_bypass_transition_p95_ms <= 250` engineering target;
-7. emits `artifacts/windows-audio-verification-evidence.json`;
-8. returns non-zero if the run does not produce an acceptance evidence candidate.
+6. binds the emitted evidence to the exact supplied repository SHA;
+7. derives `nfr_aud_002_target_met` from the existing `safe_bypass_transition_p95_ms <= 250` engineering target;
+8. emits `artifacts/windows-audio-verification-evidence.json`;
+9. returns non-zero if the run does not produce an acceptance evidence candidate.
 
 No generic processed-path latency or jitter pass threshold is invented by this runner. Those measured values remain review evidence unless an approved requirement defines a threshold.
 
@@ -123,6 +124,7 @@ No generic processed-path latency or jitter pass threshold is invented by this r
 A successful candidate must retain all of these properties:
 
 - `scope` is `controlled_machine`;
+- `repository_sha` exactly matches the revision supplied to the runner;
 - `runtime_smoke.status` is `passed`;
 - controlled calling-app checks show processed and safe-bypass audio as observed;
 - applicable recovery checks show recovery and usable safe bypass as observed;
