@@ -31,11 +31,7 @@ class FakeClosableClient implements ClosablePostgresQueryClient {
 
 function configuredEnv(): Record<string, string> {
   return {
-    VSN_POSTGRES_HOST: 'db.internal',
-    VSN_POSTGRES_PORT: '5432',
-    VSN_POSTGRES_DATABASE: 'vsn',
-    VSN_POSTGRES_USER: 'vsn_api',
-    VSN_POSTGRES_PASSWORD: 'test-only-password',
+    VSN_POSTGRES_URL: 'postgresql://vsn_api:local-test@db.internal:5432/vsn',
     VSN_POSTGRES_SSL_MODE: 'require',
   };
 }
@@ -75,8 +71,12 @@ test('configured runtime repository delegates to PostgreSQL and owns client life
   const result = await repository.listByOrganization('org_456');
 
   assert.equal(capturedConfigs.length, 1);
-  assert.equal(capturedConfigs[0]?.host, 'db.internal');
-  assert.equal(capturedConfigs[0]?.database, 'vsn');
+  const capturedConfig = capturedConfigs[0];
+  assert.ok(capturedConfig);
+  const parsedConnection = new URL(capturedConfig.connectionString);
+  assert.equal(parsedConnection.hostname, 'db.internal');
+  assert.equal(parsedConnection.pathname, '/vsn');
+  assert.equal(capturedConfig.sslMode, 'require');
   assert.equal(result.organization_id, 'org_456');
   assert.equal(result.members.length, 1);
   assert.equal(client.calls.length, 1);
