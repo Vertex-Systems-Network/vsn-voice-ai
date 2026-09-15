@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://schemas.vsn.local/windows-audio-controlled-checks.schema.json",
   "title": "VSN Windows Audio Controlled Checks",
-  "description": "Content-safe operator attestation input for a controlled Windows verification run. It intentionally excludes operator identity, machine name, audio content, transcripts, credentials and free-form notes.",
+  "description": "Content-safe operator attestation input for a controlled Windows verification run. It intentionally excludes operator identity, machine name, audio content, transcripts, credentials and free-form notes. The baseline recovery matrix always includes default-device change, disable/enable, sleep/wake and audio-service restart; USB and Bluetooth checks are additional when applicable to the supported test profile.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -47,7 +47,7 @@
     },
     "recovery_checks": {
       "type": "array",
-      "minItems": 1,
+      "minItems": 4,
       "maxItems": 6,
       "items": {
         "type": "object",
@@ -67,7 +67,45 @@
           "recovered": { "type": "boolean" },
           "safe_bypass_usable": { "type": "boolean" }
         }
-      }
+      },
+      "allOf": [
+        {
+          "contains": {
+            "type": "object",
+            "required": ["event_id"],
+            "properties": { "event_id": { "const": "default_device_change" } }
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": ["event_id"],
+            "properties": { "event_id": { "const": "disable_enable" } }
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": ["event_id"],
+            "properties": { "event_id": { "const": "sleep_wake" } }
+          },
+          "minContains": 1,
+          "maxContains": 1
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": ["event_id"],
+            "properties": { "event_id": { "const": "audio_service_restart" } }
+          },
+          "minContains": 1,
+          "maxContains": 1
+        }
+      ]
     }
   }
 }
