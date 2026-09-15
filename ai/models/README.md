@@ -18,6 +18,7 @@ The realtime-gateway module also contains an in-memory metadata registry at `ser
 - requires every manifest-referenced dataset to resolve through verified rights and deletion-lineage metadata before a provider candidate can be projected;
 - binds verification evidence references to the exact model/version/artifact digest and dataset registry set before a provider candidate can be projected;
 - can project fully verified, evidence-bound model metadata into an explicitly disabled provider-registration candidate without activating routing;
+- can validate a content-safe activation-review packet against one exact disabled provider candidate without authorizing activation;
 - does not register, enable, mutate or otherwise activate anything in the provider routing registry.
 
 A manifest may record only bounded operational metadata:
@@ -135,10 +136,32 @@ Provider-candidate schema version 2 carries the opaque `verification_evidence_id
 
 Candidate creation does not write to the provider registry. Even if the disabled candidate is explicitly registered there, the existing router rejects it because `Enabled` is false. A separate, reviewed runtime-access and operational-verification process is required before any later activation change.
 
+## Provider activation review boundary
+
+`packages/contracts/schemas/vsn-provider-activation-review.schema.json` defines a content-safe review packet for one exact disabled provider candidate. It binds the candidate's model/version/artifact identity, verification-evidence ID, provider ID, access mode, capabilities and fail-closed provider state to opaque evidence references for:
+
+- runtime access verification;
+- artifact signature verification;
+- release provenance/attestation;
+- the approved benchmark policy used to interpret benchmark evidence;
+- rollback readiness.
+
+The packet intentionally contains no numeric benchmark thresholds. Thresholds remain external approved policy and are referenced by opaque evidence ID rather than invented by this repository slice.
+
+`ValidateProviderActivationReview` rejects malformed or duplicate evidence references, promoted candidate state and candidate/review identity drift. Both the schema and Go validator require:
+
+- `activation_authorized=false`;
+- `enabled=false`;
+- `verified_access=false`;
+- `health=unhealthy`;
+- `rate_limit=unknown`.
+
+The activation-review packet is not an approval artifact. It does not verify the truth or sufficiency of the referenced records, mutate the provider registry, grant runtime access, set health/rate-limit state, deploy an artifact or make a provider routable. Any later activation mechanism must remain a separate reviewed control with explicit authorization and operational verification.
+
 ## Artifact delivery boundary
 
 Production model artifacts belong in the approved encrypted artifact/model store, outside Git. Delivery must eventually satisfy the model/update supply-chain controls from `THREAT-007`, including digest verification, signed artifacts where required, staged rollout and rollback. The manifest SHA-256 is integrity metadata; it is not a substitute for signing or release provenance.
 
 ## Next implementation slice
 
-A later WU-011 slice may define a reviewed activation-evidence boundary for runtime access, signature/release provenance, benchmark thresholds and rollback readiness without making activation automatic. Runtime loading, artifact retrieval/signature verification, production provider activation, datasets and model training remain separate authorization and verification work.
+A later WU-011 slice may add an immutable activation-review registry/audit boundary or a separate reviewed activation-decision contract that still cannot directly mutate routing state. Runtime loading, artifact retrieval/signature verification, production provider activation, datasets and model training remain separate authorization and verification work.
