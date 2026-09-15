@@ -14,6 +14,7 @@ The realtime-gateway module also contains an in-memory metadata registry at `ser
 - returns defensive copies so callers cannot mutate registry-owned metadata;
 - exposes a `VerifiedSnapshot` view only for manifests whose lifecycle and all six provenance/verification gates are verified;
 - provides a bounded JSON loader that rejects unknown fields, oversized manifests and trailing JSON values;
+- provides an immutable metadata-only dataset provenance registry for the opaque `DATASET-*` references used by model manifests;
 - binds verification evidence references to the exact model/version/artifact digest and dataset registry set before a provider candidate can be projected;
 - can project fully verified, evidence-bound model metadata into an explicitly disabled provider-registration candidate without activating routing;
 - does not register, enable, mutate or otherwise activate anything in the provider routing registry.
@@ -62,6 +63,20 @@ Therefore, repository work in this directory must not:
 - copy production customer content into research fixtures;
 - run model training or material paid GPU workloads without the separate authorization required by WU-011;
 - mark benchmark, security, provenance or rollback gates `verified` without repository-backed review evidence.
+
+## Dataset provenance registry boundary
+
+`packages/contracts/schemas/vsn-dataset-provenance.schema.json` defines a metadata-only record for one restricted `DATA-010` dataset identity. It never carries dataset bytes, audio, transcripts, embeddings, tenant identifiers, storage paths/URLs, credentials or free-form notes.
+
+The record locks storage to the `segregated_research_storage` class and carries only bounded evidence references for source provenance, rights review, deletion lineage and retention policy. `DatasetProvenanceRegistry` stores those records immutably in-process and returns defensive copies.
+
+Customer content is fail-closed:
+
+- `customer_content_policy=excluded` permits no authorization reference and requires `production_to_research_transfer_status=not_applicable`;
+- `customer_content_policy=separately_authorized` requires an opaque authorization evidence reference and a verified production-to-research transfer status;
+- neither mode moves, reads or grants access to any dataset.
+
+`VerifiedForManifest` resolves only dataset IDs explicitly referenced by a model manifest and fails unless every referenced record exists with verified rights review and verified deletion-lineage review. A `verified` metadata status still identifies repository/runtime state only; it does not independently prove the external evidence record is valid or grant training authorization.
 
 ## Artifact integrity evidence boundary
 
@@ -118,4 +133,4 @@ Production model artifacts belong in the approved encrypted artifact/model store
 
 ## Next implementation slice
 
-A later WU-011 slice may define a reviewed activation-evidence boundary for runtime access, signature/release provenance, benchmark thresholds and rollback readiness without making activation automatic. Runtime loading, artifact retrieval/signature verification, production provider activation, datasets and model training remain separate authorization and verification work.
+A later WU-011 slice may require verified dataset-provenance registry resolution as an input to provider-candidate projection, then define a reviewed activation-evidence boundary for runtime access, signature/release provenance, benchmark thresholds and rollback readiness without making activation automatic. Runtime loading, artifact retrieval/signature verification, production provider activation, datasets and model training remain separate authorization and verification work.

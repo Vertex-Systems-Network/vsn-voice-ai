@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "dataset_id": "DATASET-ACCENT-EVAL-1",
+  "classification": "restricted",
+  "storage_class": "segregated_research_storage",
+  "customer_content_policy": "excluded",
+  "source_provenance_refs": [
+    "EVIDENCE-DATASET-SOURCE-ACCENT-EVAL-1"
+  ],
+  "rights_review_status": "verified",
+  "deletion_lineage_status": "verified",
+  "deletion_lineage_ref": "EVIDENCE-DATASET-DELETION-ACCENT-EVAL-1",
+  "retention_policy_ref": "EVIDENCE-DATASET-RETENTION-ACCENT-EVAL-1",
+  "production_to_research_transfer_status": "not_applicable"
+}
