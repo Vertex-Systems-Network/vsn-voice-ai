@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "evidence_id": "MODELEVID-ACCENT-BASE-1",
+  "model_id": "vsn-accent-base",
+  "model_version": "1.0.0",
+  "artifact_id": "MODELART-ACCENT-BASE-1",
+  "artifact_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "dataset_registry_refs": [
+    "DATASET-ACCENT-BASE-1"
+  ],
+  "evidence_refs": {
+    "dataset_provenance": [
+      "EVIDENCE-DATASET-PROVENANCE-ACCENT-BASE-1"
+    ],
+    "leakage_test": "EVIDENCE-LEAKAGE-ACCENT-BASE-1",
+    "model_regression": "EVIDENCE-REGRESSION-ACCENT-BASE-1",
+    "benchmark": "EVIDENCE-BENCHMARK-ACCENT-BASE-1",
+    "security_review": "EVIDENCE-SECURITY-ACCENT-BASE-1",
+    "rollback": "EVIDENCE-ROLLBACK-ACCENT-BASE-1",
+    "artifact_integrity": "EVIDENCE-ARTIFACT-INTEGRITY-ACCENT-BASE-1"
+  }
+}
