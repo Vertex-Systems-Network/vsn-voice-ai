@@ -15,6 +15,7 @@ The realtime-gateway module also contains an in-memory metadata registry at `ser
 - exposes a `VerifiedSnapshot` view only for manifests whose lifecycle and all six provenance/verification gates are verified;
 - provides a bounded JSON loader that rejects unknown fields, oversized manifests and trailing JSON values;
 - provides an immutable metadata-only dataset provenance registry for the opaque `DATASET-*` references used by model manifests;
+- requires every manifest-referenced dataset to resolve through verified rights and deletion-lineage metadata before a provider candidate can be projected;
 - binds verification evidence references to the exact model/version/artifact digest and dataset registry set before a provider candidate can be projected;
 - can project fully verified, evidence-bound model metadata into an explicitly disabled provider-registration candidate without activating routing;
 - does not register, enable, mutate or otherwise activate anything in the provider routing registry.
@@ -115,7 +116,14 @@ A digest match is integrity evidence only. A separate reviewed process must deci
 
 ## Disabled provider candidate boundary
 
-`BuildDisabledProviderCandidate` accepts only a fully verified model manifest plus a verification-evidence bundle that matches the same model/version/artifact digest and dataset registry set. Runtime identity choices that are intentionally absent from model metadata—provider ID and access mode—must be supplied explicitly by the caller.
+`BuildDisabledProviderCandidate` accepts only:
+
+- a fully verified model manifest;
+- a verification-evidence bundle matching the same model/version/artifact digest and dataset registry set;
+- a dataset provenance registry in which every manifest-referenced dataset exists with verified rights and deletion-lineage review state;
+- explicit runtime identity choices for provider ID and access mode.
+
+Missing provenance registry state, a missing dataset record or unverified rights/deletion-lineage state fails candidate construction before provider projection. Candidate construction still does not grant dataset access, authorize training or evaluate the underlying external evidence records.
 
 Provider-candidate schema version 2 carries the opaque `verification_evidence_id` for downstream traceability. The projection copies model/version/artifact provenance plus normalized capabilities, but the generated `ProviderManifest` is always:
 
@@ -133,4 +141,4 @@ Production model artifacts belong in the approved encrypted artifact/model store
 
 ## Next implementation slice
 
-A later WU-011 slice may require verified dataset-provenance registry resolution as an input to provider-candidate projection, then define a reviewed activation-evidence boundary for runtime access, signature/release provenance, benchmark thresholds and rollback readiness without making activation automatic. Runtime loading, artifact retrieval/signature verification, production provider activation, datasets and model training remain separate authorization and verification work.
+A later WU-011 slice may define a reviewed activation-evidence boundary for runtime access, signature/release provenance, benchmark thresholds and rollback readiness without making activation automatic. Runtime loading, artifact retrieval/signature verification, production provider activation, datasets and model training remain separate authorization and verification work.

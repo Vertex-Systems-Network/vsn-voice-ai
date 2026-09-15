@@ -11,12 +11,22 @@ import (
 	"github.com/Vertex-Systems-Network/vsn-voice-ai/services/realtime-gateway/internal/provider"
 )
 
+func verifiedDatasetRegistry(t *testing.T) *DatasetProvenanceRegistry {
+	t.Helper()
+	registry := NewDatasetProvenanceRegistry()
+	if err := registry.Register(datasetProvenanceFixture(t)); err != nil {
+		t.Fatalf("register verified dataset provenance fixture: %v", err)
+	}
+	return registry
+}
+
 func TestBuildDisabledProviderCandidateRequiresFullyVerifiedModel(t *testing.T) {
 	evidence := verificationEvidenceFixture(t)
 	pending := pendingManifest()
 	if _, err := BuildDisabledProviderCandidate(
 		pending,
 		evidence,
+		nil,
 		ProviderCandidateConfig{ProviderID: "vsn-accent-runtime", AccessMode: provider.AccessInternal},
 	); !errors.Is(err, ErrModelNotFullyVerified) {
 		t.Fatalf("expected ErrModelNotFullyVerified, got %v", err)
@@ -27,6 +37,7 @@ func TestBuildDisabledProviderCandidateRequiresFullyVerifiedModel(t *testing.T) 
 	if _, err := BuildDisabledProviderCandidate(
 		deprecated,
 		evidence,
+		nil,
 		ProviderCandidateConfig{ProviderID: "vsn-accent-runtime", AccessMode: provider.AccessInternal},
 	); !errors.Is(err, ErrModelNotFullyVerified) {
 		t.Fatalf("expected deprecated model rejection, got %v", err)
@@ -39,9 +50,52 @@ func TestBuildDisabledProviderCandidateRequiresMatchingVerificationEvidence(t *t
 	if _, err := BuildDisabledProviderCandidate(
 		verifiedManifest(),
 		evidence,
+		nil,
 		ProviderCandidateConfig{ProviderID: "vsn-accent-runtime", AccessMode: provider.AccessInternal},
 	); !errors.Is(err, ErrVerificationEvidenceMismatch) {
 		t.Fatalf("expected ErrVerificationEvidenceMismatch, got %v", err)
+	}
+}
+
+func TestBuildDisabledProviderCandidateRequiresDatasetProvenanceRegistry(t *testing.T) {
+	manifest := verifiedManifest()
+	evidence := verificationEvidenceFixture(t)
+	config := ProviderCandidateConfig{ProviderID: "vsn-accent-runtime", AccessMode: provider.AccessInternal}
+
+	if _, err := BuildDisabledProviderCandidate(manifest, evidence, nil, config); !errors.Is(err, ErrDatasetProvenanceNotFound) {
+		t.Fatalf("expected nil registry to fail closed, got %v", err)
+	}
+
+	empty := NewDatasetProvenanceRegistry()
+	if _, err := BuildDisabledProviderCandidate(manifest, evidence, empty, config); !errors.Is(err, ErrDatasetProvenanceNotFound) {
+		t.Fatalf("expected missing dataset provenance to fail closed, got %v", err)
+	}
+}
+
+func TestBuildDisabledProviderCandidateRequiresVerifiedDatasetRightsAndDeletionLineage(t *testing.T) {
+	manifest := verifiedManifest()
+	evidence := verificationEvidenceFixture(t)
+	config := ProviderCandidateConfig{ProviderID: "vsn-accent-runtime", AccessMode: provider.AccessInternal}
+
+	for name, mutate := range map[string]func(*DatasetProvenanceRecord){
+		"rights": func(record *DatasetProvenanceRecord) {
+			record.RightsReviewStatus = VerificationRequired
+		},
+		"deletion lineage": func(record *DatasetProvenanceRecord) {
+			record.DeletionLineageStatus = VerificationRequired
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			registry := NewDatasetProvenanceRegistry()
+			record := datasetProvenanceFixture(t)
+			mutate(&record)
+			if err := registry.Register(record); err != nil {
+				t.Fatalf("register verification-required dataset provenance: %v", err)
+			}
+			if _, err := BuildDisabledProviderCandidate(manifest, evidence, registry, config); !errors.Is(err, ErrDatasetProvenanceNotVerified) {
+				t.Fatalf("expected ErrDatasetProvenanceNotVerified, got %v", err)
+			}
+		})
 	}
 }
 
@@ -51,6 +105,7 @@ func TestBuildDisabledProviderCandidateProjectsContentSafeMetadata(t *testing.T)
 	candidate, err := BuildDisabledProviderCandidate(
 		manifest,
 		evidence,
+		verifiedDatasetRegistry(t),
 		ProviderCandidateConfig{ProviderID: "vsn-accent-runtime", AccessMode: provider.AccessInternal},
 	)
 	if err != nil {
@@ -92,6 +147,7 @@ func TestProviderCandidateMatchesSharedContractFixture(t *testing.T) {
 	candidate, err := BuildDisabledProviderCandidate(
 		verifiedManifest(),
 		verificationEvidenceFixture(t),
+		verifiedDatasetRegistry(t),
 		ProviderCandidateConfig{ProviderID: "vsn-accent-runtime", AccessMode: provider.AccessInternal},
 	)
 	if err != nil {
@@ -125,6 +181,7 @@ func TestDisabledProviderCandidateRemainsNonRoutableAfterRegistration(t *testing
 	candidate, err := BuildDisabledProviderCandidate(
 		verifiedManifest(),
 		verificationEvidenceFixture(t),
+		verifiedDatasetRegistry(t),
 		ProviderCandidateConfig{ProviderID: "vsn-accent-runtime", AccessMode: provider.AccessInternal},
 	)
 	if err != nil {
@@ -150,6 +207,7 @@ func TestDisabledProviderCandidateRemainsNonRoutableAfterRegistration(t *testing
 func TestBuildDisabledProviderCandidateRequiresExplicitBoundedRuntimeIdentity(t *testing.T) {
 	manifest := verifiedManifest()
 	evidence := verificationEvidenceFixture(t)
+	datasets := verifiedDatasetRegistry(t)
 	cases := map[string]ProviderCandidateConfig{
 		"empty provider id": {AccessMode: provider.AccessInternal},
 		"unsafe provider id": {
@@ -164,7 +222,7 @@ func TestBuildDisabledProviderCandidateRequiresExplicitBoundedRuntimeIdentity(t 
 	}
 	for name, config := range cases {
 		t.Run(name, func(t *testing.T) {
-			if _, err := BuildDisabledProviderCandidate(manifest, evidence, config); !errors.Is(err, ErrInvalidProviderCandidate) {
+			if _, err := BuildDisabledProviderCandidate(manifest, evidence, datasets, config); !errors.Is(err, ErrInvalidProviderCandidate) {
 				t.Fatalf("expected ErrInvalidProviderCandidate, got %v", err)
 			}
 		})
@@ -176,6 +234,7 @@ func TestProviderCandidateCapabilitiesAreDefensiveCopy(t *testing.T) {
 	candidate, err := BuildDisabledProviderCandidate(
 		manifest,
 		verificationEvidenceFixture(t),
+		verifiedDatasetRegistry(t),
 		ProviderCandidateConfig{ProviderID: "vsn-accent-runtime", AccessMode: provider.AccessLocal},
 	)
 	if err != nil {
