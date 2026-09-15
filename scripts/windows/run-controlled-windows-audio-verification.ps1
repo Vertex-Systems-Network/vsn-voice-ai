@@ -18,7 +18,32 @@ $isGithubActions = [string]::Equals(
     [System.StringComparison]::OrdinalIgnoreCase
 )
 if ($isGithubActions) {
-    throw "Controlled Windows verification cannot run in hosted GitHub Actions."
+    $isSelfHosted = [string]::Equals(
+        $env:RUNNER_ENVIRONMENT,
+        "self-hosted",
+        [System.StringComparison]::OrdinalIgnoreCase
+    )
+    if (-not $isSelfHosted) {
+        throw "Controlled Windows verification can run in GitHub Actions only on an explicitly targeted self-hosted runner."
+    }
+
+    $isWindowsRunner = [string]::Equals(
+        $env:RUNNER_OS,
+        "Windows",
+        [System.StringComparison]::OrdinalIgnoreCase
+    )
+    if (-not $isWindowsRunner) {
+        throw "Controlled Windows verification requires a Windows self-hosted runner."
+    }
+
+    $isX64Runner = [string]::Equals(
+        $env:RUNNER_ARCH,
+        "X64",
+        [System.StringComparison]::OrdinalIgnoreCase
+    )
+    if (-not $isX64Runner) {
+        throw "Controlled Windows verification requires an X64 self-hosted runner."
+    }
 }
 
 $normalizedRepositorySha = $RepositorySha.ToLowerInvariant()
