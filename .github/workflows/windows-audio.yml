@@ -13,7 +13,9 @@ on:
       - "scripts/windows/**"
       - "packages/contracts/schemas/windows-audio-*.schema.json"
       - "tests/fixtures/windows-audio-performance-samples.json"
+      - "tests/test_windows_audio_controlled_*.py"
       - ".github/workflows/windows-audio.yml"
+      - ".github/workflows/windows-audio-controlled.yml"
   push:
     branches:
       - main
@@ -26,7 +28,9 @@ on:
       - "scripts/windows/**"
       - "packages/contracts/schemas/windows-audio-*.schema.json"
       - "tests/fixtures/windows-audio-performance-samples.json"
+      - "tests/test_windows_audio_controlled_*.py"
       - ".github/workflows/windows-audio.yml"
+      - ".github/workflows/windows-audio-controlled.yml"
   workflow_dispatch:
 
 permissions:
