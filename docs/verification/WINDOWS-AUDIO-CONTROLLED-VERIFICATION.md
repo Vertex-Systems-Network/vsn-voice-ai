@@ -13,7 +13,7 @@ Use this procedure on a real controlled Windows machine after the VSN virtual mi
 
 The final collector output is a content-safe **acceptance evidence candidate** only. `completion_claim` remains `false`; WU-002 completion is a separate reviewed decision.
 
-GitHub-hosted runners cannot act as a controlled machine. A GitHub Actions controlled run is allowed only on an explicitly targeted self-hosted Windows x64 runner carrying the `vsn-controlled-audio` label. Local PowerShell execution on the controlled machine remains supported.
+GitHub-hosted runners cannot act as a controlled machine. Local PowerShell execution on the controlled machine remains supported. Because this repository is public, a GitHub Actions controlled run must use the dedicated organization runner group and workflow restriction described below; a label-only self-hosted runner is not an acceptable security boundary.
 
 ## Preconditions
 
@@ -28,9 +28,18 @@ Before starting a run:
 - identify the calling applications approved for this verification run;
 - define the measurement method and stage boundaries before collecting numeric samples. Do not substitute hosted-CI timing or provider marketing claims for controlled measurements.
 
-For the self-hosted GitHub Actions path, the controlled machine must also have:
+For the self-hosted GitHub Actions path, the organization must first create a runner group named `vsn-controlled-audio-restricted` with all of these controls:
 
-- a self-hosted GitHub Actions runner registered with labels `self-hosted`, `windows`, `x64`, and `vsn-controlled-audio`;
+- repository access limited to `Vertex-Systems-Network/vsn-voice-ai`;
+- public-repository access enabled only for this explicitly reviewed controlled runner group;
+- workflow access set to **Selected workflows**, not all workflows;
+- the only selected workflow is `Vertex-Systems-Network/vsn-voice-ai/.github/workflows/windows-audio-controlled.yml@refs/heads/main`;
+- the controlled runner is placed in that group and carries labels `self-hosted`, `windows`, `x64`, and `vsn-controlled-audio`.
+
+Do not register or enable the controlled machine for this public repository if those runner-group workflow restrictions cannot be enforced. Labels route jobs; they are not the security boundary.
+
+The controlled machine must also have:
+
 - Visual Studio/MSVC x64 build tools and the existing driver-build prerequisites used by the repository Windows validation workflow;
 - a runner-local environment variable named `VSN_CONTROLLED_EVIDENCE_DIR` pointing to a directory outside the repository checkout where operator-prepared JSON inputs are stored;
 - the GitHub Actions runner service restarted after setting or changing `VSN_CONTROLLED_EVIDENCE_DIR`, so the runner process inherits the value.
@@ -141,28 +150,29 @@ From the repository root in PowerShell:
   -RepositorySha <40-character-repository-sha>
 ```
 
-Local invocation is allowed when the machine is not running under GitHub Actions. The supplied SHA must identify the exact checked-out revision being reviewed.
+Local invocation is allowed when the machine is not running under GitHub Actions. The supplied SHA must identify the exact checked-out revision being reviewed. Before measurement starts, the runner hashes the installed `VsnVirtualMic` service binary and the package `vsn_virtual_mic_control.sys`; a mismatch fails closed.
 
 ## 3B. Run through the controlled self-hosted workflow
 
-Use the GitHub Actions workflow **Controlled Windows Audio Verification** (`.github/workflows/windows-audio-controlled.yml`) and choose **Run workflow** on the exact repository revision intended for review.
+Use the GitHub Actions workflow **Controlled Windows Audio Verification** (`.github/workflows/windows-audio-controlled.yml`) and choose **Run workflow** on `main`. The job is explicitly skipped for any other ref.
 
 Provide only these two inputs:
 
 - `controlled_checks_filename`: leaf filename of the controlled-check JSON under `VSN_CONTROLLED_EVIDENCE_DIR`;
 - `performance_samples_filename`: leaf filename of the performance-sample JSON under `VSN_CONTROLLED_EVIDENCE_DIR`.
 
-The workflow is manual-only and targets `[self-hosted, windows, x64, vsn-controlled-audio]`. If no controlled runner with those labels is online, the job must remain queued rather than fall back to a GitHub-hosted runner.
+The workflow is manual-only and targets runner group `vsn-controlled-audio-restricted` plus labels `[self-hosted, windows, x64, vsn-controlled-audio]`. The organization runner group must be restricted to this workflow at `@refs/heads/main`. If the restricted group/runner is unavailable, the job must not fall back to a GitHub-hosted runner.
 
 The workflow:
 
-1. checks out the exact selected repository revision with persisted Git credentials disabled;
+1. checks out the exact `main` revision with persisted Git credentials disabled;
 2. independently verifies `RUNNER_ENVIRONMENT=self-hosted`, `RUNNER_OS=Windows`, and `RUNNER_ARCH=X64`;
 3. resolves only safe JSON leaf filenames under `VSN_CONTROLLED_EVIDENCE_DIR`;
 4. builds the virtual-microphone driver/package and installed-runtime smoke harness from the checked-out revision;
 5. does **not** install, remove or replace the driver on the machine;
-6. invokes `run-controlled-windows-audio-verification.ps1` with `${{ github.sha }}` as the exact evidence revision;
-7. uploads only the generated content-safe verification evidence and performance summary, not the raw controlled-check or raw performance-sample inputs.
+6. requires the installed `VsnVirtualMic` driver binary SHA-256 to match the newly built verified package driver before any controlled measurement is summarized or collected;
+7. invokes `run-controlled-windows-audio-verification.ps1` with `${{ github.sha }}` as the exact evidence revision;
+8. uploads only the generated content-safe verification evidence and performance summary, not the raw controlled-check or raw performance-sample inputs.
 
 The PowerShell runner repeats the self-hosted Windows x64 boundary check when invoked inside GitHub Actions, so a workflow configuration mistake cannot silently turn a GitHub-hosted job into controlled acceptance evidence.
 
@@ -171,15 +181,16 @@ The PowerShell runner repeats the self-hosted Windows x64 boundary check when in
 The runner performs these steps in order:
 
 1. rejects GitHub Actions execution unless `RUNNER_ENVIRONMENT` is `self-hosted`, `RUNNER_OS` is `Windows`, and `RUNNER_ARCH` is `X64`;
-2. summarizes raw numeric samples into `artifacts/windows-audio-performance-measurements.json`;
-3. runs the installed endpoint/control smoke;
-4. collects package hashes/signature status and controlled checks;
-5. requires the four baseline lifecycle recovery events and any applicable profile-specific additions;
-6. binds controlled checks and performance measurements by identical `test_run_id`;
-7. binds the emitted evidence to the exact supplied repository SHA;
-8. derives `nfr_aud_002_target_met` from the existing `safe_bypass_transition_p95_ms <= 250` engineering target;
-9. emits `artifacts/windows-audio-verification-evidence.json`;
-10. returns non-zero if the run does not produce an acceptance evidence candidate.
+2. resolves the installed `VsnVirtualMic` service driver and requires its SHA-256 to equal the verified package driver SHA-256;
+3. summarizes raw numeric samples into `artifacts/windows-audio-performance-measurements.json`;
+4. runs the installed endpoint/control smoke;
+5. collects package hashes/signature status and controlled checks;
+6. requires the four baseline lifecycle recovery events and any applicable profile-specific additions;
+7. binds controlled checks and performance measurements by identical `test_run_id`;
+8. binds the emitted evidence to the exact supplied repository SHA;
+9. derives `nfr_aud_002_target_met` from the existing `safe_bypass_transition_p95_ms <= 250` engineering target;
+10. emits `artifacts/windows-audio-verification-evidence.json`;
+11. returns non-zero if the run does not produce an acceptance evidence candidate.
 
 No generic processed-path latency or jitter pass threshold is invented by this runner. Those measured values remain review evidence unless an approved requirement defines a threshold.
 
@@ -189,6 +200,7 @@ A successful candidate must retain all of these properties:
 
 - `scope` is `controlled_machine`;
 - `repository_sha` exactly matches the revision supplied to the runner;
+- the installed driver binary was hash-matched to the verified package before collection;
 - `runtime_smoke.status` is `passed`;
 - controlled calling-app checks show processed and safe-bypass audio as observed;
 - all four baseline lifecycle recovery checks are present and show recovery plus usable safe bypass;
