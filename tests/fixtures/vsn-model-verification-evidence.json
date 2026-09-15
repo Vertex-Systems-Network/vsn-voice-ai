@@ -6,7 +6,7 @@
   "artifact_id": "MODELART-ACCENT-BASE-1",
   "artifact_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   "dataset_registry_refs": [
-    "DATASET-ACCENT-BASE-1"
+    "DATASET-ACCENT-EVAL-1"
   ],
   "evidence_refs": {
     "dataset_provenance": [
