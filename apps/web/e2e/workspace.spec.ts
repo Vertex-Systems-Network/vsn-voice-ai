@@ -18,6 +18,7 @@ test('workspace renders explicit tenant-safe signed-out states', async ({ page }
 });
 
 test('authenticated directory requires explicit selection before team data loads', async ({ page }) => {
+  let teamRequestCount = 0;
   await page.route('**/v1/workspaces', async (route) => {
     await route.fulfill({
       status: 200,
@@ -38,6 +39,7 @@ test('authenticated directory requires explicit selection before team data loads
     });
   });
   await page.route('**/v1/workspaces/org_1/team', async (route) => {
+    teamRequestCount += 1;
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -61,6 +63,7 @@ test('authenticated directory requires explicit selection before team data loads
   await page.goto('/');
   await expect(page.getByRole('heading', { name: '1 workspace available' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Select a workspace first' })).toBeVisible();
+  expect(teamRequestCount).toBe(0);
 
   const selectButton = page.getByRole('button', { name: 'Select workspace org_1' });
   await expect(selectButton).toBeVisible();
@@ -69,6 +72,7 @@ test('authenticated directory requires explicit selection before team data loads
   await expect(page.getByRole('heading', { name: '1 team member' })).toBeVisible();
   await expect(page.getByText('member_1')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Select a workspace first' })).toHaveCount(0);
+  expect(teamRequestCount).toBe(1);
 });
 
 test('workspace sends baseline browser security headers', async ({ request }) => {
