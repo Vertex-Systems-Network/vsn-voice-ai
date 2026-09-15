@@ -43,6 +43,7 @@ class WindowsAudioVerificationEvidenceContractTests(unittest.TestCase):
             ]
         )
         cls.validator = Draft202012Validator(cls.evidence_schema, registry=registry)
+        cls.controlled_validator = Draft202012Validator(cls.controlled_schema)
         cls.performance_validator = Draft202012Validator(cls.performance_schema)
 
     def valid_controlled_checks(self) -> dict:
@@ -62,7 +63,22 @@ class WindowsAudioVerificationEvidenceContractTests(unittest.TestCase):
                     "event_id": "default_device_change",
                     "recovered": True,
                     "safe_bypass_usable": True,
-                }
+                },
+                {
+                    "event_id": "disable_enable",
+                    "recovered": True,
+                    "safe_bypass_usable": True,
+                },
+                {
+                    "event_id": "sleep_wake",
+                    "recovered": True,
+                    "safe_bypass_usable": True,
+                },
+                {
+                    "event_id": "audio_service_restart",
+                    "recovered": True,
+                    "safe_bypass_usable": True,
+                },
             ],
         }
 
@@ -154,6 +170,42 @@ class WindowsAudioVerificationEvidenceContractTests(unittest.TestCase):
         with self.assertRaises(ValidationError):
             self.performance_validator.validate(payload)
 
+    def test_required_recovery_baseline_cannot_be_omitted(self) -> None:
+        required = {
+            "default_device_change",
+            "disable_enable",
+            "sleep_wake",
+            "audio_service_restart",
+        }
+        for missing in required:
+            with self.subTest(missing=missing):
+                payload = self.valid_controlled_checks()
+                payload["recovery_checks"] = [
+                    item
+                    for item in payload["recovery_checks"]
+                    if item["event_id"] != missing
+                ]
+                with self.assertRaises(ValidationError):
+                    self.controlled_validator.validate(payload)
+
+    def test_profile_specific_recovery_checks_are_optional_additions(self) -> None:
+        payload = self.valid_controlled_checks()
+        payload["recovery_checks"].extend(
+            [
+                {
+                    "event_id": "usb_unplug_replug",
+                    "recovered": True,
+                    "safe_bypass_usable": True,
+                },
+                {
+                    "event_id": "bluetooth_disconnect",
+                    "recovered": True,
+                    "safe_bypass_usable": True,
+                },
+            ]
+        )
+        self.controlled_validator.validate(payload)
+
     def test_completion_can_never_be_claimed_by_collector_contract(self) -> None:
         payload = self.valid_evidence()
         payload["completion_claim"] = True
@@ -170,9 +222,8 @@ class WindowsAudioVerificationEvidenceContractTests(unittest.TestCase):
     def test_controlled_input_rejects_free_form_notes(self) -> None:
         payload = self.valid_controlled_checks()
         payload["notes"] = "free-form content is intentionally forbidden"
-        controlled_validator = Draft202012Validator(self.controlled_schema)
         with self.assertRaises(ValidationError):
-            controlled_validator.validate(payload)
+            self.controlled_validator.validate(payload)
 
 
 class WindowsAudioVerificationCollectorSecurityTests(unittest.TestCase):
@@ -200,6 +251,18 @@ class WindowsAudioVerificationCollectorSecurityTests(unittest.TestCase):
             "Controlled checks and performance measurements must share the same test_run_id",
             self.source,
         )
+
+    def test_collector_requires_four_baseline_recovery_events(self) -> None:
+        for event_id in (
+            "default_device_change",
+            "disable_enable",
+            "sleep_wake",
+            "audio_service_restart",
+        ):
+            self.assertIn(event_id, self.source)
+        self.assertIn("$requiredRecoveryEvents.Count", self.source)
+        self.assertIn("must include required recovery event", self.source)
+        self.assertIn("$seenRecovery.Contains($requiredEvent)", self.source)
 
     def test_safe_bypass_target_is_derived_from_existing_nfr(self) -> None:
         self.assertIn("safe_bypass_transition_p95_ms -le 250.0", self.source)

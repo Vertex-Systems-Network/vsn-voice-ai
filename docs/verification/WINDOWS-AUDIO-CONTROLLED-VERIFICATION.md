@@ -31,6 +31,15 @@ Before starting a run:
 
 Create `artifacts/windows-audio-controlled-checks.json` using the closed contract in `packages/contracts/schemas/windows-audio-controlled-checks.schema.json`.
 
+The baseline lifecycle matrix always requires these four recovery scenarios:
+
+- `default_device_change`
+- `disable_enable`
+- `sleep_wake`
+- `audio_service_restart`
+
+Add `usb_unplug_replug` and/or `bluetooth_disconnect` when those device classes are part of the supported controlled test profile. They are additional checks, not substitutes for the four baseline events.
+
 The example below is deliberately fail-closed. Keep every result `false` until the corresponding behavior is actually observed on the controlled machine.
 
 ```json
@@ -50,12 +59,29 @@ The example below is deliberately fail-closed. Keep every result `false` until t
       "event_id": "default_device_change",
       "recovered": false,
       "safe_bypass_usable": false
+    },
+    {
+      "event_id": "disable_enable",
+      "recovered": false,
+      "safe_bypass_usable": false
+    },
+    {
+      "event_id": "sleep_wake",
+      "recovered": false,
+      "safe_bypass_usable": false
+    },
+    {
+      "event_id": "audio_service_restart",
+      "recovered": false,
+      "safe_bypass_usable": false
     }
   ]
 }
 ```
 
-Set a result to `true` only after it is actually observed. Set `operator_attested` to `true` only after all entries in the file represent the completed controlled run. Include every lifecycle event applicable to the controlled test profile. Supported event identifiers are:
+Set a result to `true` only after it is actually observed. Set `operator_attested` to `true` only after all entries in the file represent the completed controlled run. The schema and collector both reject a controlled-check file that omits any of the four baseline recovery events.
+
+Supported recovery event identifiers are:
 
 - `usb_unplug_replug`
 - `default_device_change`
@@ -111,11 +137,12 @@ The runner performs these steps in order:
 2. summarizes raw numeric samples into `artifacts/windows-audio-performance-measurements.json`;
 3. runs the installed endpoint/control smoke;
 4. collects package hashes/signature status and controlled checks;
-5. binds controlled checks and performance measurements by identical `test_run_id`;
-6. binds the emitted evidence to the exact supplied repository SHA;
-7. derives `nfr_aud_002_target_met` from the existing `safe_bypass_transition_p95_ms <= 250` engineering target;
-8. emits `artifacts/windows-audio-verification-evidence.json`;
-9. returns non-zero if the run does not produce an acceptance evidence candidate.
+5. requires the four baseline lifecycle recovery events and any applicable profile-specific additions;
+6. binds controlled checks and performance measurements by identical `test_run_id`;
+7. binds the emitted evidence to the exact supplied repository SHA;
+8. derives `nfr_aud_002_target_met` from the existing `safe_bypass_transition_p95_ms <= 250` engineering target;
+9. emits `artifacts/windows-audio-verification-evidence.json`;
+10. returns non-zero if the run does not produce an acceptance evidence candidate.
 
 No generic processed-path latency or jitter pass threshold is invented by this runner. Those measured values remain review evidence unless an approved requirement defines a threshold.
 
@@ -127,7 +154,8 @@ A successful candidate must retain all of these properties:
 - `repository_sha` exactly matches the revision supplied to the runner;
 - `runtime_smoke.status` is `passed`;
 - controlled calling-app checks show processed and safe-bypass audio as observed;
-- applicable recovery checks show recovery and usable safe bypass as observed;
+- all four baseline lifecycle recovery checks are present and show recovery plus usable safe bypass;
+- USB/Bluetooth recovery checks are included when those scenarios are part of the supported profile;
 - `performance_measurements` is present;
 - controlled checks and performance measurements share the same `test_run_id`;
 - `nfr_aud_002_target_met` is `true`;

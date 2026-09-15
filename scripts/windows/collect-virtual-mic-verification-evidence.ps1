@@ -186,9 +186,15 @@ function Read-ControlledChecks {
         ),
         [System.StringComparer]::Ordinal
     )
+    $requiredRecoveryEvents = [string[]]@(
+        "default_device_change",
+        "disable_enable",
+        "sleep_wake",
+        "audio_service_restart"
+    )
     $recoveryChecks = @($checks.recovery_checks)
-    if ($recoveryChecks.Count -lt 1 -or $recoveryChecks.Count -gt $allowedRecoveryEvents.Count) {
-        throw "Controlled checks must contain bounded physical recovery checks."
+    if ($recoveryChecks.Count -lt $requiredRecoveryEvents.Count -or $recoveryChecks.Count -gt $allowedRecoveryEvents.Count) {
+        throw "Controlled checks must contain the four required baseline recovery checks and at most two applicable profile-specific checks."
     }
     $seenRecovery = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
     $safeRecovery = @()
@@ -211,6 +217,11 @@ function Read-ControlledChecks {
             event_id = $item.event_id
             recovered = [bool]$item.recovered
             safe_bypass_usable = [bool]$item.safe_bypass_usable
+        }
+    }
+    foreach ($requiredEvent in $requiredRecoveryEvents) {
+        if (-not $seenRecovery.Contains($requiredEvent)) {
+            throw "Controlled checks must include required recovery event '$requiredEvent'."
         }
     }
 
@@ -308,8 +319,25 @@ function Test-ControlledChecksPassed {
             return $false
         }
     }
+
+    $requiredRecoveryEvents = [System.Collections.Generic.HashSet[string]]::new(
+        [string[]]@(
+            "default_device_change",
+            "disable_enable",
+            "sleep_wake",
+            "audio_service_restart"
+        ),
+        [System.StringComparer]::Ordinal
+    )
+    $seenRecovery = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::Ordinal)
     foreach ($item in @($Checks.recovery_checks)) {
         if (-not $item.recovered -or -not $item.safe_bypass_usable) {
+            return $false
+        }
+        [void]$seenRecovery.Add([string]$item.event_id)
+    }
+    foreach ($requiredEvent in $requiredRecoveryEvents) {
+        if (-not $seenRecovery.Contains($requiredEvent)) {
             return $false
         }
     }
