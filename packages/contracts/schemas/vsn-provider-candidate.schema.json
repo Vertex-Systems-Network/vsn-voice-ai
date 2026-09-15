@@ -2,10 +2,12 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://vsn.internal/schemas/vsn-provider-candidate.schema.json",
   "title": "VSNProviderCandidate",
+  "description": "Fail-closed provider-registration candidate for a fully verified VSN model. Schema version 2 adds an opaque verification-evidence binding. This contract does not authorize runtime activation or deployment.",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "schema_version",
+    "verification_evidence_id",
     "model_id",
     "model_version",
     "artifact_id",
@@ -13,7 +15,11 @@
     "provider_manifest"
   ],
   "properties": {
-    "schema_version": {"const": 1},
+    "schema_version": {"const": 2},
+    "verification_evidence_id": {
+      "type": "string",
+      "pattern": "^MODELEVID-[A-Z0-9][A-Z0-9._-]{0,63}$"
+    },
     "model_id": {
       "type": "string",
       "pattern": "^vsn-[a-z0-9][a-z0-9._-]{0,62}$"
