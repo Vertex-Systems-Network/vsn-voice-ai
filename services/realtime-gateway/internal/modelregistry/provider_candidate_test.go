@@ -12,9 +12,11 @@ import (
 )
 
 func TestBuildDisabledProviderCandidateRequiresFullyVerifiedModel(t *testing.T) {
+	evidence := verificationEvidenceFixture(t)
 	pending := pendingManifest()
 	if _, err := BuildDisabledProviderCandidate(
 		pending,
+		evidence,
 		ProviderCandidateConfig{ProviderID: "vsn-accent-runtime", AccessMode: provider.AccessInternal},
 	); !errors.Is(err, ErrModelNotFullyVerified) {
 		t.Fatalf("expected ErrModelNotFullyVerified, got %v", err)
@@ -24,16 +26,31 @@ func TestBuildDisabledProviderCandidateRequiresFullyVerifiedModel(t *testing.T) 
 	deprecated.LifecycleState = LifecycleDeprecated
 	if _, err := BuildDisabledProviderCandidate(
 		deprecated,
+		evidence,
 		ProviderCandidateConfig{ProviderID: "vsn-accent-runtime", AccessMode: provider.AccessInternal},
 	); !errors.Is(err, ErrModelNotFullyVerified) {
 		t.Fatalf("expected deprecated model rejection, got %v", err)
 	}
 }
 
+func TestBuildDisabledProviderCandidateRequiresMatchingVerificationEvidence(t *testing.T) {
+	evidence := verificationEvidenceFixture(t)
+	evidence.ArtifactSHA256 = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+	if _, err := BuildDisabledProviderCandidate(
+		verifiedManifest(),
+		evidence,
+		ProviderCandidateConfig{ProviderID: "vsn-accent-runtime", AccessMode: provider.AccessInternal},
+	); !errors.Is(err, ErrVerificationEvidenceMismatch) {
+		t.Fatalf("expected ErrVerificationEvidenceMismatch, got %v", err)
+	}
+}
+
 func TestBuildDisabledProviderCandidateProjectsContentSafeMetadata(t *testing.T) {
 	manifest := verifiedManifest()
+	evidence := verificationEvidenceFixture(t)
 	candidate, err := BuildDisabledProviderCandidate(
 		manifest,
+		evidence,
 		ProviderCandidateConfig{ProviderID: "vsn-accent-runtime", AccessMode: provider.AccessInternal},
 	)
 	if err != nil {
@@ -41,11 +58,12 @@ func TestBuildDisabledProviderCandidateProjectsContentSafeMetadata(t *testing.T)
 	}
 
 	if candidate.SchemaVersion != providerCandidateSchemaVersion ||
+		candidate.VerificationEvidenceID != evidence.EvidenceID ||
 		candidate.ModelID != manifest.ModelID ||
 		candidate.ModelVersion != manifest.ModelVersion ||
 		candidate.ArtifactID != manifest.Artifact.ArtifactID ||
 		candidate.ArtifactSHA256 != manifest.Artifact.SHA256 {
-		t.Fatalf("candidate lost model provenance: %#v", candidate)
+		t.Fatalf("candidate lost model/evidence provenance: %#v", candidate)
 	}
 	if candidate.Manifest.ID != "vsn-accent-runtime" ||
 		candidate.Manifest.Version != manifest.ModelVersion ||
@@ -73,6 +91,7 @@ func TestBuildDisabledProviderCandidateProjectsContentSafeMetadata(t *testing.T)
 func TestProviderCandidateMatchesSharedContractFixture(t *testing.T) {
 	candidate, err := BuildDisabledProviderCandidate(
 		verifiedManifest(),
+		verificationEvidenceFixture(t),
 		ProviderCandidateConfig{ProviderID: "vsn-accent-runtime", AccessMode: provider.AccessInternal},
 	)
 	if err != nil {
@@ -105,6 +124,7 @@ func TestProviderCandidateMatchesSharedContractFixture(t *testing.T) {
 func TestDisabledProviderCandidateRemainsNonRoutableAfterRegistration(t *testing.T) {
 	candidate, err := BuildDisabledProviderCandidate(
 		verifiedManifest(),
+		verificationEvidenceFixture(t),
 		ProviderCandidateConfig{ProviderID: "vsn-accent-runtime", AccessMode: provider.AccessInternal},
 	)
 	if err != nil {
@@ -129,6 +149,7 @@ func TestDisabledProviderCandidateRemainsNonRoutableAfterRegistration(t *testing
 
 func TestBuildDisabledProviderCandidateRequiresExplicitBoundedRuntimeIdentity(t *testing.T) {
 	manifest := verifiedManifest()
+	evidence := verificationEvidenceFixture(t)
 	cases := map[string]ProviderCandidateConfig{
 		"empty provider id": {AccessMode: provider.AccessInternal},
 		"unsafe provider id": {
@@ -143,7 +164,7 @@ func TestBuildDisabledProviderCandidateRequiresExplicitBoundedRuntimeIdentity(t 
 	}
 	for name, config := range cases {
 		t.Run(name, func(t *testing.T) {
-			if _, err := BuildDisabledProviderCandidate(manifest, config); !errors.Is(err, ErrInvalidProviderCandidate) {
+			if _, err := BuildDisabledProviderCandidate(manifest, evidence, config); !errors.Is(err, ErrInvalidProviderCandidate) {
 				t.Fatalf("expected ErrInvalidProviderCandidate, got %v", err)
 			}
 		})
@@ -154,6 +175,7 @@ func TestProviderCandidateCapabilitiesAreDefensiveCopy(t *testing.T) {
 	manifest := verifiedManifest()
 	candidate, err := BuildDisabledProviderCandidate(
 		manifest,
+		verificationEvidenceFixture(t),
 		ProviderCandidateConfig{ProviderID: "vsn-accent-runtime", AccessMode: provider.AccessLocal},
 	)
 	if err != nil {
