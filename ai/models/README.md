@@ -14,6 +14,7 @@ The realtime-gateway module also contains an in-memory metadata registry at `ser
 - returns defensive copies so callers cannot mutate registry-owned metadata;
 - exposes a `VerifiedSnapshot` view only for manifests whose lifecycle and all six provenance/verification gates are verified;
 - provides a bounded JSON loader that rejects unknown fields, oversized manifests and trailing JSON values;
+- can project fully verified model metadata into an explicitly disabled provider-registration candidate without activating routing;
 - does not register, enable, mutate or otherwise activate anything in the provider routing registry.
 
 A manifest may record only bounded operational metadata:
@@ -79,10 +80,24 @@ The verifier:
 
 A digest match is integrity evidence only. A separate reviewed process must decide whether artifact-integrity evidence is sufficient to update registry metadata, and signing/release provenance remains a separate `THREAT-007` control.
 
+## Disabled provider candidate boundary
+
+`BuildDisabledProviderCandidate` accepts only a fully verified model manifest. Runtime identity choices that are intentionally absent from model metadata—provider ID and access mode—must be supplied explicitly by the caller.
+
+The projection copies model/version/artifact provenance plus normalized capabilities, but the generated `ProviderManifest` is always:
+
+- `enabled=false`;
+- `verified_access=false`;
+- `health=unhealthy`;
+- `rate_limit=unknown`;
+- empty for region, retention, latency, quality, privacy, cost and quota metadata that has not been separately verified.
+
+Candidate creation does not write to the provider registry. Even if the disabled candidate is explicitly registered there, the existing router rejects it because `Enabled` is false. A separate, reviewed runtime-access and operational-verification process is required before any later activation change.
+
 ## Artifact delivery boundary
 
 Production model artifacts belong in the approved encrypted artifact/model store, outside Git. Delivery must eventually satisfy the model/update supply-chain controls from `THREAT-007`, including digest verification, signed artifacts where required, staged rollout and rollback. The manifest SHA-256 is integrity metadata; it is not a substitute for signing or release provenance.
 
 ## Next implementation slice
 
-A later WU-011 slice may add an explicit adapter-registration candidate boundary that accepts only `VerifiedSnapshot` entries and still produces a disabled, non-routable provider candidate. Runtime loading, artifact retrieval/signature verification, production provider activation, datasets and model training remain separate authorization and verification work.
+A later WU-011 slice may define the evidence required to promote a disabled provider candidate toward runtime-access verification, without making activation automatic. Runtime loading, artifact retrieval/signature verification, production provider activation, datasets and model training remain separate authorization and verification work.
