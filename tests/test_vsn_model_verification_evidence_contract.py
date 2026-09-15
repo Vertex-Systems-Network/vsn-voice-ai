@@ -7,11 +7,11 @@ from jsonschema import Draft202012Validator, ValidationError
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SCHEMA = ROOT / "packages" / "contracts" / "schemas" / "vsn-provider-candidate.schema.json"
-FIXTURE = ROOT / "tests" / "fixtures" / "vsn-provider-candidate.json"
+SCHEMA = ROOT / "packages" / "contracts" / "schemas" / "vsn-model-verification-evidence.schema.json"
+FIXTURE = ROOT / "tests" / "fixtures" / "vsn-model-verification-evidence.json"
 
 
-class VSNProviderCandidateContractTests(unittest.TestCase):
+class VSNModelVerificationEvidenceContractTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
@@ -19,45 +19,34 @@ class VSNProviderCandidateContractTests(unittest.TestCase):
         Draft202012Validator.check_schema(cls.schema)
         cls.validator = Draft202012Validator(cls.schema)
 
-    def test_shared_disabled_candidate_fixture_is_valid(self) -> None:
+    def test_shared_fixture_is_valid(self) -> None:
         self.validator.validate(self.fixture)
 
-    def test_activation_fields_are_schema_locked_fail_closed(self) -> None:
-        for field, value in (
-            ("enabled", True),
-            ("verified_access", True),
-            ("health", "healthy"),
-            ("rate_limit", "available"),
+    def test_every_required_evidence_gate_is_mandatory(self) -> None:
+        for field in (
+            "dataset_provenance",
+            "leakage_test",
+            "model_regression",
+            "benchmark",
+            "security_review",
+            "rollback",
+            "artifact_integrity",
         ):
             with self.subTest(field=field):
                 payload = copy.deepcopy(self.fixture)
-                payload["provider_manifest"][field] = value
+                del payload["evidence_refs"][field]
                 with self.assertRaises(ValidationError):
                     self.validator.validate(payload)
 
-    def test_unverified_runtime_and_commercial_metadata_is_rejected(self) -> None:
-        for field, value in (
-            ("regions", ["us-east-1"]),
-            ("retention_policy", "customer-defined"),
-            ("latency_p95_ms", 50),
-            ("quality_score", 90),
-            ("privacy_score", 90),
-            ("cost_microunits_per_minute", 10),
-            ("remaining_quota_microunits", 1000),
-        ):
-            with self.subTest(field=field):
-                payload = copy.deepcopy(self.fixture)
-                payload["provider_manifest"][field] = value
-                with self.assertRaises(ValidationError):
-                    self.validator.validate(payload)
-
-    def test_sensitive_or_delivery_fields_are_rejected(self) -> None:
+    def test_content_paths_urls_credentials_and_activation_fields_are_rejected(self) -> None:
         for field, value in (
             ("artifact_url", "https://example.invalid/model.onnx"),
             ("artifact_path", "C:\\models\\model.onnx"),
             ("credential", "secret"),
-            ("tenant_id", "tenant_123"),
             ("notes", "free form"),
+            ("transcript", "customer speech"),
+            ("enabled", True),
+            ("routing_eligible", True),
         ):
             with self.subTest(field=field):
                 payload = copy.deepcopy(self.fixture)
@@ -65,40 +54,48 @@ class VSNProviderCandidateContractTests(unittest.TestCase):
                 with self.assertRaises(ValidationError):
                     self.validator.validate(payload)
 
-    def test_schema_and_identifiers_are_bounded(self) -> None:
+    def test_evidence_references_are_opaque_bounded_identifiers(self) -> None:
         payload = copy.deepcopy(self.fixture)
-        payload["schema_version"] = 1
+        payload["evidence_refs"]["benchmark"] = "https://example.invalid/benchmark.json"
         with self.assertRaises(ValidationError):
             self.validator.validate(payload)
 
         payload = copy.deepcopy(self.fixture)
-        payload["verification_evidence_id"] = "unsafe evidence/id"
+        payload["evidence_refs"]["rollback"] = "C:\\evidence\\rollback.json"
         with self.assertRaises(ValidationError):
             self.validator.validate(payload)
 
         payload = copy.deepcopy(self.fixture)
-        del payload["verification_evidence_id"]
+        payload["evidence_refs"]["dataset_provenance"] = []
+        with self.assertRaises(ValidationError):
+            self.validator.validate(payload)
+
+    def test_dataset_and_evidence_reference_arrays_are_unique(self) -> None:
+        payload = copy.deepcopy(self.fixture)
+        payload["dataset_registry_refs"].append(payload["dataset_registry_refs"][0])
         with self.assertRaises(ValidationError):
             self.validator.validate(payload)
 
         payload = copy.deepcopy(self.fixture)
-        payload["provider_manifest"]["id"] = "Customer / transcript"
+        payload["evidence_refs"]["dataset_provenance"].append(
+            payload["evidence_refs"]["dataset_provenance"][0]
+        )
+        with self.assertRaises(ValidationError):
+            self.validator.validate(payload)
+
+    def test_schema_identity_and_artifact_digest_are_locked(self) -> None:
+        payload = copy.deepcopy(self.fixture)
+        payload["schema_version"] = 2
+        with self.assertRaises(ValidationError):
+            self.validator.validate(payload)
+
+        payload = copy.deepcopy(self.fixture)
+        payload["evidence_id"] = "unsafe evidence/id"
         with self.assertRaises(ValidationError):
             self.validator.validate(payload)
 
         payload = copy.deepcopy(self.fixture)
         payload["artifact_sha256"] = "0" * 64
-        with self.assertRaises(ValidationError):
-            self.validator.validate(payload)
-
-    def test_capabilities_and_access_mode_are_closed(self) -> None:
-        payload = copy.deepcopy(self.fixture)
-        payload["provider_manifest"]["capabilities"] = ["voice.future_capability"]
-        with self.assertRaises(ValidationError):
-            self.validator.validate(payload)
-
-        payload = copy.deepcopy(self.fixture)
-        payload["provider_manifest"]["access_mode"] = "unverified_mode"
         with self.assertRaises(ValidationError):
             self.validator.validate(payload)
 

@@ -1,5 +1,6 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
+  "verification_evidence_id": "MODELEVID-ACCENT-BASE-1",
   "model_id": "vsn-accent-base",
   "model_version": "1.0.0",
   "artifact_id": "MODELART-ACCENT-BASE-1",
