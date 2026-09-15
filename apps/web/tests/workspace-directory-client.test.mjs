@@ -50,6 +50,23 @@ test('workspace directory uses same-origin credentialed no-store request', async
   assert.equal(Object.hasOwn(seenInit.headers, 'authorization'), false);
 });
 
+test('empty and truncated directory payloads remain valid explicit states', async () => {
+  const empty = await client.requestWorkspaceDirectory(
+    async () => jsonResponse(payload([])),
+  );
+  const truncatedPayload = payload([workspace(1)]);
+  truncatedPayload.has_more = true;
+  const truncated = await client.requestWorkspaceDirectory(
+    async () => jsonResponse(truncatedPayload),
+  );
+
+  assert.equal(empty.status, 'ready');
+  assert.equal(empty.data.workspaces.length, 0);
+  assert.equal(empty.data.has_more, false);
+  assert.equal(truncated.status, 'ready');
+  assert.equal(truncated.data.has_more, true);
+});
+
 test('browser boundary rejects internal identity, session, permission and profile fields', async () => {
   const forbiddenFields = [
     ['subject_id', 'subject_internal'],
