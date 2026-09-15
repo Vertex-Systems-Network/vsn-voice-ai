@@ -15,6 +15,8 @@
     "runtime_smoke",
     "package",
     "controlled_checks",
+    "performance_measurements",
+    "nfr_aud_002_target_met",
     "acceptance_evidence_candidate",
     "completion_claim"
   ],
@@ -33,6 +35,7 @@
         "verification_required",
         "runtime_smoke_passed",
         "controlled_checks_passed",
+        "controlled_evidence_candidate",
         "failed"
       ]
     },
@@ -105,6 +108,13 @@
         { "$ref": "https://schemas.vsn.local/windows-audio-controlled-checks.schema.json" }
       ]
     },
+    "performance_measurements": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "https://schemas.vsn.local/windows-audio-performance-measurements.schema.json" }
+      ]
+    },
+    "nfr_aud_002_target_met": { "type": "boolean" },
     "acceptance_evidence_candidate": { "type": "boolean" },
     "completion_claim": { "const": false }
   },
