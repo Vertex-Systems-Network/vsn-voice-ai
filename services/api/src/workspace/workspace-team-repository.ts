@@ -5,6 +5,7 @@ import type {
 } from '../organizations/organization-membership.js';
 import { authorizeTenantAccess } from '../organizations/tenant-authorization.js';
 
+export const WORKSPACE_TEAM_REPOSITORY = Symbol('WORKSPACE_TEAM_REPOSITORY');
 export const WORKSPACE_TEAM_READ_PERMISSION = 'team.read';
 export const MAX_WORKSPACE_TEAM_MEMBERS = 200;
 
@@ -88,5 +89,24 @@ export class WorkspaceTeamDataIntegrityError extends Error {
   public constructor(message: string) {
     super(message);
     this.name = 'WorkspaceTeamDataIntegrityError';
+  }
+}
+
+/**
+ * Safe runtime default for environments where PostgreSQL is not configured.
+ * Team state must never be fabricated from an unavailable persistence layer.
+ */
+export class RejectingWorkspaceTeamRepository implements WorkspaceTeamRepository {
+  public async listByOrganization(
+    _organizationId: string,
+  ): Promise<WorkspaceTeamSnapshot> {
+    throw new WorkspaceTeamPersistenceUnavailableError();
+  }
+}
+
+export class WorkspaceTeamPersistenceUnavailableError extends Error {
+  public constructor() {
+    super('workspace team persistence is unavailable');
+    this.name = 'WorkspaceTeamPersistenceUnavailableError';
   }
 }
