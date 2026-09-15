@@ -6,7 +6,7 @@ param(
     [Parameter(Mandatory = $true)][string]$PerformanceSamplesFile,
     [string]$PerformanceSummaryFile = "artifacts/windows-audio-performance-measurements.json",
     [string]$OutputFile = "artifacts/windows-audio-verification-evidence.json",
-    [string]$RepositorySha = ""
+    [Parameter(Mandatory = $true)][ValidatePattern('^[0-9a-fA-F]{40}$')][string]$RepositorySha
 )
 
 $ErrorActionPreference = "Stop"
@@ -21,6 +21,7 @@ if ($isGithubActions) {
     throw "Controlled Windows verification cannot run in hosted GitHub Actions."
 }
 
+$normalizedRepositorySha = $RepositorySha.ToLowerInvariant()
 $summarizer = Join-Path $PSScriptRoot "summarize-windows-audio-performance.ps1"
 $collector = Join-Path $PSScriptRoot "collect-virtual-mic-verification-evidence.ps1"
 if (-not (Test-Path -LiteralPath $summarizer -PathType Leaf)) {
@@ -43,10 +44,8 @@ $collectorArguments = @{
     ControlledChecksFile = $ControlledChecksFile
     PerformanceMeasurementsFile = $PerformanceSummaryFile
     OutputFile = $OutputFile
+    RepositorySha = $normalizedRepositorySha
     ControlledMachine = $true
-}
-if (-not [string]::IsNullOrWhiteSpace($RepositorySha)) {
-    $collectorArguments.RepositorySha = $RepositorySha
 }
 
 & $collector @collectorArguments
@@ -93,6 +92,9 @@ if (($actualFields -join "|") -ne ($expectedFields -join "|")) {
 
 if ($evidence.scope -ne "controlled_machine") {
     throw "Verification evidence did not preserve controlled_machine scope."
+}
+if ($evidence.repository_sha -ne $normalizedRepositorySha) {
+    throw "Verification evidence repository_sha does not match the controlled run revision."
 }
 if ($evidence.completion_claim -ne $false) {
     throw "Verification evidence must never claim WU-002 completion."
