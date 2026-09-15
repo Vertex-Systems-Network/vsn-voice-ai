@@ -40,6 +40,28 @@ class WindowsAudioControlledRunnerTests(unittest.TestCase):
         self.assertLess(github_guard, normalization)
         self.assertNotIn("GITHUB_ACTIONS must be true", self.source)
 
+    def test_runner_binds_installed_driver_to_verified_package(self) -> None:
+        self.assertIn(
+            'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\VsnVirtualMic',
+            self.source,
+        )
+        self.assertIn("Get-ItemProperty", self.source)
+        self.assertIn("ImagePath", self.source)
+        self.assertIn('Join-Path $packagePath "vsn_virtual_mic_control.sys"', self.source)
+        self.assertGreaterEqual(self.source.count("Get-FileHash"), 2)
+        self.assertIn("-Algorithm SHA256", self.source)
+        self.assertIn(
+            "Installed VSN virtual microphone driver binary does not match the verified package for this controlled run",
+            self.source,
+        )
+
+    def test_runner_checks_driver_binding_before_measurement_and_collection(self) -> None:
+        binding_index = self.source.index("$installedDriverHash")
+        summarize_index = self.source.index("& $summarizer")
+        collect_index = self.source.index("& $collector")
+        self.assertLess(binding_index, summarize_index)
+        self.assertLess(binding_index, collect_index)
+
     def test_runner_summarizes_samples_before_collecting_evidence(self) -> None:
         summarize_index = self.source.index("& $summarizer")
         collect_index = self.source.index("& $collector")
