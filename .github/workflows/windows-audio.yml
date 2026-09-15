@@ -13,7 +13,9 @@ on:
       - "scripts/windows/**"
       - "packages/contracts/schemas/windows-audio-*.schema.json"
       - "tests/fixtures/windows-audio-performance-samples.json"
+      - "tests/test_windows_audio_controlled_*.py"
       - ".github/workflows/windows-audio.yml"
+      - ".github/workflows/windows-audio-controlled.yml"
   push:
     branches:
       - main
@@ -26,7 +28,9 @@ on:
       - "scripts/windows/**"
       - "packages/contracts/schemas/windows-audio-*.schema.json"
       - "tests/fixtures/windows-audio-performance-samples.json"
+      - "tests/test_windows_audio_controlled_*.py"
       - ".github/workflows/windows-audio.yml"
+      - ".github/workflows/windows-audio-controlled.yml"
   workflow_dispatch:
 
 permissions:
@@ -62,6 +66,35 @@ jobs:
       - name: Test Windows audio crate
         shell: pwsh
         run: cargo +1.98.1 test --locked -p vsn-windows-audio
+
+      - name: Verify controlled runner syntax and hosted rejection
+        shell: pwsh
+        run: |
+          $runner = (Resolve-Path "scripts/windows/run-controlled-windows-audio-verification.ps1").Path
+          $tokens = $null
+          $parseErrors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            $runner,
+            [ref]$tokens,
+            [ref]$parseErrors
+          )
+          if ($parseErrors.Count -ne 0) {
+            $parseErrors | ForEach-Object { Write-Error $_.Message }
+            throw "Controlled Windows verification runner contains PowerShell parse errors."
+          }
+
+          try {
+            & $runner `
+              -ControlledChecksFile "hosted-runner-must-reject-before-reading.json" `
+              -PerformanceSamplesFile "hosted-runner-must-reject-before-reading.json" `
+              -RepositorySha "${{ github.sha }}"
+            throw "Hosted runner was unexpectedly accepted as a controlled machine."
+          }
+          catch {
+            if ($_.Exception.Message -notlike "*only on an explicitly targeted self-hosted runner*") {
+              throw
+            }
+          }
 
       - name: Verify controlled performance summarizer contract
         shell: pwsh

@@ -12,13 +12,105 @@ param(
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
+function Resolve-RepositoryPath {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    if ([System.IO.Path]::IsPathRooted($Path)) {
+        return [System.IO.Path]::GetFullPath($Path)
+    }
+    return [System.IO.Path]::GetFullPath((Join-Path $script:repoRoot $Path))
+}
+
+function Resolve-InstalledVirtualMicDriverPath {
+    $serviceKey = "HKLM:\SYSTEM\CurrentControlSet\Services\VsnVirtualMic"
+    if (-not (Test-Path -LiteralPath $serviceKey)) {
+        throw "Installed VSN virtual microphone service was not found."
+    }
+
+    $service = Get-ItemProperty -LiteralPath $serviceKey -Name ImagePath -ErrorAction Stop
+    $rawImagePath = [string]$service.ImagePath
+    if ([string]::IsNullOrWhiteSpace($rawImagePath)) {
+        throw "Installed VSN virtual microphone service has no driver image path."
+    }
+
+    $candidate = [System.Environment]::ExpandEnvironmentVariables($rawImagePath).Trim()
+    if ($candidate.StartsWith('"') -and $candidate.EndsWith('"')) {
+        $candidate = $candidate.Substring(1, $candidate.Length - 2)
+    }
+    if ($candidate.StartsWith("\??\", [System.StringComparison]::OrdinalIgnoreCase)) {
+        $candidate = $candidate.Substring(4)
+    }
+    elseif ($candidate.StartsWith("\\?\", [System.StringComparison]::OrdinalIgnoreCase)) {
+        $candidate = $candidate.Substring(4)
+    }
+
+    if ($candidate.StartsWith("\SystemRoot\", [System.StringComparison]::OrdinalIgnoreCase)) {
+        $candidate = Join-Path $env:SystemRoot $candidate.Substring("\SystemRoot\".Length)
+    }
+    elseif ($candidate.StartsWith("System32\", [System.StringComparison]::OrdinalIgnoreCase)) {
+        $candidate = Join-Path $env:SystemRoot $candidate
+    }
+
+    if (-not [System.IO.Path]::IsPathRooted($candidate) -or
+        -not $candidate.EndsWith(".sys", [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "Installed VSN virtual microphone driver image path is not an absolute .sys path."
+    }
+
+    $resolved = [System.IO.Path]::GetFullPath($candidate)
+    if (-not (Test-Path -LiteralPath $resolved -PathType Leaf)) {
+        throw "Installed VSN virtual microphone driver binary was not found."
+    }
+    return $resolved
+}
+
 $isGithubActions = [string]::Equals(
     $env:GITHUB_ACTIONS,
     "true",
     [System.StringComparison]::OrdinalIgnoreCase
 )
 if ($isGithubActions) {
-    throw "Controlled Windows verification cannot run in hosted GitHub Actions."
+    $isSelfHosted = [string]::Equals(
+        $env:RUNNER_ENVIRONMENT,
+        "self-hosted",
+        [System.StringComparison]::OrdinalIgnoreCase
+    )
+    if (-not $isSelfHosted) {
+        throw "Controlled Windows verification can run in GitHub Actions only on an explicitly targeted self-hosted runner."
+    }
+
+    $isWindowsRunner = [string]::Equals(
+        $env:RUNNER_OS,
+        "Windows",
+        [System.StringComparison]::OrdinalIgnoreCase
+    )
+    if (-not $isWindowsRunner) {
+        throw "Controlled Windows verification requires a Windows self-hosted runner."
+    }
+
+    $isX64Runner = [string]::Equals(
+        $env:RUNNER_ARCH,
+        "X64",
+        [System.StringComparison]::OrdinalIgnoreCase
+    )
+    if (-not $isX64Runner) {
+        throw "Controlled Windows verification requires an X64 self-hosted runner."
+    }
+}
+
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
+$packagePath = Resolve-RepositoryPath -Path $PackageDirectory
+$packageDriverPath = Join-Path $packagePath "vsn_virtual_mic_control.sys"
+if (-not (Test-Path -LiteralPath $packageDriverPath -PathType Leaf)) {
+    throw "Verified VSN virtual microphone package driver binary was not found."
+}
+$installedDriverPath = Resolve-InstalledVirtualMicDriverPath
+$packageDriverHash = (Get-FileHash -LiteralPath $packageDriverPath -Algorithm SHA256).Hash
+$installedDriverHash = (Get-FileHash -LiteralPath $installedDriverPath -Algorithm SHA256).Hash
+if (-not [string]::Equals(
+        $packageDriverHash,
+        $installedDriverHash,
+        [System.StringComparison]::OrdinalIgnoreCase)) {
+    throw "Installed VSN virtual microphone driver binary does not match the verified package for this controlled run."
 }
 
 $normalizedRepositorySha = $RepositorySha.ToLowerInvariant()
@@ -54,13 +146,7 @@ if ($collectorExitCode -ne 0) {
     exit $collectorExitCode
 }
 
-$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
-$evidencePath = if ([System.IO.Path]::IsPathRooted($OutputFile)) {
-    [System.IO.Path]::GetFullPath($OutputFile)
-}
-else {
-    [System.IO.Path]::GetFullPath((Join-Path $repoRoot $OutputFile))
-}
+$evidencePath = Resolve-RepositoryPath -Path $OutputFile
 if (-not (Test-Path -LiteralPath $evidencePath -PathType Leaf)) {
     throw "Verification collector completed without producing evidence."
 }

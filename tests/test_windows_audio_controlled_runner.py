@@ -11,12 +11,56 @@ class WindowsAudioControlledRunnerTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.source = SCRIPT.read_text(encoding="utf-8")
 
-    def test_runner_refuses_hosted_ci_controlled_machine_claims(self) -> None:
+    def test_runner_refuses_github_hosted_controlled_machine_claims(self) -> None:
         self.assertIn('$env:GITHUB_ACTIONS', self.source)
+        self.assertIn('$env:RUNNER_ENVIRONMENT', self.source)
+        self.assertIn('"self-hosted"', self.source)
         self.assertIn(
-            "Controlled Windows verification cannot run in hosted GitHub Actions",
+            "Controlled Windows verification can run in GitHub Actions only on an explicitly targeted self-hosted runner",
             self.source,
         )
+
+    def test_runner_requires_windows_x64_for_github_actions_controlled_runs(self) -> None:
+        self.assertIn('$env:RUNNER_OS', self.source)
+        self.assertIn('$env:RUNNER_ARCH', self.source)
+        self.assertIn('"Windows"', self.source)
+        self.assertIn('"X64"', self.source)
+        self.assertIn(
+            "Controlled Windows verification requires a Windows self-hosted runner",
+            self.source,
+        )
+        self.assertIn(
+            "Controlled Windows verification requires an X64 self-hosted runner",
+            self.source,
+        )
+
+    def test_runner_keeps_local_non_github_invocation_available(self) -> None:
+        github_guard = self.source.index("if ($isGithubActions)")
+        normalization = self.source.index("$normalizedRepositorySha")
+        self.assertLess(github_guard, normalization)
+        self.assertNotIn("GITHUB_ACTIONS must be true", self.source)
+
+    def test_runner_binds_installed_driver_to_verified_package(self) -> None:
+        self.assertIn(
+            'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\VsnVirtualMic',
+            self.source,
+        )
+        self.assertIn("Get-ItemProperty", self.source)
+        self.assertIn("ImagePath", self.source)
+        self.assertIn('Join-Path $packagePath "vsn_virtual_mic_control.sys"', self.source)
+        self.assertGreaterEqual(self.source.count("Get-FileHash"), 2)
+        self.assertIn("-Algorithm SHA256", self.source)
+        self.assertIn(
+            "Installed VSN virtual microphone driver binary does not match the verified package for this controlled run",
+            self.source,
+        )
+
+    def test_runner_checks_driver_binding_before_measurement_and_collection(self) -> None:
+        binding_index = self.source.index("$installedDriverHash")
+        summarize_index = self.source.index("& $summarizer")
+        collect_index = self.source.index("& $collector")
+        self.assertLess(binding_index, summarize_index)
+        self.assertLess(binding_index, collect_index)
 
     def test_runner_summarizes_samples_before_collecting_evidence(self) -> None:
         summarize_index = self.source.index("& $summarizer")
