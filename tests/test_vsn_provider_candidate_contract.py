@@ -67,7 +67,17 @@ class VSNProviderCandidateContractTests(unittest.TestCase):
 
     def test_schema_and_identifiers_are_bounded(self) -> None:
         payload = copy.deepcopy(self.fixture)
-        payload["schema_version"] = 2
+        payload["schema_version"] = 1
+        with self.assertRaises(ValidationError):
+            self.validator.validate(payload)
+
+        payload = copy.deepcopy(self.fixture)
+        payload["verification_evidence_id"] = "unsafe evidence/id"
+        with self.assertRaises(ValidationError):
+            self.validator.validate(payload)
+
+        payload = copy.deepcopy(self.fixture)
+        del payload["verification_evidence_id"]
         with self.assertRaises(ValidationError):
             self.validator.validate(payload)
 
