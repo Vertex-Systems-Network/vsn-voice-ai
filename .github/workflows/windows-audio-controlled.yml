@@ -1,0 +1,168 @@
+name: Controlled Windows Audio Verification
+
+on:
+  workflow_dispatch:
+    inputs:
+      controlled_checks_filename:
+        description: "JSON leaf filename under VSN_CONTROLLED_EVIDENCE_DIR containing controlled calling-app and lifecycle checks"
+        required: true
+        type: string
+      performance_samples_filename:
+        description: "JSON leaf filename under VSN_CONTROLLED_EVIDENCE_DIR containing raw controlled performance samples"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: controlled-windows-audio-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  controlled-windows-audio:
+    name: controlled-windows-audio
+    runs-on: [self-hosted, windows, x64, vsn-controlled-audio]
+    timeout-minutes: 45
+    env:
+      CONTROLLED_CHECKS_FILENAME: ${{ inputs.controlled_checks_filename }}
+      PERFORMANCE_SAMPLES_FILENAME: ${{ inputs.performance_samples_filename }}
+    steps:
+      - name: Checkout exact repository revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          clean: true
+
+      - name: Verify controlled self-hosted runner boundary
+        shell: pwsh
+        run: |
+          if ($env:RUNNER_ENVIRONMENT -ne "self-hosted") {
+            throw "Controlled verification requires a self-hosted GitHub Actions runner."
+          }
+          if ($env:RUNNER_OS -ne "Windows") {
+            throw "Controlled verification requires a Windows runner."
+          }
+          if ($env:RUNNER_ARCH -ne "X64") {
+            throw "Controlled verification requires an X64 runner."
+          }
+          if ([string]::IsNullOrWhiteSpace($env:VSN_CONTROLLED_EVIDENCE_DIR)) {
+            throw "VSN_CONTROLLED_EVIDENCE_DIR must be configured on the controlled runner."
+          }
+
+          $root = [System.IO.Path]::GetFullPath($env:VSN_CONTROLLED_EVIDENCE_DIR)
+          if (-not (Test-Path -LiteralPath $root -PathType Container)) {
+            throw "VSN_CONTROLLED_EVIDENCE_DIR does not exist on the controlled runner."
+          }
+
+          $leafPattern = '^[A-Za-z0-9][A-Za-z0-9._-]{0,126}\.json$'
+          if ($env:CONTROLLED_CHECKS_FILENAME -notmatch $leafPattern) {
+            throw "controlled_checks_filename must be a bounded JSON leaf filename."
+          }
+          if ($env:PERFORMANCE_SAMPLES_FILENAME -notmatch $leafPattern) {
+            throw "performance_samples_filename must be a bounded JSON leaf filename."
+          }
+
+          $checks = [System.IO.Path]::GetFullPath((Join-Path $root $env:CONTROLLED_CHECKS_FILENAME))
+          $samples = [System.IO.Path]::GetFullPath((Join-Path $root $env:PERFORMANCE_SAMPLES_FILENAME))
+          $rootPrefix = $root.TrimEnd([System.IO.Path]::DirectorySeparatorChar, [System.IO.Path]::AltDirectorySeparatorChar) + [System.IO.Path]::DirectorySeparatorChar
+          if (-not $checks.StartsWith($rootPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+            throw "Controlled checks path escaped the configured evidence directory."
+          }
+          if (-not $samples.StartsWith($rootPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+            throw "Performance samples path escaped the configured evidence directory."
+          }
+          if (-not (Test-Path -LiteralPath $checks -PathType Leaf)) {
+            throw "Controlled checks file was not found in VSN_CONTROLLED_EVIDENCE_DIR."
+          }
+          if (-not (Test-Path -LiteralPath $samples -PathType Leaf)) {
+            throw "Performance samples file was not found in VSN_CONTROLLED_EVIDENCE_DIR."
+          }
+
+          "CONTROLLED_CHECKS_PATH=$checks" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "PERFORMANCE_SAMPLES_PATH=$samples" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Restore pinned Windows Driver Kit packages
+        shell: pwsh
+        working-directory: native/windows-virtual-mic/driver
+        run: nuget restore packages.config -PackagesDirectory packages -Source "https://api.nuget.org/v3/index.json" -NonInteractive
+
+      - name: Build virtual microphone driver
+        shell: pwsh
+        run: |
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} "Microsoft Visual Studio\Installer\vswhere.exe"
+          if (-not (Test-Path -LiteralPath $vswhere -PathType Leaf)) {
+            throw "vswhere.exe was not found on the controlled runner."
+          }
+
+          $installation = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $installation) {
+            throw "A Visual Studio installation with MSVC x64 tools was not found."
+          }
+
+          $msbuild = Join-Path $installation "MSBuild\Current\Bin\MSBuild.exe"
+          if (-not (Test-Path -LiteralPath $msbuild -PathType Leaf)) {
+            throw "MSBuild.exe was not found on the controlled runner."
+          }
+
+          & $msbuild "native\windows-virtual-mic\driver\vsn_virtual_mic_control.vcxproj" /m /t:Build /p:Configuration=Debug /p:Platform=x64 /p:SignMode=Off /v:minimal
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
+
+          $driver = Get-ChildItem "native\windows-virtual-mic\driver" -Recurse -Filter "vsn_virtual_mic_control.sys" | Select-Object -First 1
+          if (-not $driver) {
+            throw "Driver build completed without producing vsn_virtual_mic_control.sys."
+          }
+          "VSN_DRIVER_BINARY=$($driver.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Build and verify virtual microphone test package
+        shell: pwsh
+        run: |
+          ./scripts/windows/build-virtual-mic-test-package.ps1 -DriverBinary $env:VSN_DRIVER_BINARY
+          if (-not (Test-Path -LiteralPath "artifacts\vsn-virtual-mic-test-package\vsn_virtual_mic.cat" -PathType Leaf)) {
+            throw "Verified driver package did not contain the generated catalog."
+          }
+
+      - name: Compile installed endpoint runtime smoke harness
+        shell: pwsh
+        run: |
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} "Microsoft Visual Studio\Installer\vswhere.exe"
+          $installation = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $installation) {
+            throw "A Visual Studio installation with MSVC x64 tools was not found."
+          }
+          $devCmd = Join-Path $installation "Common7\Tools\VsDevCmd.bat"
+          if (-not (Test-Path -LiteralPath $devCmd -PathType Leaf)) {
+            throw "VsDevCmd.bat was not found on the controlled runner."
+          }
+
+          New-Item -ItemType Directory -Force -Path artifacts | Out-Null
+          $compile = "`"$devCmd`" -no_logo -arch=x64 && cl.exe /nologo /std:c++17 /permissive- /W4 /WX /EHsc /I native\windows-virtual-mic\include native\windows-virtual-mic\tests\installed_runtime_smoke.cpp /Fe:artifacts\virtual_mic_installed_runtime_smoke.exe /link ole32.lib"
+          & cmd.exe /d /c $compile
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
+
+      - name: Collect controlled Windows audio evidence candidate
+        shell: pwsh
+        run: |
+          ./scripts/windows/run-controlled-windows-audio-verification.ps1 `
+            -SmokeExecutable artifacts/virtual_mic_installed_runtime_smoke.exe `
+            -PackageDirectory artifacts/vsn-virtual-mic-test-package `
+            -ControlledChecksFile $env:CONTROLLED_CHECKS_PATH `
+            -PerformanceSamplesFile $env:PERFORMANCE_SAMPLES_PATH `
+            -PerformanceSummaryFile artifacts/windows-audio-performance-measurements.json `
+            -OutputFile artifacts/windows-audio-verification-evidence.json `
+            -RepositorySha "${{ github.sha }}"
+
+      - name: Retain content-safe controlled verification outputs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: controlled-windows-audio-${{ github.run_id }}
+          path: |
+            artifacts/windows-audio-verification-evidence.json
+            artifacts/windows-audio-performance-measurements.json
+          if-no-files-found: warn
+          retention-days: 14
