@@ -12,7 +12,7 @@ var (
 	ErrVerificationEvidenceMismatch = errors.New("VSN model verification evidence does not match manifest")
 
 	modelVerificationEvidenceIDPattern = regexp.MustCompile(`^MODELEVID-[A-Z0-9][A-Z0-9._-]{0,63}$`)
-	modelEvidenceRefPattern             = regexp.MustCompile(`^EVIDENCE-[A-Z0-9][A-Z0-9._-]{0,95}$`)
+	modelEvidenceRefPattern            = regexp.MustCompile(`^EVIDENCE-[A-Z0-9][A-Z0-9._-]{0,95}$`)
 )
 
 type VerificationEvidenceRefs struct {
