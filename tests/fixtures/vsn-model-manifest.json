@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "model_id": "vsn-noise-foundation",
+  "model_version": "0.1.0",
+  "lifecycle_state": "verification_required",
+  "capabilities": [
+    "audio.noise_cancel",
+    "audio.vad"
+  ],
+  "artifact": {
+    "artifact_id": "MODELART-NOISE-001",
+    "format": "onnx",
+    "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+  },
+  "provenance": {
+    "dataset_registry_refs": [
+      "DATASET-SYNTHETIC-001"
+    ],
+    "rights_review_status": "verification_required",
+    "deletion_lineage_status": "verification_required"
+  },
+  "verification": {
+    "artifact_integrity": "verification_required",
+    "benchmark": "verification_required",
+    "security_review": "verification_required",
+    "rollback": "verification_required"
+  }
+}
