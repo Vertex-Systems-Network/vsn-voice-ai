@@ -72,6 +72,8 @@ Create `artifacts/windows-audio-performance-samples.json` using `packages/contra
 
 Each metric requires 20–10,000 numeric observations. All three arrays must contain the same number of observations.
 
+The structure below is intentionally **schema-invalid until real measurements replace every placeholder**. This prevents a copied template from becoming an acceptance candidate by accident.
+
 ```json
 {
   "schema_version": 1,
@@ -80,15 +82,15 @@ Each metric requires 20–10,000 numeric observations. All three arrays must con
   "sample_rate_hz": 48000,
   "frame_duration_ms": 10,
   "measurement_window_seconds": 30.0,
-  "processed_path_latency_ms": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  "callback_jitter_ms": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  "safe_bypass_transition_ms": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  "processed_path_latency_ms": ["REPLACE_WITH_20_OR_MORE_MEASURED_NUMBERS"],
+  "callback_jitter_ms": ["REPLACE_WITH_20_OR_MORE_MEASURED_NUMBERS"],
+  "safe_bypass_transition_ms": ["REPLACE_WITH_20_OR_MORE_MEASURED_NUMBERS"],
   "provider_path": "not_applicable",
   "network_profile": "not_applicable"
 }
 ```
 
-The zero values above are structure placeholders, **not benchmark evidence**. Replace every sample with an observed measurement from the defined controlled test method before running verification.
+Do not run verification until every placeholder has been replaced by observed numeric measurements from the defined controlled test method and all three arrays have equal length.
 
 The summarizer computes deterministic nearest-rank p95 values. Operators do not enter p95 values manually.
 
