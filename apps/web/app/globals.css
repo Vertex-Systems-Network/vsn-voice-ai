@@ -245,7 +245,8 @@ button:focus-visible,
   background: var(--accent-soft);
 }
 
-.workspace-directory-list {
+.workspace-directory-list,
+.team-member-list {
   width: 100%;
   display: grid;
   gap: 0.65rem;
@@ -254,7 +255,8 @@ button:focus-visible,
   list-style: none;
 }
 
-.workspace-directory-row {
+.workspace-directory-row,
+.team-member-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -266,17 +268,20 @@ button:focus-visible,
   background: var(--surface-raised);
 }
 
-.workspace-directory-row > div {
+.workspace-directory-row > div,
+.team-member-row > div {
   min-width: 0;
   display: grid;
   gap: 0.2rem;
 }
 
-.workspace-directory-row strong {
+.workspace-directory-row strong,
+.team-member-row strong {
   overflow-wrap: anywhere;
 }
 
-.workspace-directory-row span {
+.workspace-directory-row span,
+.team-member-row span {
   color: var(--muted);
   font-size: 0.82rem;
 }
@@ -298,7 +303,8 @@ button:focus-visible,
   border-color: var(--accent);
 }
 
-.workspace-directory-limit-note {
+.workspace-directory-limit-note,
+.team-member-limit-note {
   margin-top: 1rem !important;
 }
 
@@ -337,7 +343,8 @@ button:focus-visible,
     grid-template-columns: 1fr;
   }
 
-  .workspace-directory-row {
+  .workspace-directory-row,
+  .team-member-row {
     align-items: stretch;
     flex-direction: column;
   }
