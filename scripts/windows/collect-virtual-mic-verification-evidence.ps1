@@ -334,7 +334,6 @@ function Test-ControlledChecksPassed {
         if (-not $item.recovered -or -not $item.safe_bypass_usable) {
             return $false
         }
-        static_cast = $null
         [void]$seenRecovery.Add([string]$item.event_id)
     }
     foreach ($requiredEvent in $requiredRecoveryEvents) {
