@@ -13,6 +13,7 @@ The realtime-gateway module also contains an in-memory metadata registry at `ser
 - supports multiple explicit versions of one model;
 - returns defensive copies so callers cannot mutate registry-owned metadata;
 - exposes a `VerifiedSnapshot` view only for manifests whose lifecycle and all six provenance/verification gates are verified;
+- provides a bounded JSON loader that rejects unknown fields, oversized manifests and trailing JSON values;
 - does not register, enable, mutate or otherwise activate anything in the provider routing registry.
 
 A manifest may record only bounded operational metadata:
@@ -59,6 +60,24 @@ Therefore, repository work in this directory must not:
 - copy production customer content into research fixtures;
 - run model training or material paid GPU workloads without the separate authorization required by WU-011;
 - mark benchmark, security, provenance or rollback gates `verified` without repository-backed review evidence.
+
+## Artifact integrity evidence boundary
+
+`VerifyArtifactDigest` accepts model bytes only through a caller-supplied `io.Reader` and requires the caller to provide an explicit positive `MaxBytes` policy. The model registry does not invent one global model-size ceiling.
+
+The verifier:
+
+- hashes at most `MaxBytes + 1` bytes so oversize inputs fail closed without reading an unbounded stream;
+- compares the observed SHA-256 with the immutable manifest digest;
+- returns only content-safe metadata: artifact ID, expected/observed digests, byte count and match state;
+- does not retain or return model bytes;
+- does not resolve artifact paths or URLs;
+- does not fetch or store artifacts;
+- does not verify signatures or release provenance;
+- does not mutate `verification.artifact_integrity` or any other manifest state;
+- does not register or enable a provider.
+
+A digest match is integrity evidence only. A separate reviewed process must decide whether artifact-integrity evidence is sufficient to update registry metadata, and signing/release provenance remains a separate `THREAT-007` control.
 
 ## Artifact delivery boundary
 
