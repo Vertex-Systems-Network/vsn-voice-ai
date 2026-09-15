@@ -11,6 +11,8 @@ on:
       - "native/windows-audio/**"
       - "native/windows-virtual-mic/**"
       - "scripts/windows/**"
+      - "packages/contracts/schemas/windows-audio-*.schema.json"
+      - "tests/fixtures/windows-audio-performance-samples.json"
       - ".github/workflows/windows-audio.yml"
   push:
     branches:
@@ -22,6 +24,8 @@ on:
       - "native/windows-audio/**"
       - "native/windows-virtual-mic/**"
       - "scripts/windows/**"
+      - "packages/contracts/schemas/windows-audio-*.schema.json"
+      - "tests/fixtures/windows-audio-performance-samples.json"
       - ".github/workflows/windows-audio.yml"
   workflow_dispatch:
 
@@ -58,6 +62,27 @@ jobs:
       - name: Test Windows audio crate
         shell: pwsh
         run: cargo +1.98.1 test --locked -p vsn-windows-audio
+
+      - name: Verify controlled performance summarizer contract
+        shell: pwsh
+        run: |
+          ./scripts/windows/summarize-windows-audio-performance.ps1 `
+            -InputFile tests/fixtures/windows-audio-performance-samples.json `
+            -OutputFile artifacts/windows-audio-performance-measurements-fixture.json
+
+          $summary = Get-Content -LiteralPath artifacts/windows-audio-performance-measurements-fixture.json -Raw -Encoding UTF8 | ConvertFrom-Json
+          if ([int]$summary.sample_count -ne 20) {
+            throw "Performance summarizer fixture produced an unexpected sample_count"
+          }
+          if ([Math]::Abs([double]$summary.processed_path_latency_p95_ms - 28.0) -gt 0.000001) {
+            throw "Performance summarizer fixture produced an unexpected processed-path p95"
+          }
+          if ([Math]::Abs([double]$summary.callback_jitter_p95_ms - 1.9) -gt 0.000001) {
+            throw "Performance summarizer fixture produced an unexpected jitter p95"
+          }
+          if ([Math]::Abs([double]$summary.safe_bypass_transition_p95_ms - 118.0) -gt 0.000001) {
+            throw "Performance summarizer fixture produced an unexpected safe-bypass p95"
+          }
 
       - name: Restore pinned Windows Driver Kit packages
         shell: pwsh

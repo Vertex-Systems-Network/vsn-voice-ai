@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.vsn.local/windows-audio-performance-samples.schema.json",
+  "title": "VSN Windows Audio Performance Samples",
+  "description": "Content-safe numeric sample input for controlled WU-002 latency, jitter and safe-bypass measurement summarization. It intentionally excludes raw audio, transcripts, operator identity, machine name, credentials and free-form notes.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "test_run_id",
+    "hardware_profile_id",
+    "sample_rate_hz",
+    "frame_duration_ms",
+    "measurement_window_seconds",
+    "processed_path_latency_ms",
+    "callback_jitter_ms",
+    "safe_bypass_transition_ms",
+    "provider_path",
+    "network_profile"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "test_run_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z0-9._-]+$"
+    },
+    "hardware_profile_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 96,
+      "pattern": "^[a-z0-9._-]+$"
+    },
+    "sample_rate_hz": {
+      "type": "integer",
+      "minimum": 8000,
+      "maximum": 192000
+    },
+    "frame_duration_ms": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    },
+    "measurement_window_seconds": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 3600
+    },
+    "processed_path_latency_ms": {
+      "type": "array",
+      "minItems": 20,
+      "maxItems": 10000,
+      "items": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 10000
+      }
+    },
+    "callback_jitter_ms": {
+      "type": "array",
+      "minItems": 20,
+      "maxItems": 10000,
+      "items": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 1000
+      }
+    },
+    "safe_bypass_transition_ms": {
+      "type": "array",
+      "minItems": 20,
+      "maxItems": 10000,
+      "items": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 10000
+      }
+    },
+    "provider_path": { "const": "not_applicable" },
+    "network_profile": { "const": "not_applicable" }
+  }
+}
