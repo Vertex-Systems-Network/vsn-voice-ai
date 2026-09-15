@@ -22,7 +22,10 @@ concurrency:
 jobs:
   controlled-windows-audio:
     name: controlled-windows-audio
-    runs-on: [self-hosted, windows, x64, vsn-controlled-audio]
+    if: github.ref == 'refs/heads/main'
+    runs-on:
+      group: vsn-controlled-audio-restricted
+      labels: [self-hosted, windows, x64, vsn-controlled-audio]
     timeout-minutes: 45
     env:
       CONTROLLED_CHECKS_FILENAME: ${{ inputs.controlled_checks_filename }}
