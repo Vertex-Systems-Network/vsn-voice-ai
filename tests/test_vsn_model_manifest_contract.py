@@ -8,6 +8,7 @@ from jsonschema import Draft202012Validator, ValidationError
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA = ROOT / "packages" / "contracts" / "schemas" / "vsn-model-manifest.schema.json"
+FIXTURE = ROOT / "tests" / "fixtures" / "vsn-model-manifest.json"
 
 
 def registered_manifest() -> dict:
@@ -40,8 +41,13 @@ class VSNModelManifestContractTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
+        cls.fixture = json.loads(FIXTURE.read_text(encoding="utf-8"))
         Draft202012Validator.check_schema(cls.schema)
         cls.validator = Draft202012Validator(cls.schema)
+
+    def test_shared_fixture_matches_schema_and_reference_payload(self) -> None:
+        self.validator.validate(self.fixture)
+        self.assertEqual(self.fixture, registered_manifest())
 
     def test_unverified_registration_metadata_is_valid(self) -> None:
         self.validator.validate(registered_manifest())
