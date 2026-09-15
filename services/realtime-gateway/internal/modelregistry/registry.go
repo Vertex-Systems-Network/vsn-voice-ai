@@ -26,15 +26,15 @@ const (
 )
 
 var (
-	ErrInvalidManifest       = errors.New("invalid VSN model manifest")
+	ErrInvalidManifest        = errors.New("invalid VSN model manifest")
 	ErrModelAlreadyRegistered = errors.New("VSN model version already registered")
 	ErrModelNotFound          = errors.New("VSN model version not found")
 
-	modelIDPattern    = regexp.MustCompile(`^vsn-[a-z0-9][a-z0-9._-]{0,62}$`)
+	modelIDPattern      = regexp.MustCompile(`^vsn-[a-z0-9][a-z0-9._-]{0,62}$`)
 	modelVersionPattern = regexp.MustCompile(`^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]{1,32})?$`)
-	artifactIDPattern = regexp.MustCompile(`^MODELART-[A-Z0-9][A-Z0-9._-]{0,63}$`)
-	sha256Pattern     = regexp.MustCompile(`^[a-f0-9]{64}$`)
-	datasetRefPattern = regexp.MustCompile(`^DATASET-[A-Z0-9][A-Z0-9._-]{0,63}$`)
+	artifactIDPattern   = regexp.MustCompile(`^MODELART-[A-Z0-9][A-Z0-9._-]{0,63}$`)
+	sha256Pattern       = regexp.MustCompile(`^[a-f0-9]{64}$`)
+	datasetRefPattern   = regexp.MustCompile(`^DATASET-[A-Z0-9][A-Z0-9._-]{0,63}$`)
 )
 
 const zeroSHA256 = "0000000000000000000000000000000000000000000000000000000000000000"
@@ -46,8 +46,8 @@ type Artifact struct {
 }
 
 type Provenance struct {
-	DatasetRegistryRefs  []string          `json:"dataset_registry_refs"`
-	RightsReviewStatus   VerificationState `json:"rights_review_status"`
+	DatasetRegistryRefs   []string          `json:"dataset_registry_refs"`
+	RightsReviewStatus    VerificationState `json:"rights_review_status"`
 	DeletionLineageStatus VerificationState `json:"deletion_lineage_status"`
 }
 
@@ -107,9 +107,24 @@ func (r *Registry) Get(modelID string, modelVersion string) (Manifest, error) {
 func (r *Registry) Snapshot() []Manifest {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
+	return snapshotLocked(r.models, false)
+}
 
-	result := make([]Manifest, 0, len(r.models))
-	for _, manifest := range r.models {
+// VerifiedSnapshot returns only metadata whose lifecycle and all six verification
+// gates are verified. It is a read-only registry view and does not register or
+// enable a provider in the routing registry.
+func (r *Registry) VerifiedSnapshot() []Manifest {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return snapshotLocked(r.models, true)
+}
+
+func snapshotLocked(models map[string]Manifest, verifiedOnly bool) []Manifest {
+	result := make([]Manifest, 0, len(models))
+	for _, manifest := range models {
+		if verifiedOnly && (manifest.LifecycleState != LifecycleVerified || !allVerificationGatesPassed(manifest)) {
+			continue
+		}
 		result = append(result, cloneManifest(manifest))
 	}
 	sort.Slice(result, func(i, j int) bool {
