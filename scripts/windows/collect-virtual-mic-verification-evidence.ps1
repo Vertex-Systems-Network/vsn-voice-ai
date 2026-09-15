@@ -4,6 +4,7 @@ param(
     [string]$PackageDirectory = "artifacts/vsn-virtual-mic-test-package",
     [string]$OutputFile = "artifacts/windows-audio-verification-evidence.json",
     [string]$ControlledChecksFile = "",
+    [string]$PerformanceMeasurementsFile = "",
     [string]$RepositorySha = $env:GITHUB_SHA,
     [switch]$ControlledMachine,
     [switch]$AllowVerificationRequired
@@ -75,6 +76,32 @@ function Assert-ExactObjectKeys {
     if (($actual -join "|") -ne ($wanted -join "|")) {
         throw "$Context contains missing or unsupported fields."
     }
+}
+
+function Test-JsonInteger {
+    param($Value)
+
+    return (
+        $Value -is [byte] -or
+        $Value -is [sbyte] -or
+        $Value -is [int16] -or
+        $Value -is [uint16] -or
+        $Value -is [int32] -or
+        $Value -is [uint32] -or
+        $Value -is [int64] -or
+        $Value -is [uint64]
+    )
+}
+
+function Test-JsonNumber {
+    param($Value)
+
+    return (
+        (Test-JsonInteger -Value $Value) -or
+        $Value -is [single] -or
+        $Value -is [double] -or
+        $Value -is [decimal]
+    )
 }
 
 function Get-PackageFileEvidence {
@@ -196,6 +223,80 @@ function Read-ControlledChecks {
     }
 }
 
+function Read-PerformanceMeasurements {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    $resolved = Resolve-InputPath -Value $Path
+    $raw = Get-Content -LiteralPath $resolved -Raw -Encoding UTF8
+    if ($raw.Length -gt 32768) {
+        throw "PerformanceMeasurementsFile exceeds the 32 KiB evidence-input limit."
+    }
+    $measurements = $raw | ConvertFrom-Json
+    Assert-ExactObjectKeys -Object $measurements -Expected @(
+        "schema_version",
+        "test_run_id",
+        "hardware_profile_id",
+        "sample_rate_hz",
+        "frame_duration_ms",
+        "sample_count",
+        "measurement_window_seconds",
+        "processed_path_latency_p95_ms",
+        "callback_jitter_p95_ms",
+        "safe_bypass_transition_p95_ms",
+        "provider_path",
+        "network_profile"
+    ) -Context "performance measurements"
+
+    if ($measurements.schema_version -ne 1) {
+        throw "Performance measurements schema_version must be 1."
+    }
+    if ($measurements.test_run_id -isnot [string] -or $measurements.test_run_id -notmatch '^[A-Za-z0-9._-]{1,64}$') {
+        throw "Performance measurements test_run_id is invalid."
+    }
+    if ($measurements.hardware_profile_id -isnot [string] -or $measurements.hardware_profile_id -notmatch '^[a-z0-9._-]{1,96}$') {
+        throw "Performance measurements hardware_profile_id is invalid."
+    }
+    if (-not (Test-JsonInteger -Value $measurements.sample_rate_hz) -or [long]$measurements.sample_rate_hz -lt 8000 -or [long]$measurements.sample_rate_hz -gt 192000) {
+        throw "Performance measurements sample_rate_hz is out of range."
+    }
+    if (-not (Test-JsonInteger -Value $measurements.frame_duration_ms) -or [long]$measurements.frame_duration_ms -lt 1 -or [long]$measurements.frame_duration_ms -gt 100) {
+        throw "Performance measurements frame_duration_ms is out of range."
+    }
+    if (-not (Test-JsonInteger -Value $measurements.sample_count) -or [long]$measurements.sample_count -lt 20 -or [long]$measurements.sample_count -gt 1000000) {
+        throw "Performance measurements sample_count is out of range."
+    }
+    if (-not (Test-JsonNumber -Value $measurements.measurement_window_seconds) -or [double]$measurements.measurement_window_seconds -le 0 -or [double]$measurements.measurement_window_seconds -gt 3600) {
+        throw "Performance measurements measurement_window_seconds is out of range."
+    }
+    if (-not (Test-JsonNumber -Value $measurements.processed_path_latency_p95_ms) -or [double]$measurements.processed_path_latency_p95_ms -lt 0 -or [double]$measurements.processed_path_latency_p95_ms -gt 10000) {
+        throw "Performance measurements processed_path_latency_p95_ms is out of range."
+    }
+    if (-not (Test-JsonNumber -Value $measurements.callback_jitter_p95_ms) -or [double]$measurements.callback_jitter_p95_ms -lt 0 -or [double]$measurements.callback_jitter_p95_ms -gt 1000) {
+        throw "Performance measurements callback_jitter_p95_ms is out of range."
+    }
+    if (-not (Test-JsonNumber -Value $measurements.safe_bypass_transition_p95_ms) -or [double]$measurements.safe_bypass_transition_p95_ms -lt 0 -or [double]$measurements.safe_bypass_transition_p95_ms -gt 10000) {
+        throw "Performance measurements safe_bypass_transition_p95_ms is out of range."
+    }
+    if ($measurements.provider_path -ne "not_applicable" -or $measurements.network_profile -ne "not_applicable") {
+        throw "WU-002 local virtual-mic performance evidence must mark provider and network as not_applicable."
+    }
+
+    return [ordered]@{
+        schema_version = 1
+        test_run_id = $measurements.test_run_id
+        hardware_profile_id = $measurements.hardware_profile_id
+        sample_rate_hz = [int]$measurements.sample_rate_hz
+        frame_duration_ms = [int]$measurements.frame_duration_ms
+        sample_count = [long]$measurements.sample_count
+        measurement_window_seconds = [double]$measurements.measurement_window_seconds
+        processed_path_latency_p95_ms = [double]$measurements.processed_path_latency_p95_ms
+        callback_jitter_p95_ms = [double]$measurements.callback_jitter_p95_ms
+        safe_bypass_transition_p95_ms = [double]$measurements.safe_bypass_transition_p95_ms
+        provider_path = "not_applicable"
+        network_profile = "not_applicable"
+    }
+}
+
 function Test-ControlledChecksPassed {
     param($Checks)
 
@@ -264,8 +365,22 @@ $controlledChecks = $null
 if (-not [string]::IsNullOrWhiteSpace($ControlledChecksFile)) {
     $controlledChecks = Read-ControlledChecks -Path $ControlledChecksFile
 }
+$performanceMeasurements = $null
+if (-not [string]::IsNullOrWhiteSpace($PerformanceMeasurementsFile)) {
+    $performanceMeasurements = Read-PerformanceMeasurements -Path $PerformanceMeasurementsFile
+}
 if ($ControlledMachine -and $null -eq $controlledChecks) {
     throw "ControlledMachine requires a ControlledChecksFile; unattended machines cannot self-attest."
+}
+if ($ControlledMachine -and $null -eq $performanceMeasurements) {
+    throw "ControlledMachine requires a PerformanceMeasurementsFile; latency and jitter evidence cannot be omitted."
+}
+if (
+    $null -ne $controlledChecks -and
+    $null -ne $performanceMeasurements -and
+    $controlledChecks.test_run_id -ne $performanceMeasurements.test_run_id
+) {
+    throw "Controlled checks and performance measurements must share the same test_run_id."
 }
 
 $scope = if ($isGithubActions) {
@@ -279,15 +394,23 @@ else {
 }
 
 $controlledChecksPassed = Test-ControlledChecksPassed -Checks $controlledChecks
+$nfrAud002TargetMet =
+    $null -ne $performanceMeasurements -and
+    [double]$performanceMeasurements.safe_bypass_transition_p95_ms -le 250.0
 $acceptanceEvidenceCandidate =
     $scope -eq "controlled_machine" -and
     $smokePayload.status -eq "passed" -and
-    $controlledChecksPassed
+    $controlledChecksPassed -and
+    $null -ne $performanceMeasurements -and
+    $nfrAud002TargetMet
 
 $evidenceState = if ($smokePayload.status -eq "failed") {
     "failed"
 }
 elseif ($acceptanceEvidenceCandidate) {
+    "controlled_evidence_candidate"
+}
+elseif ($scope -eq "controlled_machine" -and $smokePayload.status -eq "passed" -and $controlledChecksPassed) {
     "controlled_checks_passed"
 }
 elseif ($smokePayload.status -eq "passed") {
@@ -324,6 +447,8 @@ $evidence = [ordered]@{
     }
     package = $packageEvidence
     controlled_checks = $controlledChecks
+    performance_measurements = $performanceMeasurements
+    nfr_aud_002_target_met = [bool]$nfrAud002TargetMet
     acceptance_evidence_candidate = $acceptanceEvidenceCandidate
     completion_claim = $false
 }
