@@ -24,11 +24,11 @@ type ProviderActivationCandidateState struct {
 }
 
 type ProviderActivationEvidenceRefs struct {
-	RuntimeAccess      string `json:"runtime_access"`
-	ArtifactSignature  string `json:"artifact_signature"`
-	ReleaseProvenance  string `json:"release_provenance"`
-	BenchmarkPolicy    string `json:"benchmark_policy"`
-	RollbackReadiness  string `json:"rollback_readiness"`
+	RuntimeAccess     string `json:"runtime_access"`
+	ArtifactSignature string `json:"artifact_signature"`
+	ReleaseProvenance string `json:"release_provenance"`
+	BenchmarkPolicy   string `json:"benchmark_policy"`
+	RollbackReadiness string `json:"rollback_readiness"`
 }
 
 type ProviderActivationReview struct {
