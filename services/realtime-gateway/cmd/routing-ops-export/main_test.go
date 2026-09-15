@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -53,6 +55,27 @@ func encodeInput(t *testing.T, input auditedExportInput) []byte {
 		t.Fatalf("marshal input: %v", err)
 	}
 	return data
+}
+
+func TestSharedContractFixtureIsAccepted(t *testing.T) {
+	fixturePath := filepath.Join("..", "..", "..", "..", "tests", "fixtures", "routing-ops-export-input.json")
+	fixture, err := os.ReadFile(fixturePath)
+	if err != nil {
+		t.Fatalf("read shared fixture: %v", err)
+	}
+
+	var output bytes.Buffer
+	if err := run(bytes.NewReader(fixture), &output); err != nil {
+		t.Fatalf("run shared fixture: %v", err)
+	}
+
+	var exported provider.RoutingAuditedOperationalExport
+	if err := json.Unmarshal(output.Bytes(), &exported); err != nil {
+		t.Fatalf("decode shared fixture export: %v", err)
+	}
+	if exported.Reconciliation.Status != provider.RoutingCostReconciliationConsistent {
+		t.Fatalf("expected shared fixture reconciliation to be consistent, got %q", exported.Reconciliation.Status)
+	}
 }
 
 func TestRunProducesAuditedContentSafeExport(t *testing.T) {

@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vsn.internal/schemas/routing-ops-export-input.schema.json",
+  "title": "RoutingOpsExportInput",
+  "description": "Closed content-safe local input for the realtime-gateway routing-ops-export diagnostic command. It contains operational provider identifiers, counters, latency/cost rates, health/rate-limit states and alert thresholds only; it does not accept tenant identity, request payloads, audio, transcripts, credentials or free-form notes.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "metrics": { "$ref": "#/$defs/routingMetrics" },
+    "reported_cost_control": { "$ref": "#/$defs/costControl" },
+    "thresholds": { "$ref": "#/$defs/thresholds" }
+  },
+  "$defs": {
+    "providerId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+    },
+    "health": {
+      "enum": ["healthy", "degraded", "unhealthy", "circuit_open"]
+    },
+    "rateLimit": {
+      "enum": ["unknown", "available", "constrained", "exhausted"]
+    },
+    "routingMetrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "total_selections": { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 },
+        "no_eligible_count": { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 },
+        "by_provider": {
+          "type": "object",
+          "propertyNames": { "$ref": "#/$defs/providerId" },
+          "additionalProperties": { "$ref": "#/$defs/providerMetrics" }
+        }
+      }
+    },
+    "providerMetrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider_id", "health", "rate_limit"],
+      "properties": {
+        "provider_id": { "$ref": "#/$defs/providerId" },
+        "selection_count": { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 },
+        "latency_p95_ms": { "type": "integer", "minimum": 0, "maximum": 9223372036854775807 },
+        "cost_microunits_per_minute": { "type": "integer", "minimum": 0, "maximum": 9223372036854775807 },
+        "health": { "$ref": "#/$defs/health" },
+        "rate_limit": { "$ref": "#/$defs/rateLimit" }
+      }
+    },
+    "costControl": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "total_selections": { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 },
+        "no_eligible_count": { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 },
+        "no_eligible_basis_points": { "type": "integer", "minimum": 0, "maximum": 10000 },
+        "average_selected_cost_microunits_per_minute": { "type": "integer", "minimum": 0, "maximum": 9223372036854775807 },
+        "by_provider": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/providerCostControl" }
+        }
+      }
+    },
+    "providerCostControl": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider_id", "health", "rate_limit"],
+      "properties": {
+        "provider_id": { "$ref": "#/$defs/providerId" },
+        "selection_count": { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 },
+        "selection_share_basis_points": { "type": "integer", "minimum": 0, "maximum": 10000 },
+        "cost_microunits_per_minute": { "type": "integer", "minimum": 0, "maximum": 9223372036854775807 },
+        "weighted_cost_contribution_microunits_per_minute": { "type": "integer", "minimum": 0, "maximum": 9223372036854775807 },
+        "latency_p95_ms": { "type": "integer", "minimum": 0, "maximum": 9223372036854775807 },
+        "health": { "$ref": "#/$defs/health" },
+        "rate_limit": { "$ref": "#/$defs/rateLimit" }
+      }
+    },
+    "thresholds": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_latency_p95_ms": { "type": "integer", "minimum": 0, "maximum": 9223372036854775807 },
+        "max_cost_microunits_per_minute": { "type": "integer", "minimum": 0, "maximum": 9223372036854775807 },
+        "max_no_eligible_basis_points": { "type": "integer", "minimum": 0, "maximum": 10000 },
+        "min_route_attempts": { "type": "integer", "minimum": 0, "maximum": 18446744073709551615 }
+      }
+    }
+  }
+}
