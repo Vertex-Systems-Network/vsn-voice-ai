@@ -4,7 +4,16 @@ This directory is the repository entry point for WU-011 model-registry metadata 
 
 ## Current scope
 
-The first registry contract is `packages/contracts/schemas/vsn-model-manifest.schema.json`.
+The registry contract is `packages/contracts/schemas/vsn-model-manifest.schema.json`.
+
+The realtime-gateway module also contains an in-memory metadata registry at `services/realtime-gateway/internal/modelregistry`. That registry:
+
+- enforces the same bounded identifiers, capabilities, ONNX artifact digest metadata and provenance/verification states as the JSON contract;
+- keeps each `(model_id, model_version)` immutable once registered;
+- supports multiple explicit versions of one model;
+- returns defensive copies so callers cannot mutate registry-owned metadata;
+- exposes a `VerifiedSnapshot` view only for manifests whose lifecycle and all six provenance/verification gates are verified;
+- does not register, enable, mutate or otherwise activate anything in the provider routing registry.
 
 A manifest may record only bounded operational metadata:
 
@@ -27,7 +36,7 @@ Allowed lifecycle states are:
 - `verified`
 - `deprecated`
 
-`verified` is schema-valid only when all provenance and verification gates are `verified`:
+`verified` is schema-valid and registry-valid only when all provenance and verification gates are `verified`:
 
 - dataset rights review;
 - dataset deletion-lineage review;
@@ -36,7 +45,7 @@ Allowed lifecycle states are:
 - security review;
 - rollback evidence.
 
-A registry manifest never makes a model routable by itself. A separately verified runtime/provider adapter must translate an approved VSN model into the existing `ProviderManifest` contract, and the provider gateway remains the routing authority.
+A registry manifest never makes a model routable by itself. `VerifiedSnapshot` is only a filtered metadata view. A separately verified runtime/provider adapter must translate an approved VSN model into the existing `ProviderManifest` contract, and the provider gateway remains the routing authority with its own `Enabled`, `VerifiedAccess`, health and rate-limit gates.
 
 ## Data and training boundary
 
@@ -57,4 +66,4 @@ Production model artifacts belong in the approved encrypted artifact/model store
 
 ## Next implementation slice
 
-A later WU-011 slice may add a metadata registry loader that enforces unique `(model_id, model_version)` entries and exposes only manifests that pass the required verification state. It must remain separate from training/data ingestion and from provider routing activation.
+A later WU-011 slice may add an explicit adapter-registration candidate boundary that accepts only `VerifiedSnapshot` entries and still produces a disabled, non-routable provider candidate. Runtime loading, artifact retrieval/signature verification, production provider activation, datasets and model training remain separate authorization and verification work.
