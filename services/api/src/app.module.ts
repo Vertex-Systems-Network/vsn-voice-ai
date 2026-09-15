@@ -13,9 +13,11 @@ import {
   RejectingTrustedPrincipalResolver,
   TRUSTED_PRINCIPAL_RESOLVER,
 } from './identity/trusted-principal-resolver.js';
+import { ORGANIZATION_MEMBERSHIP_DIRECTORY } from './organizations/organization-membership-directory.js';
 import { ORGANIZATION_MEMBERSHIP_RESOLVER } from './organizations/organization-membership-resolver.js';
 import { createRuntimeOrganizationMembershipResolver } from './organizations/runtime-organization-membership-resolver.js';
 import { createRuntimeWorkspaceTeamRepository } from './workspace/runtime-workspace-team-repository.js';
+import { WorkspaceDirectoryController } from './workspace/workspace-directory.controller.js';
 import { WORKSPACE_TEAM_REPOSITORY } from './workspace/workspace-team-repository.js';
 import { WorkspaceTeamController } from './workspace/workspace-team.controller.js';
 import { WorkspaceController } from './workspace/workspace.controller.js';
@@ -23,6 +25,7 @@ import { WorkspaceController } from './workspace/workspace.controller.js';
 @Module({
   controllers: [
     HealthController,
+    WorkspaceDirectoryController,
     WorkspaceController,
     WorkspaceTeamController,
     DesktopLinkController,
@@ -39,6 +42,10 @@ import { WorkspaceController } from './workspace/workspace.controller.js';
     {
       provide: ORGANIZATION_MEMBERSHIP_RESOLVER,
       useFactory: () => createRuntimeOrganizationMembershipResolver(process.env),
+    },
+    {
+      provide: ORGANIZATION_MEMBERSHIP_DIRECTORY,
+      useExisting: ORGANIZATION_MEMBERSHIP_RESOLVER,
     },
     {
       provide: WORKSPACE_TEAM_REPOSITORY,
