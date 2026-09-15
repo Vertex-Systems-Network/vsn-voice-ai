@@ -7,6 +7,8 @@ import (
 	"github.com/Vertex-Systems-Network/vsn-voice-ai/services/realtime-gateway/internal/provider"
 )
 
+const providerCandidateSchemaVersion = 1
+
 var (
 	ErrModelNotFullyVerified    = errors.New("VSN model is not fully verified")
 	ErrInvalidProviderCandidate = errors.New("invalid VSN provider candidate configuration")
@@ -25,6 +27,7 @@ type ProviderCandidateConfig struct {
 // permanently emitted disabled, unverified and unhealthy by this builder, so
 // registering the candidate alone cannot make the model routable.
 type ProviderCandidate struct {
+	SchemaVersion  int                       `json:"schema_version"`
 	ModelID        string                    `json:"model_id"`
 	ModelVersion   string                    `json:"model_version"`
 	ArtifactID     string                    `json:"artifact_id"`
@@ -48,6 +51,7 @@ func BuildDisabledProviderCandidate(manifest Manifest, config ProviderCandidateC
 
 	capabilities := append([]provider.Capability(nil), manifest.Capabilities...)
 	return ProviderCandidate{
+		SchemaVersion:  providerCandidateSchemaVersion,
 		ModelID:        manifest.ModelID,
 		ModelVersion:   manifest.ModelVersion,
 		ArtifactID:     manifest.Artifact.ArtifactID,

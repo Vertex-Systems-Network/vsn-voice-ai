@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "model_id": "vsn-accent-base",
+  "model_version": "1.0.0",
+  "artifact_id": "MODELART-ACCENT-BASE-1",
+  "artifact_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "provider_manifest": {
+    "id": "vsn-accent-runtime",
+    "version": "1.0.0",
+    "access_mode": "internal",
+    "capabilities": [
+      "voice.accent_convert",
+      "voice.identity_preserve"
+    ],
+    "enabled": false,
+    "verified_access": false,
+    "health": "unhealthy",
+    "rate_limit": "unknown"
+  }
+}
