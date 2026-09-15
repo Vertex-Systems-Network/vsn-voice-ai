@@ -62,9 +62,9 @@ test('runtime team repository remains fail-closed without PostgreSQL configurati
 
 test('configured runtime repository delegates to PostgreSQL and owns client lifecycle', async () => {
   const client = new FakeClosableClient([teamRow()]);
-  let capturedConfig: PostgresRuntimeConfig | null = null;
+  const capturedConfigs: PostgresRuntimeConfig[] = [];
   const factory: WorkspaceTeamPostgresClientFactory = (config) => {
-    capturedConfig = config;
+    capturedConfigs.push(config);
     return client;
   };
   const repository = createRuntimeWorkspaceTeamRepository(
@@ -74,8 +74,9 @@ test('configured runtime repository delegates to PostgreSQL and owns client life
 
   const result = await repository.listByOrganization('org_456');
 
-  assert.equal(capturedConfig?.host, 'db.internal');
-  assert.equal(capturedConfig?.database, 'vsn');
+  assert.equal(capturedConfigs.length, 1);
+  assert.equal(capturedConfigs[0]?.host, 'db.internal');
+  assert.equal(capturedConfigs[0]?.database, 'vsn');
   assert.equal(result.organization_id, 'org_456');
   assert.equal(result.members.length, 1);
   assert.equal(client.calls.length, 1);
