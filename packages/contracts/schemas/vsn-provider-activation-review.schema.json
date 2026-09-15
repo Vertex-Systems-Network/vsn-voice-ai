@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vsn.internal/schemas/vsn-provider-activation-review.schema.json",
+  "title": "VSNProviderActivationReview",
+  "description": "Content-safe, non-activating review packet for one disabled VSN provider candidate. It binds runtime-access, artifact-signature, release-provenance, benchmark-policy and rollback-readiness evidence references without authorizing activation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "review_id",
+    "verification_evidence_id",
+    "model_id",
+    "model_version",
+    "artifact_id",
+    "artifact_sha256",
+    "provider_id",
+    "access_mode",
+    "capabilities",
+    "candidate_state",
+    "evidence_refs",
+    "activation_authorized"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "review_id": {
+      "type": "string",
+      "pattern": "^ACTREVIEW-[A-Z0-9][A-Z0-9._-]{0,63}$"
+    },
+    "verification_evidence_id": {
+      "type": "string",
+      "pattern": "^MODELEVID-[A-Z0-9][A-Z0-9._-]{0,63}$"
+    },
+    "model_id": {
+      "type": "string",
+      "pattern": "^vsn-[a-z0-9][a-z0-9._-]{0,62}$"
+    },
+    "model_version": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]{1,32})?$"
+    },
+    "artifact_id": {
+      "type": "string",
+      "pattern": "^MODELART-[A-Z0-9][A-Z0-9._-]{0,63}$"
+    },
+    "artifact_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "not": {"const": "0000000000000000000000000000000000000000000000000000000000000000"}
+    },
+    "provider_id": {
+      "type": "string",
+      "pattern": "^vsn-[a-z0-9][a-z0-9._-]{0,62}$"
+    },
+    "access_mode": {
+      "enum": ["api", "sdk", "local", "on_prem", "internal"]
+    },
+    "capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 20,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "audio.noise_cancel",
+          "audio.background_voice_cancel",
+          "audio.echo_reduce",
+          "audio.vad",
+          "voice.accent_convert",
+          "voice.identity_preserve",
+          "voice.deepfake_detect",
+          "voice.speaker_verify",
+          "speech.translate_realtime",
+          "speech.transcribe_stream",
+          "speech.transcribe_finalize",
+          "speech.synthesize",
+          "meeting.capture",
+          "meeting.transcript",
+          "meeting.intelligence",
+          "conversation.score",
+          "knowledge.search",
+          "assistant.realtime",
+          "agent.action",
+          "telephony.media"
+        ]
+      }
+    },
+    "candidate_state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enabled", "verified_access", "health", "rate_limit"],
+      "properties": {
+        "enabled": {"const": false},
+        "verified_access": {"const": false},
+        "health": {"const": "unhealthy"},
+        "rate_limit": {"const": "unknown"}
+      }
+    },
+    "evidence_refs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "runtime_access",
+        "artifact_signature",
+        "release_provenance",
+        "benchmark_policy",
+        "rollback_readiness"
+      ],
+      "properties": {
+        "runtime_access": {
+          "type": "string",
+          "pattern": "^EVIDENCE-[A-Z0-9][A-Z0-9._-]{0,95}$"
+        },
+        "artifact_signature": {
+          "type": "string",
+          "pattern": "^EVIDENCE-[A-Z0-9][A-Z0-9._-]{0,95}$"
+        },
+        "release_provenance": {
+          "type": "string",
+          "pattern": "^EVIDENCE-[A-Z0-9][A-Z0-9._-]{0,95}$"
+        },
+        "benchmark_policy": {
+          "type": "string",
+          "pattern": "^EVIDENCE-[A-Z0-9][A-Z0-9._-]{0,95}$"
+        },
+        "rollback_readiness": {
+          "type": "string",
+          "pattern": "^EVIDENCE-[A-Z0-9][A-Z0-9._-]{0,95}$"
+        }
+      }
+    },
+    "activation_authorized": {"const": false}
+  }
+}
