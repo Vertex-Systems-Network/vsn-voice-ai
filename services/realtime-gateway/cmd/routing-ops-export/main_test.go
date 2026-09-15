@@ -139,7 +139,7 @@ func TestDecodeRejectsOversizedInputWithoutEchoingContent(t *testing.T) {
 	if !errors.Is(err, errInputTooLarge) {
 		t.Fatalf("expected size error, got %v", err)
 	}
-	if strings.Contains(err.Error(), "x") {
-		t.Fatal("size error must not echo input content")
+	if err.Error() != errInputTooLarge.Error() {
+		t.Fatalf("size error must remain generic, got %q", err.Error())
 	}
 }
