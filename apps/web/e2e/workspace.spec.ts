@@ -1,16 +1,74 @@
 import { expect, test } from '@playwright/test';
 
-test('workspace renders explicit tenant-safe empty states', async ({ page }) => {
+test('workspace renders explicit tenant-safe signed-out states', async ({ page }) => {
+  await page.route('**/v1/workspaces', async (route) => {
+    await route.fulfill({ status: 401 });
+  });
   await page.goto('/');
 
   await expect(page.getByRole('heading', { level: 1 })).toContainText('without invented account state');
-  await expect(page.getByRole('status')).toHaveText('Authentication not connected');
+  await expect(page.locator('.session-state')).toHaveText('Authentication not connected');
   await expect(page.getByRole('navigation', { name: 'Workspace navigation' })).toBeVisible();
-  await expect(page.locator('.area-card')).toHaveCount(4);
+  await expect(page.locator('.area-card')).toHaveCount(5);
   await expect(page.getByText('No meetings yet')).toBeVisible();
   await expect(page.getByText('No linked desktop shown')).toBeVisible();
-  await expect(page.getByText('Team data not loaded')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Authentication required' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Select a workspace first' })).toBeVisible();
   await expect(page.getByText('Settings are not connected yet')).toBeVisible();
+});
+
+test('authenticated directory requires explicit selection before team data loads', async ({ page }) => {
+  await page.route('**/v1/workspaces', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_version: 1,
+        workspaces: [
+          {
+            schema_version: 1,
+            membership_id: 'membership_1',
+            organization_id: 'org_1',
+            status: 'active',
+            roles: ['member'],
+          },
+        ],
+        has_more: false,
+      }),
+    });
+  });
+  await page.route('**/v1/workspaces/org_1/team', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_version: 1,
+        organization_id: 'org_1',
+        members: [
+          {
+            schema_version: 1,
+            membership_id: 'membership_1',
+            subject_id: 'member_1',
+            status: 'active',
+            roles: ['member'],
+          },
+        ],
+        has_more: false,
+      }),
+    });
+  });
+
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: '1 workspace available' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Select a workspace first' })).toBeVisible();
+
+  const selectButton = page.getByRole('button', { name: 'Select workspace org_1' });
+  await expect(selectButton).toBeVisible();
+  await selectButton.click();
+
+  await expect(page.getByRole('heading', { name: '1 team member' })).toBeVisible();
+  await expect(page.getByText('member_1')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Select a workspace first' })).toHaveCount(0);
 });
 
 test('workspace sends baseline browser security headers', async ({ request }) => {
