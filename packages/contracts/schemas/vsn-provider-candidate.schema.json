@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vsn.internal/schemas/vsn-provider-candidate.schema.json",
+  "title": "VSNProviderCandidate",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "model_id",
+    "model_version",
+    "artifact_id",
+    "artifact_sha256",
+    "provider_manifest"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "model_id": {
+      "type": "string",
+      "pattern": "^vsn-[a-z0-9][a-z0-9._-]{0,62}$"
+    },
+    "model_version": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]{1,32})?$"
+    },
+    "artifact_id": {
+      "type": "string",
+      "pattern": "^MODELART-[A-Z0-9][A-Z0-9._-]{0,63}$"
+    },
+    "artifact_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "not": {"const": "0000000000000000000000000000000000000000000000000000000000000000"}
+    },
+    "provider_manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "access_mode",
+        "capabilities",
+        "enabled",
+        "verified_access",
+        "health",
+        "rate_limit"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^vsn-[a-z0-9][a-z0-9._-]{0,62}$"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z.-]{1,32})?$"
+        },
+        "access_mode": {
+          "enum": ["api", "sdk", "local", "on_prem", "internal"]
+        },
+        "capabilities": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 20,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "audio.noise_cancel",
+              "audio.background_voice_cancel",
+              "audio.echo_reduce",
+              "audio.vad",
+              "voice.accent_convert",
+              "voice.identity_preserve",
+              "voice.deepfake_detect",
+              "voice.speaker_verify",
+              "speech.translate_realtime",
+              "speech.transcribe_stream",
+              "speech.transcribe_finalize",
+              "speech.synthesize",
+              "meeting.capture",
+              "meeting.transcript",
+              "meeting.intelligence",
+              "conversation.score",
+              "knowledge.search",
+              "assistant.realtime",
+              "agent.action",
+              "telephony.media"
+            ]
+          }
+        },
+        "enabled": {"const": false},
+        "verified_access": {"const": false},
+        "health": {"const": "unhealthy"},
+        "rate_limit": {"const": "unknown"}
+      }
+    }
+  }
+}
