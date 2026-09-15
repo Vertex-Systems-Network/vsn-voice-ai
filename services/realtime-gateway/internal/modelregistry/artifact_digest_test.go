@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"io"
 	"strings"
 	"testing"
 )
@@ -79,20 +80,16 @@ func TestVerifyArtifactDigestStopsAfterConfiguredBoundPlusSentinelByte(t *testin
 
 func TestVerifyArtifactDigestRejectsInvalidPolicyReaderAndManifest(t *testing.T) {
 	manifest := digestManifest()
-	for name, reader, policy := range map[string]struct {
-		reader *strings.Reader
+	for name, tc := range map[string]struct {
+		reader io.Reader
 		policy ArtifactDigestPolicy
 	}{
-		"zero bound": {strings.NewReader("data"), ArtifactDigestPolicy{}},
+		"zero bound":     {strings.NewReader("data"), ArtifactDigestPolicy{}},
 		"negative bound": {strings.NewReader("data"), ArtifactDigestPolicy{MaxBytes: -1}},
-		"nil reader": {nil, ArtifactDigestPolicy{MaxBytes: 1024}},
+		"nil reader":     {nil, ArtifactDigestPolicy{MaxBytes: 1024}},
 	} {
 		t.Run(name, func(t *testing.T) {
-			var source interface{ Read([]byte) (int, error) }
-			if reader != nil {
-				source = reader
-			}
-			result, err := VerifyArtifactDigest(manifest, source, policy)
+			result, err := VerifyArtifactDigest(manifest, tc.reader, tc.policy)
 			if !errors.Is(err, ErrInvalidArtifactDigestPolicy) {
 				t.Fatalf("expected ErrInvalidArtifactDigestPolicy, got %v", err)
 			}
