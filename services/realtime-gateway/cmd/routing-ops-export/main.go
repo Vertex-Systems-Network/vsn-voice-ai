@@ -17,15 +17,15 @@ const (
 )
 
 var (
-	errInvalidInput = errors.New("invalid routing operations input")
-	errInputTooLarge = errors.New("routing operations input exceeds limit")
+	errInvalidInput   = errors.New("invalid routing operations input")
+	errInputTooLarge  = errors.New("routing operations input exceeds limit")
 	providerIDPattern = regexp.MustCompile(`^[a-z0-9][a-z0-9._-]{0,63}$`)
 )
 
 type auditedExportInput struct {
-	SchemaVersion       uint32                              `json:"schema_version"`
-	Metrics             provider.RoutingMetricsSnapshot     `json:"metrics"`
-	ReportedCostControl provider.RoutingCostControlSummary  `json:"reported_cost_control"`
+	SchemaVersion       uint32                                `json:"schema_version"`
+	Metrics             provider.RoutingMetricsSnapshot       `json:"metrics"`
+	ReportedCostControl provider.RoutingCostControlSummary    `json:"reported_cost_control"`
 	Thresholds          provider.RoutingOperationalThresholds `json:"thresholds"`
 }
 
