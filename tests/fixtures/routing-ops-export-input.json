@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "metrics": {
+    "total_selections": 3,
+    "no_eligible_count": 1,
+    "by_provider": {
+      "provider-a": {
+        "provider_id": "provider-a",
+        "selection_count": 2,
+        "latency_p95_ms": 120,
+        "cost_microunits_per_minute": 1000,
+        "health": "healthy",
+        "rate_limit": "available"
+      },
+      "provider-b": {
+        "provider_id": "provider-b",
+        "selection_count": 1,
+        "latency_p95_ms": 240,
+        "cost_microunits_per_minute": 2000,
+        "health": "degraded",
+        "rate_limit": "constrained"
+      }
+    }
+  },
+  "reported_cost_control": {
+    "total_selections": 3,
+    "no_eligible_count": 1,
+    "no_eligible_basis_points": 2500,
+    "average_selected_cost_microunits_per_minute": 1333,
+    "by_provider": [
+      {
+        "provider_id": "provider-a",
+        "selection_count": 2,
+        "selection_share_basis_points": 6666,
+        "cost_microunits_per_minute": 1000,
+        "weighted_cost_contribution_microunits_per_minute": 666,
+        "latency_p95_ms": 120,
+        "health": "healthy",
+        "rate_limit": "available"
+      },
+      {
+        "provider_id": "provider-b",
+        "selection_count": 1,
+        "selection_share_basis_points": 3333,
+        "cost_microunits_per_minute": 2000,
+        "weighted_cost_contribution_microunits_per_minute": 666,
+        "latency_p95_ms": 240,
+        "health": "degraded",
+        "rate_limit": "constrained"
+      }
+    ]
+  },
+  "thresholds": {
+    "max_latency_p95_ms": 200,
+    "max_cost_microunits_per_minute": 1500,
+    "max_no_eligible_basis_points": 2000,
+    "min_route_attempts": 1
+  }
+}
