@@ -1,3 +1,5 @@
+import { WorkspaceTeamWorkspace } from '../components/workspace-team-workspace';
+
 const workspaceNavigation = [
   { href: '#overview', label: 'Overview' },
   { href: '#meetings', label: 'Meetings' },
@@ -20,13 +22,6 @@ const workspaceAreas = [
     title: 'No linked desktop shown',
     description:
       'Desktop devices appear only after a short-lived, single-use linking exchange completes successfully.',
-  },
-  {
-    id: 'team',
-    eyebrow: 'Organization',
-    title: 'Team data not loaded',
-    description:
-      'Membership and role data will be rendered only from an authenticated, tenant-bound API response.',
   },
   {
     id: 'settings',
@@ -91,7 +86,18 @@ export default function WorkspacePage() {
           </section>
 
           <div className="area-grid">
-            {workspaceAreas.map((area) => (
+            {workspaceAreas.slice(0, 2).map((area) => (
+              <section className="area-card" id={area.id} key={area.id} aria-labelledby={`${area.id}-title`}>
+                <p className="eyebrow">{area.eyebrow}</p>
+                <h3 id={`${area.id}-title`}>{area.title}</h3>
+                <p>{area.description}</p>
+                <span className="empty-state-badge">Empty state</span>
+              </section>
+            ))}
+
+            <WorkspaceTeamWorkspace />
+
+            {workspaceAreas.slice(2).map((area) => (
               <section className="area-card" id={area.id} key={area.id} aria-labelledby={`${area.id}-title`}>
                 <p className="eyebrow">{area.eyebrow}</p>
                 <h3 id={`${area.id}-title`}>{area.title}</h3>
