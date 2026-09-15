@@ -1,7 +1,11 @@
 package modelregistry
 
 import (
+	"encoding/json"
 	"errors"
+	"os"
+	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/Vertex-Systems-Network/vsn-voice-ai/services/realtime-gateway/internal/provider"
@@ -36,7 +40,8 @@ func TestBuildDisabledProviderCandidateProjectsContentSafeMetadata(t *testing.T)
 		t.Fatalf("build disabled provider candidate: %v", err)
 	}
 
-	if candidate.ModelID != manifest.ModelID ||
+	if candidate.SchemaVersion != providerCandidateSchemaVersion ||
+		candidate.ModelID != manifest.ModelID ||
 		candidate.ModelVersion != manifest.ModelVersion ||
 		candidate.ArtifactID != manifest.Artifact.ArtifactID ||
 		candidate.ArtifactSHA256 != manifest.Artifact.SHA256 {
@@ -62,6 +67,38 @@ func TestBuildDisabledProviderCandidateProjectsContentSafeMetadata(t *testing.T)
 		candidate.Manifest.CostMicrounitsPerMinute != 0 ||
 		candidate.Manifest.RemainingQuotaMicrounits != 0 {
 		t.Fatalf("candidate invented unverified runtime/commercial metadata: %#v", candidate.Manifest)
+	}
+}
+
+func TestProviderCandidateMatchesSharedContractFixture(t *testing.T) {
+	candidate, err := BuildDisabledProviderCandidate(
+		verifiedManifest(),
+		ProviderCandidateConfig{ProviderID: "vsn-accent-runtime", AccessMode: provider.AccessInternal},
+	)
+	if err != nil {
+		t.Fatalf("build disabled provider candidate: %v", err)
+	}
+
+	actualJSON, err := json.Marshal(candidate)
+	if err != nil {
+		t.Fatalf("marshal provider candidate: %v", err)
+	}
+	fixturePath := filepath.Join("..", "..", "..", "..", "tests", "fixtures", "vsn-provider-candidate.json")
+	expectedJSON, err := os.ReadFile(fixturePath)
+	if err != nil {
+		t.Fatalf("read shared provider candidate fixture: %v", err)
+	}
+
+	var actual any
+	var expected any
+	if err := json.Unmarshal(actualJSON, &actual); err != nil {
+		t.Fatalf("decode candidate JSON: %v", err)
+	}
+	if err := json.Unmarshal(expectedJSON, &expected); err != nil {
+		t.Fatalf("decode shared candidate fixture: %v", err)
+	}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("Go candidate drifted from shared contract fixture\nactual: %s\nexpected: %s", actualJSON, expectedJSON)
 	}
 }
 
