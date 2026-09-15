@@ -14,6 +14,9 @@ import type {
 import {
   createRuntimeOrganizationMembershipResolver,
 } from '../src/organizations/runtime-organization-membership-resolver.js';
+import {
+  WorkspaceTeamPersistenceUnavailableError,
+} from '../src/workspace/workspace-team-repository.js';
 
 const principal: AuthenticatedPrincipal = {
   subjectId: 'user_123',
@@ -26,7 +29,7 @@ const persistedMembership = {
   organization_id: 'org_001',
   status: 'active',
   roles: ['member'],
-  permissions: ['conversation.read'],
+  permissions: ['conversation.read', 'team.read'],
 } as const;
 
 class SharedFakePostgresClient implements ClosablePostgresQueryClient {
@@ -41,14 +44,7 @@ class SharedFakePostgresClient implements ClosablePostgresQueryClient {
     values: readonly unknown[],
   ): Promise<PostgresQueryResult<Row>> {
     this.queries.push({ text, values: [...values] });
-    const secondValue = values[1];
-    if (typeof secondValue === 'string') {
-      return { rows: [persistedMembership as unknown as Row] };
-    }
-    if (typeof secondValue === 'number') {
-      return { rows: [persistedMembership as unknown as Row] };
-    }
-    return { rows: [] };
+    return { rows: [persistedMembership as unknown as Row] };
   }
 
   public async close(): Promise<void> {
@@ -56,7 +52,7 @@ class SharedFakePostgresClient implements ClosablePostgresQueryClient {
   }
 }
 
-test('configured runtime shares one PostgreSQL client across resolver and directory reads', async () => {
+test('configured runtime shares one PostgreSQL client across membership, directory and team reads', async () => {
   const client = new SharedFakePostgresClient();
   let factoryCalls = 0;
   const runtime = createRuntimeOrganizationMembershipResolver(
@@ -69,15 +65,21 @@ test('configured runtime shares one PostgreSQL client across resolver and direct
 
   const membership = await runtime.resolve(principal, 'org_001');
   const directory = await runtime.listForPrincipal(principal);
+  const team = await runtime.listByOrganization('org_001');
 
   assert.equal(factoryCalls, 1);
   assert.equal(membership?.organizationId, 'org_001');
   assert.equal(directory.memberships.length, 1);
   assert.equal(directory.memberships[0]?.organizationId, 'org_001');
   assert.equal(directory.hasMore, false);
-  assert.equal(client.queries.length, 2);
+  assert.equal(team.organization_id, 'org_001');
+  assert.equal(team.members.length, 1);
+  assert.equal(team.members[0]?.subject_id, 'user_123');
+  assert.equal(team.has_more, false);
+  assert.equal(client.queries.length, 3);
   assert.deepEqual(client.queries[0]?.values, ['user_123', 'org_001']);
   assert.deepEqual(client.queries[1]?.values, ['user_123', 101]);
+  assert.deepEqual(client.queries[2]?.values, ['org_001', 201]);
 
   await Promise.all([
     runtime.onApplicationShutdown(),
@@ -86,7 +88,7 @@ test('configured runtime shares one PostgreSQL client across resolver and direct
   assert.equal(client.closeCalls, 1);
 });
 
-test('missing PostgreSQL configuration fails closed for both membership access modes', async () => {
+test('missing PostgreSQL configuration fails closed for all membership-backed access modes', async () => {
   let factoryCalls = 0;
   const runtime = createRuntimeOrganizationMembershipResolver({}, () => {
     factoryCalls += 1;
@@ -97,6 +99,10 @@ test('missing PostgreSQL configuration fails closed for both membership access m
   await assert.rejects(
     () => runtime.listForPrincipal(principal),
     OrganizationMembershipDirectoryUnavailableError,
+  );
+  await assert.rejects(
+    () => runtime.listByOrganization('org_001'),
+    WorkspaceTeamPersistenceUnavailableError,
   );
   assert.equal(factoryCalls, 0);
   await runtime.onApplicationShutdown();
