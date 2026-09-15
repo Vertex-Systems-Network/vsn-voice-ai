@@ -3,6 +3,11 @@ import type { OnApplicationShutdown } from '@nestjs/common';
 import type { PostgresRuntimeConfig } from '../config/postgres-runtime-config.js';
 import { loadOptionalPostgresRuntimeConfig } from '../config/postgres-runtime-config.js';
 import type { AuthenticatedPrincipal } from '../identity/authenticated-principal.js';
+import {
+  type OrganizationMembershipDirectory,
+  type OrganizationMembershipDirectorySnapshot,
+  RejectingOrganizationMembershipDirectory,
+} from './organization-membership-directory.js';
 import type { OrganizationMembership } from './organization-membership.js';
 import type { OrganizationMembershipResolver } from './organization-membership-resolver.js';
 import { RejectingOrganizationMembershipResolver } from './organization-membership-resolver.js';
@@ -21,16 +26,21 @@ function defaultPostgresQueryClientFactory(
 }
 
 /**
- * Runtime resolver that stays fail-closed when no database is configured and
- * owns the lifecycle of a configured PostgreSQL pool.
+ * Runtime membership service that stays fail-closed when no database is
+ * configured, shares one PostgreSQL pool across exact membership resolution
+ * and subject-bound directory reads, and owns that pool lifecycle.
  */
 export class RuntimeOrganizationMembershipResolver
-  implements OrganizationMembershipResolver, OnApplicationShutdown
+  implements
+    OrganizationMembershipResolver,
+    OrganizationMembershipDirectory,
+    OnApplicationShutdown
 {
   private closePromise: Promise<void> | null = null;
 
   public constructor(
-    private readonly delegate: OrganizationMembershipResolver,
+    private readonly resolverDelegate: OrganizationMembershipResolver,
+    private readonly directoryDelegate: OrganizationMembershipDirectory,
     private readonly closeClient: (() => Promise<void>) | null,
   ) {}
 
@@ -38,7 +48,13 @@ export class RuntimeOrganizationMembershipResolver
     principal: AuthenticatedPrincipal,
     organizationId: string,
   ): Promise<OrganizationMembership | null> {
-    return this.delegate.resolve(principal, organizationId);
+    return this.resolverDelegate.resolve(principal, organizationId);
+  }
+
+  public listForPrincipal(
+    principal: AuthenticatedPrincipal,
+  ): Promise<OrganizationMembershipDirectorySnapshot> {
+    return this.directoryDelegate.listForPrincipal(principal);
   }
 
   public onApplicationShutdown(): Promise<void> {
@@ -60,13 +76,16 @@ export function createRuntimeOrganizationMembershipResolver(
   if (config === null) {
     return new RuntimeOrganizationMembershipResolver(
       new RejectingOrganizationMembershipResolver(),
+      new RejectingOrganizationMembershipDirectory(),
       null,
     );
   }
 
   const client = createClient(config);
+  const postgresMemberships = new PostgresOrganizationMembershipResolver(client);
   return new RuntimeOrganizationMembershipResolver(
-    new PostgresOrganizationMembershipResolver(client),
+    postgresMemberships,
+    postgresMemberships,
     () => client.close(),
   );
 }

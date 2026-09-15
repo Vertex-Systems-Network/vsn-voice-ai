@@ -1,4 +1,10 @@
 import type { AuthenticatedPrincipal } from '../identity/authenticated-principal.js';
+import {
+  MAX_ORGANIZATION_MEMBERSHIPS_PER_DIRECTORY,
+  type OrganizationMembershipDirectory,
+  OrganizationMembershipDirectoryDataIntegrityError,
+  type OrganizationMembershipDirectorySnapshot,
+} from './organization-membership-directory.js';
 import type {
   MembershipStatus,
   OrganizationMembership,
@@ -37,6 +43,20 @@ FROM organization_memberships
 WHERE subject_id = $1
   AND organization_id = $2
 LIMIT 2
+`.trim();
+
+const membershipDirectorySql = `
+SELECT
+  membership_id,
+  subject_id,
+  organization_id,
+  status,
+  roles,
+  permissions
+FROM organization_memberships
+WHERE subject_id = $1
+ORDER BY organization_id ASC
+LIMIT $2
 `.trim();
 
 const authorityTokenPattern = /^[a-z][a-z0-9._:-]*$/;
@@ -86,14 +106,15 @@ function isAuthorityTokens(
 function toMembership(
   row: PostgresMembershipRow,
   expectedSubjectId: string,
-  expectedOrganizationId: string,
+  expectedOrganizationId?: string,
 ): OrganizationMembership | null {
   if (
     !isBoundedIdentifier(row.membership_id) ||
     !isBoundedIdentifier(row.subject_id) ||
     !isBoundedIdentifier(row.organization_id) ||
     row.subject_id !== expectedSubjectId ||
-    row.organization_id !== expectedOrganizationId ||
+    (expectedOrganizationId !== undefined &&
+      row.organization_id !== expectedOrganizationId) ||
     !isMembershipStatus(row.status) ||
     !isAuthorityTokens(row.roles, 1, 32, 128) ||
     !isAuthorityTokens(row.permissions, 0, 256, 160)
@@ -112,12 +133,13 @@ function toMembership(
 }
 
 /**
- * PostgreSQL-backed membership resolver for the owner-approved data stack.
- * The connection/pool is injected so credentials and deployment-specific pool
- * configuration remain outside the tenant authorization domain layer.
+ * PostgreSQL-backed membership resolver and subject-bound membership directory
+ * for the owner-approved data stack. The connection/pool is injected so
+ * credentials and deployment-specific pool configuration remain outside the
+ * tenant authorization domain layer.
  */
 export class PostgresOrganizationMembershipResolver
-  implements OrganizationMembershipResolver
+  implements OrganizationMembershipResolver, OrganizationMembershipDirectory
 {
   public constructor(private readonly client: PostgresQueryClient) {}
 
@@ -149,8 +171,60 @@ export class PostgresOrganizationMembershipResolver
     }
     return toMembership(row, subjectId, normalizedOrganizationId);
   }
+
+  public async listForPrincipal(
+    principal: AuthenticatedPrincipal,
+  ): Promise<OrganizationMembershipDirectorySnapshot> {
+    const subjectId = principal.subjectId.trim();
+    if (!isBoundedIdentifier(subjectId)) {
+      throw new OrganizationMembershipDirectoryDataIntegrityError(
+        'authenticated subject identifier is invalid',
+      );
+    }
+
+    const result = await this.client.query<PostgresMembershipRow>(
+      membershipDirectorySql,
+      [subjectId, MAX_ORGANIZATION_MEMBERSHIPS_PER_DIRECTORY + 1],
+    );
+    const hasMore =
+      result.rows.length > MAX_ORGANIZATION_MEMBERSHIPS_PER_DIRECTORY;
+    const boundedRows = result.rows.slice(
+      0,
+      MAX_ORGANIZATION_MEMBERSHIPS_PER_DIRECTORY,
+    );
+    const seenMembershipIds = new Set<string>();
+    const seenOrganizationIds = new Set<string>();
+    const memberships = boundedRows.map((row) => {
+      const membership = toMembership(row, subjectId);
+      if (membership === null) {
+        throw new OrganizationMembershipDirectoryDataIntegrityError(
+          'membership directory persistence returned an invalid row',
+        );
+      }
+      if (
+        seenMembershipIds.has(membership.membershipId) ||
+        seenOrganizationIds.has(membership.organizationId)
+      ) {
+        throw new OrganizationMembershipDirectoryDataIntegrityError(
+          'membership directory persistence returned duplicate membership data',
+        );
+      }
+      seenMembershipIds.add(membership.membershipId);
+      seenOrganizationIds.add(membership.organizationId);
+      return membership;
+    });
+
+    return Object.freeze({
+      memberships: Object.freeze(memberships),
+      hasMore,
+    });
+  }
 }
 
 export function getOrganizationMembershipLookupSql(): string {
   return membershipLookupSql;
+}
+
+export function getOrganizationMembershipDirectorySql(): string {
+  return membershipDirectorySql;
 }
