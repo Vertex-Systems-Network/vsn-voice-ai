@@ -26,6 +26,18 @@ class WindowsAudioControlledRunnerTests(unittest.TestCase):
         self.assertIn("ControlledMachine = $true", self.source)
         self.assertNotIn("AllowVerificationRequired", self.source)
 
+    def test_runner_requires_exact_repository_revision_binding(self) -> None:
+        self.assertIn(
+            "[Parameter(Mandatory = $true)][ValidatePattern('^[0-9a-fA-F]{40}$')][string]$RepositorySha",
+            self.source,
+        )
+        self.assertIn("RepositorySha = $normalizedRepositorySha", self.source)
+        self.assertIn(
+            "evidence.repository_sha -ne $normalizedRepositorySha",
+            self.source,
+        )
+        self.assertIn("does not match the controlled run revision", self.source)
+
     def test_runner_requires_reviewable_candidate_without_claiming_completion(self) -> None:
         self.assertIn("acceptance_evidence_candidate", self.source)
         self.assertIn("completion_claim -ne $false", self.source)
