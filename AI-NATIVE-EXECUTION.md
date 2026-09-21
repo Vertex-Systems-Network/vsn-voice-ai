@@ -262,6 +262,18 @@ It should expose at minimum:
 
 Do not fake precision. If progress percentages cannot be credibly calculated, use work-unit counts and status summaries instead.
 
+## README Progress Contract
+
+`README.md` is a mandatory AI-Native progress surface, not an optional narrative.
+
+- Reconcile README on every owner turn before the final response.
+- Every material source-development milestone must update the machine-readable README progress snapshot and affected dashboard/evidence lines in the same source commit.
+- The snapshot must agree with `config/ai/execution-plan.json`, `config/ai/project-state.json`, and the relevant module state.
+- Work-unit completion percentages count only `complete` non-deprecated work units. In-progress, blocked, verification-required, deferred and not-started work receive no partial numeric credit.
+- Material delivery evidence may be added while a work unit remains in progress, but it must not inflate deterministic completion percentage.
+- CI/status-only turns reconcile README truth but must not create a README-only source commit just to restate a workflow result; terminal remote evidence stays on the remote evidence overlay until the next material source mutation.
+- If README progress drifts from machine state, repository validation must fail closed.
+
 ## Autonomous next-work selection
 
 When the user has authorized AI-native development and no human decision blocks progress, the AI should determine the next valid work item rather than asking the user which module to work on.

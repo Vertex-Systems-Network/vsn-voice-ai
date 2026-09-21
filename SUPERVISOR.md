@@ -233,7 +233,7 @@ Migrations require explicit review of idempotency, transaction boundaries, apply
 
 Where applicable, pin third-party CI actions to immutable revisions, disable unnecessary credential persistence, use least-privilege workflow permissions, avoid unsafe `pull_request_target` execution, and separate production/distributable dependency audits from development-tooling audits when appropriate.
 
-Large README/module dashboards change only when underlying delivery truth changes or a terminal product/integration milestone is being reported. Governance-only cycles update compact state and affected governance records, not a large dashboard merely to create churn.
+README is a mandatory durable progress surface. On **every Supervisor turn**, reconcile `README.md` against repository truth before reporting. Every **material source-development milestone** must update the machine-readable README progress snapshot and any affected dashboard/evidence narrative in the **same source commit**. Deterministic completion percentages remain derived from completed non-deprecated work units only; in-progress work is described separately and receives no fractional completion credit. A CI/status-only turn still performs the reconciliation but must not create a README-only source commit merely to restate remote status, because that would change the exact head and create verification churn. Repository validation must fail when the README progress snapshot disagrees with execution-plan/project-state truth.
 
 ### Mandatory user-facing response footer
 

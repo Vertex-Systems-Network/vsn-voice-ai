@@ -5,18 +5,18 @@ observed_main_sha: c7ed9caf06bd44460a7717e4f419b51cf49792d4
 active_issue: 133
 active_pr: 131
 active_branch: ai/supervisor-resume-protocol
-current_milestone: reconcile-next-valid-work-selection
+current_milestone: enforce-readme-progress-synchronization
 milestone_status: VERIFYING
-last_completed_milestone: "AI-Native plan/flow governance-memory reconciliation passed exact-head AI Native Quality Gates run 35640781642 on cff0c21976530cedc6fa1ff266b9fc3723a099fa. Terminal evidence is persisted in PR #131 comment 5765771925."
-exact_next_safe_action: "Resolve PR #131 exact current head after this next-work reconciliation commit and perform one consolidated CI/status refresh. If terminal, persist through the remote terminal-evidence overlay without a source-only restatement commit. WU-002 remains current/in_progress but completion-blocked by Issue #110; WU-014 is the next valid product work unit when external governance gates permit unrelated safe work."
+last_completed_milestone: "AI-Native next-valid work reconciliation passed exact-head AI Native Quality Gates run 35641796156 on c250180b8c37b586faabf93b0b002a1796113489. WU-014 product PRs #134, #135 and #136 have current exact-head technical gates green and remain unmerged/review-pending."
+exact_next_safe_action: "Resolve PR #131 exact current head after the README progress synchronization commit and perform one consolidated CI/status refresh. README progress is now a mandatory machine-validated surface. If CI is terminal, persist through the remote terminal-evidence overlay without a source-only restatement commit. Continue WU-014 safe product work independently while review/merge authority remains pending."
 next_product_work_unit: WU-014
 pending_runner_ids:
-  - RUN-PR-131-NEXT-WORK-SELECTION-CI
+  - RUN-PR-131-README-PROGRESS-SYNC-CI
   - RUN-WU-002-CONTROLLED-WINDOWS-AUDIO
 blocked_runner_ids:
   - RUN-WU-002-CONTROLLED-WINDOWS-AUDIO
 current_blockers:
-  - "No live authenticated Supervisor lease is present; do not claim continuous Supervisor authority."
+  - "No live authenticated Supervisor lease is present; do not claim continuous Supervisor authority or merge authority."
   - "Issue #110: WU-002 controlled physical Windows acceptance requires separately authorized restricted runner infrastructure and operator evidence before WU-002 completion."
   - "Issue #132: protected control-plane PR #131 has no eligible independent reviewer identity/team yet; self-approval must not satisfy the gate."
   - "Issue #133: owner authorization is granted; connected GitHub surface has no ruleset administration write action, so external/admin-capable application and authenticated verification remain required."
@@ -28,6 +28,12 @@ github_rules_authorization:
   ruleset_id: 23374505
   verified_required_status_context: repository-integrity
   ruleset_write_capability_in_current_connector: unavailable
+readme_progress_sync:
+  reconcile_on_every_supervisor_turn: true
+  material_source_milestone_requires_same_commit_readme_sync: true
+  machine_progress_block_required: true
+  progress_block_must_match_execution_plan_and_project_state: true
+  ci_or_status_only_turn_must_not_create_readme_only_commit: true
 terminal_remote_evidence_overlay:
   source_compact_state_may_remain_pre_terminal_check_snapshot: true
   source_only_commit_to_restate_terminal_ci_forbidden: true
@@ -47,11 +53,20 @@ progress:
   overall_complete_work_units: 3
   overall_total_non_deprecated_work_units: 25
   in_progress_work_units: 4
+active_product_delivery:
+  work_unit: WU-014
+  module: MOD-014
+  pr_134: technical_gate_pass_review_merge_pending
+  pr_135: technical_gate_pass_review_merge_pending
+  pr_136: technical_gate_pass_review_merge_pending
 open_reconciliation:
   open_issue_count: 3
-  open_pr_count: 10
+  open_pr_count: 13
   issue_110: completion_blocked_external_authority_and_physical_runner
   issue_132: blocked_external_independent_reviewer_identity
   issue_133: owner_approved_blocked_admin_capable_application
   active_governance_pr: 131
-  dependency_prs: reconciled_not_selected_as_current_user_directed_milestone
+  product_prs:
+    - 134
+    - 135
+    - 136

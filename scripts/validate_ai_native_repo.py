@@ -338,6 +338,103 @@ def validate_compact_runtime_state() -> None:
             fail(f"RUNNER-BENCHMARK {task['task_id']}: immutable_evidence must be a list")
 
 
+def validate_readme_progress() -> None:
+    readme_path = ROOT / "README.md"
+    if not readme_path.exists():
+        fail("README.md is required for AI-Native progress synchronization")
+        return
+
+    text = readme_path.read_text(encoding="utf-8")
+    start_marker = "<!-- AI-NATIVE-PROGRESS:START -->"
+    end_marker = "<!-- AI-NATIVE-PROGRESS:END -->"
+    if text.count(start_marker) != 1 or text.count(end_marker) != 1:
+        fail("README.md must contain exactly one AI-NATIVE-PROGRESS marker pair")
+        return
+    start = text.index(start_marker) + len(start_marker)
+    end = text.index(end_marker)
+    if end <= start:
+        fail("README.md AI-NATIVE-PROGRESS markers are malformed")
+        return
+    block = text[start:end]
+
+    execution = load_json("config/ai/execution-plan.json")
+    state = load_json("config/ai/project-state.json")
+    modules_doc = load_json("config/ai/modules-bank.json")
+    work_units = [
+        unit for unit in execution.get("work_units", [])
+        if isinstance(unit, dict) and unit.get("status") != "deprecated"
+    ]
+    total = len(work_units)
+    complete = sum(1 for unit in work_units if unit.get("status") == "complete")
+    in_progress = sum(1 for unit in work_units if unit.get("status") == "in_progress")
+    overall_percent = 0 if total == 0 else (complete * 100) // total
+
+    current_module = state.get("current_module")
+    current_work_unit = state.get("current_work_unit")
+    current_phase = state.get("current_phase")
+    next_valid = state.get("next_valid_work_unit")
+    by_id = {unit.get("id"): unit for unit in work_units if unit.get("id")}
+    current = by_id.get(current_work_unit) or {}
+    next_unit = by_id.get(next_valid) or {}
+    current_module_units = [unit for unit in work_units if unit.get("module_id") == current_module]
+    current_module_total = len(current_module_units)
+    current_module_complete = sum(
+        1 for unit in current_module_units if unit.get("status") == "complete"
+    )
+    current_module_percent = (
+        0 if current_module_total == 0
+        else (current_module_complete * 100) // current_module_total
+    )
+
+    expected_lines = [
+        f"- Overall work-unit progress: `{complete} / {total} complete ({overall_percent}%)`",
+        f"- In-progress work units: `{in_progress}`",
+        f"- Current phase: `{current_phase}`",
+        f"- Current tracked work: `{current_module} / {current_work_unit}` — `{current.get('status')}`",
+        f"- Current module completion: `{current_module_complete} / {current_module_total} complete ({current_module_percent}%)`",
+        f"- Next valid product work: `{next_unit.get('module_id')} / {next_valid}` — `{next_unit.get('status')}`",
+    ]
+    for line in expected_lines:
+        if line not in block:
+            fail(f"README.md AI-Native progress snapshot missing or stale line: {line}")
+
+    dashboard_lines = {
+        line.split("|")[1].strip(): line
+        for line in text.splitlines()
+        if line.startswith("| MOD-")
+    }
+    for module in modules_doc.get("modules", []):
+        if not isinstance(module, dict) or not module.get("id"):
+            continue
+        module_id = module["id"]
+        status = module.get("status")
+        line = dashboard_lines.get(module_id)
+        if line is None:
+            fail(f"README.md module dashboard missing {module_id}")
+            continue
+        if status == "complete" and "100%" not in line:
+            fail(f"README.md module dashboard {module_id} must show 100% for complete state")
+        elif status == "in_progress" and "in progress" not in line:
+            fail(f"README.md module dashboard {module_id} must show in progress")
+        elif status == "not_started" and ("Not started" not in line or "in progress" in line):
+            fail(f"README.md module dashboard {module_id} must show not started")
+
+    policy = load_json("config/ai/runtime/runtime-policy.json")
+    readme_policy = policy.get("readme_progress_sync") or {}
+    for key in [
+        "reconcile_on_every_supervisor_turn",
+        "material_source_milestone_requires_same_commit_readme_sync",
+        "machine_progress_block_required",
+        "progress_block_must_match_execution_plan_and_project_state",
+        "in_progress_work_must_not_receive_partial_completion_credit",
+        "material_delivery_evidence_may_update_without_percentage_inflation",
+        "ci_or_status_only_turn_must_not_create_readme_only_commit",
+        "terminal_remote_evidence_overlay_preserves_exact_head",
+    ]:
+        if readme_policy.get(key) is not True:
+            fail(f"runtime-policy: README progress synchronization must require {key}")
+
+
 def validate_protocol_versioning() -> None:
     version = load_json("config/protocol/version.json")
     instance = load_json("config/protocol/instance.json")
@@ -824,6 +921,7 @@ def main() -> int:
     validate_json_schemas()
     validate_manifest()
     validate_compact_runtime_state()
+    validate_readme_progress()
     validate_protocol_versioning()
     validate_template_boundary()
     validate_control_plane()
