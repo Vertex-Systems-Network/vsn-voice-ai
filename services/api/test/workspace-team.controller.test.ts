@@ -108,7 +108,9 @@ test('trusted principal and membership can load the bounded team snapshot', asyn
   const result = await controller.getTeam(' org_456 ', opaqueRequest);
 
   assert.equal(principalResolver.lastRequest, opaqueRequest);
-  assert.equal(membershipResolver.lastPrincipal, principal);
+  assert.deepEqual(membershipResolver.lastPrincipal, principal);
+  assert.notEqual(membershipResolver.lastPrincipal, principal);
+  assert.equal(Object.isFrozen(membershipResolver.lastPrincipal), true);
   assert.equal(membershipResolver.lastOrganizationId, 'org_456');
   assert.equal(repository.lastOrganizationId, 'org_456');
   assert.deepEqual(result, teamSnapshot);
@@ -188,4 +190,25 @@ test('persistence unavailability maps to a generic service-unavailable response'
     controller.getTeam('org_456', opaqueRequest),
     ServiceUnavailableException,
   );
+});
+
+test('malformed trusted principal fails closed before team membership access', async () => {
+  const membershipResolver = new StaticMembershipResolver(membership);
+  const repository = new StaticTeamRepository(teamSnapshot);
+  const malformed = {
+    subjectId: 'user_123',
+    sessionId: ' session_internal ',
+  } as AuthenticatedPrincipal;
+  const controller = new WorkspaceTeamController(
+    new StaticPrincipalResolver(malformed),
+    membershipResolver,
+    repository,
+  );
+
+  await assert.rejects(
+    controller.getTeam('org_456', opaqueRequest),
+    ServiceUnavailableException,
+  );
+  assert.equal(membershipResolver.lastPrincipal, null);
+  assert.equal(repository.lastOrganizationId, null);
 });

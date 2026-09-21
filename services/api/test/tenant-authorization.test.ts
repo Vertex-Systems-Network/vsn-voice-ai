@@ -132,3 +132,26 @@ test('authorization output contains no identity-vendor or credential secrets', (
     'subject_id',
   ]);
 });
+
+
+test('malformed trusted principal identifiers fail closed', () => {
+  const malformedPrincipals = [
+    { subjectId: ' user_123' },
+    { subjectId: 'user_123 ' },
+    { subjectId: 'x'.repeat(129) },
+    { subjectId: 'user_123', sessionId: '' },
+    { subjectId: 'user_123', sessionId: ' session_abc' },
+    { subjectId: 'user_123', sessionId: 'x'.repeat(129) },
+  ] as const;
+
+  for (const malformedPrincipal of malformedPrincipals) {
+    expectDenied(() =>
+      authorizeTenantAccess({
+        principal: malformedPrincipal,
+        membership,
+        resource: { organizationId: 'org_456' },
+        requiredPermission: 'conversation.read',
+      }),
+    );
+  }
+});

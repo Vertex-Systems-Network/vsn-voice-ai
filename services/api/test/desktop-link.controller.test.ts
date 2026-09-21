@@ -98,7 +98,9 @@ test('authorized issue returns only the one-time exchange contract', async () =>
   );
 
   assert.equal(principalResolver.lastRequest, opaqueRequest);
-  assert.equal(membershipResolver.lastPrincipal, principal);
+  assert.deepEqual(membershipResolver.lastPrincipal, principal);
+  assert.notEqual(membershipResolver.lastPrincipal, principal);
+  assert.equal(Object.isFrozen(membershipResolver.lastPrincipal), true);
   assert.equal(membershipResolver.lastOrganizationId, 'org_456');
   assert.equal(response.schema_version, 1);
   assert.match(response.record_id, /^[0-9a-f-]{36}$/i);
@@ -525,4 +527,18 @@ test('linked desktop inventory maps persistence outage to generic service unavai
     controller.list('org_456', opaqueRequest),
     ServiceUnavailableException,
   );
+});
+
+test('malformed trusted principal fails closed before desktop-link membership access', async () => {
+  const malformed = { subjectId: ' user_123' } as AuthenticatedPrincipal;
+  const { controller, membershipResolver } = createController(
+    malformed,
+    membership,
+  );
+
+  await assert.rejects(
+    controller.issue('org_456', { device_id: 'desktop_001' }, opaqueRequest),
+    ServiceUnavailableException,
+  );
+  assert.equal(membershipResolver.lastPrincipal, null);
 });

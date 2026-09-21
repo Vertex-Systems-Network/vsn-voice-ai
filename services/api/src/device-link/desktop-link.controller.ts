@@ -17,6 +17,7 @@ import {
 import type { FastifyRequest } from 'fastify';
 
 import {
+  resolveTrustedPrincipal,
   TRUSTED_PRINCIPAL_RESOLVER,
   type TrustedPrincipalResolver,
 } from '../identity/trusted-principal-resolver.js';
@@ -368,10 +369,14 @@ export class DesktopLinkController {
     request: FastifyRequest,
     organizationId: string,
   ) {
-    const principal = await this.principalResolver.resolve(request);
-    if (principal === null) {
+    const identity = await resolveTrustedPrincipal(this.principalResolver, request);
+    if (identity.status === 'unauthenticated') {
       throw new UnauthorizedException('authenticated principal is required');
     }
+    if (identity.status === 'unavailable') {
+      throw new ServiceUnavailableException('authentication unavailable');
+    }
+    const { principal } = identity;
 
     const membership = await this.membershipResolver.resolve(
       principal,

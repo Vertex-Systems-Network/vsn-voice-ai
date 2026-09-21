@@ -88,7 +88,9 @@ test('authenticated principal receives only browser-safe workspace membership su
   const response = await controller.listWorkspaces(opaqueRequest);
 
   assert.equal(principalResolver.lastRequest, opaqueRequest);
-  assert.equal(directory.lastPrincipal, principal);
+  assert.deepEqual(directory.lastPrincipal, principal);
+  assert.notEqual(directory.lastPrincipal, principal);
+  assert.equal(Object.isFrozen(directory.lastPrincipal), true);
   assert.deepEqual(response, {
     schema_version: 1,
     workspaces: [
@@ -143,4 +145,19 @@ test('directory availability failure maps to generic service unavailable', async
     controller.listWorkspaces(opaqueRequest),
     ServiceUnavailableException,
   );
+});
+
+test('malformed trusted principal fails closed before directory access', async () => {
+  const directory = new StaticDirectory(snapshot());
+  const malformed = { subjectId: ' user_123 ' } as AuthenticatedPrincipal;
+  const controller = new WorkspaceDirectoryController(
+    new StaticPrincipalResolver(malformed),
+    directory,
+  );
+
+  await assert.rejects(
+    controller.listWorkspaces(opaqueRequest),
+    ServiceUnavailableException,
+  );
+  assert.equal(directory.lastPrincipal, null);
 });
