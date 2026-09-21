@@ -17,6 +17,7 @@ const MIN_TTL_MS = 30 * 1_000;
 const MAX_TTL_MS = 10 * 60 * 1_000;
 const TOKEN_BYTES = 32;
 const REQUIRED_PERMISSION = 'device.link';
+const LINKED_DEVICE_PAGE_SIZE = 50;
 
 export interface DesktopLinkIssue {
   readonly recordId: string;
@@ -40,6 +41,17 @@ export interface DesktopLinkStatusSnapshot {
   readonly status: 'issued' | 'consumed' | 'revoked' | 'expired';
   readonly expiresAt: string;
   readonly consumedAt: string | null;
+}
+
+export interface LinkedDesktopSnapshot {
+  readonly recordId: string;
+  readonly deviceId: string;
+  readonly linkedAt: string;
+}
+
+export interface LinkedDesktopInventory {
+  readonly devices: readonly LinkedDesktopSnapshot[];
+  readonly hasMore: boolean;
 }
 
 export interface DesktopLinkClock {
@@ -121,6 +133,34 @@ export class DesktopLinkService {
       recordId,
       exchangeToken,
       expiresAt: expiresAt.toISOString(),
+    });
+  }
+
+  public async listLinked(
+    principal: AuthenticatedPrincipal,
+    organizationId: string,
+  ): Promise<LinkedDesktopInventory> {
+    requireNonEmpty(principal.subjectId, 'subject id');
+    requireNonEmpty(organizationId, 'organization id');
+
+    const records = await this.store.listLatestConsumed(
+      principal.subjectId,
+      organizationId,
+      LINKED_DEVICE_PAGE_SIZE + 1,
+    );
+    const devices = records.slice(0, LINKED_DEVICE_PAGE_SIZE).map((record) => {
+      if (record.status !== 'consumed' || typeof record.consumed_at !== 'string') {
+        throw new DesktopLinkDeniedError('linked desktop inventory contains invalid state');
+      }
+      return Object.freeze({
+        recordId: record.record_id,
+        deviceId: record.device_id,
+        linkedAt: record.consumed_at,
+      });
+    });
+    return Object.freeze({
+      devices: Object.freeze(devices),
+      hasMore: records.length > LINKED_DEVICE_PAGE_SIZE,
     });
   }
 

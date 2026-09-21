@@ -42,6 +42,14 @@ class RejectingDesktopLinkRecordStore implements DesktopLinkRecordStore {
   ): Promise<DesktopLinkRecord | undefined> {
     throw new DesktopLinkPersistenceUnavailableError();
   }
+
+  public async listLatestConsumed(
+    _subjectId: string,
+    _organizationId: string,
+    _limit: number,
+  ): Promise<readonly DesktopLinkRecord[]> {
+    throw new DesktopLinkPersistenceUnavailableError();
+  }
 }
 
 export type DesktopLinkPostgresQueryClientFactory = (
@@ -118,6 +126,25 @@ export class RuntimeDesktopLinkRecordStore
         subjectId,
         organizationId,
         revokedAt,
+      );
+    } catch (error: unknown) {
+      if (error instanceof DesktopLinkPersistenceUnavailableError) {
+        throw error;
+      }
+      throw new DesktopLinkPersistenceUnavailableError();
+    }
+  }
+
+  public async listLatestConsumed(
+    subjectId: string,
+    organizationId: string,
+    limit: number,
+  ): Promise<readonly DesktopLinkRecord[]> {
+    try {
+      return await this.delegate.listLatestConsumed(
+        subjectId,
+        organizationId,
+        limit,
       );
     } catch (error: unknown) {
       if (error instanceof DesktopLinkPersistenceUnavailableError) {

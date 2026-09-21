@@ -272,3 +272,64 @@ test('revoke is subject and tenant bound and rejects terminal non-revoked states
     service.revoke(principal, 'org_456', expired.recordId),
   );
 });
+
+test('linked desktop inventory keeps latest consumed record per device and hides secrets', async () => {
+  const { clock, service } = setup();
+
+  const first = await service.issue(authorization, 'desktop_001');
+  await service.consume(
+    principal,
+    'org_456',
+    'desktop_001',
+    first.recordId,
+    first.exchangeToken,
+  );
+
+  clock.advance(1_000);
+  const second = await service.issue(authorization, 'desktop_001');
+  await service.consume(
+    principal,
+    'org_456',
+    'desktop_001',
+    second.recordId,
+    second.exchangeToken,
+  );
+
+  clock.advance(1_000);
+  const third = await service.issue(authorization, 'desktop_002');
+  await service.consume(
+    principal,
+    'org_456',
+    'desktop_002',
+    third.recordId,
+    third.exchangeToken,
+  );
+
+  const inventory = await service.listLinked(principal, 'org_456');
+
+  assert.equal(inventory.hasMore, false);
+  assert.deepEqual(
+    inventory.devices.map((device) => device.deviceId),
+    ['desktop_002', 'desktop_001'],
+  );
+  assert.equal(inventory.devices[1]?.recordId, second.recordId);
+  assert.equal(JSON.stringify(inventory).includes(first.exchangeToken), false);
+  assert.equal(JSON.stringify(inventory).includes(second.exchangeToken), false);
+  assert.equal(JSON.stringify(inventory).includes('user_123'), false);
+  assert.equal(JSON.stringify(inventory).includes('browser_session_never_exported'), false);
+});
+
+test('linked desktop inventory is subject and tenant scoped', async () => {
+  const { service } = setup();
+  const issued = await service.issue(authorization, 'desktop_001');
+  await service.consume(
+    principal,
+    'org_456',
+    'desktop_001',
+    issued.recordId,
+    issued.exchangeToken,
+  );
+
+  assert.equal((await service.listLinked({ subjectId: 'user_other' }, 'org_456')).devices.length, 0);
+  assert.equal((await service.listLinked(principal, 'org_other')).devices.length, 0);
+});

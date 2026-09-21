@@ -63,7 +63,7 @@ The owner-approved product direction is:
 - Current module completion: `0 / 1 complete (0%)`
 - Next valid product work: `MOD-014 / WU-014` — `in_progress`
 - Current WU-002 blocker: Issue #110 controlled Windows runner/acceptance evidence.
-- Active WU-014 delivery: PR #134 cache/test hardening, PR #135 desktop-link persistence/status/revoke API, and PR #136 browser desktop-link issue/expiry/completion flow; deterministic completion remains unchanged until a WU completion boundary is verified.
+- Active WU-014 delivery: PR #134 cache/test hardening, PR #135 desktop-link persistence/status/revoke/inventory API, and PR #136 browser desktop-link issue/expiry/status/link/cancel UX; deterministic completion remains unchanged until a WU completion boundary is verified.
 <!-- AI-NATIVE-PROGRESS:END -->
 
 ## README Reconciliation Rule — Mandatory
@@ -123,8 +123,8 @@ Progress scale: `░░░░░░░░░░ 0%` → `███████�
 ## WU-014 — Active Delivery
 
 - PR #134: workspace bootstrap cache policy + deterministic API test discovery — exact-head technical checks green.
-- PR #135: desktop-link persistence fail-closed boundary + tenant-safe lifecycle status — exact-head technical checks were green before this material update; this branch now also implements an atomic tenant/subject-bound revoke transition for pending one-time exchanges, with exact-head verification required after this commit.
-- PR #136: browser desktop-link issue, transient record/token pairing, expiry clearing and confirmed linked-state observation — exact-head technical checks green.
+- PR #135: desktop-link persistence fail-closed boundary + tenant-safe lifecycle status + atomic pending-exchange revoke were exact-head green before this material update; this branch now also implements a bounded tenant/subject-scoped linked-desktop inventory using the latest consumed record per device, with new exact-head verification required.
+- PR #136: browser desktop-link issue, transient record/token pairing, expiry clearing, confirmed linked-state observation and user cancellation — exact-head technical checks green.
 - Deterministic project completion remains `3 / 25 (12%)`; these are in-progress WU-014 delivery slices, not completed-work-unit credit.
 
 ## MOD-002 — Current Verified Boundary

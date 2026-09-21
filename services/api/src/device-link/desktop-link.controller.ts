@@ -66,6 +66,20 @@ export interface DesktopLinkStatusResponse {
   readonly consumed_at: string | null;
 }
 
+export interface LinkedDesktopResponse {
+  readonly schema_version: 1;
+  readonly record_id: string;
+  readonly device_id: string;
+  readonly linked_at: string;
+}
+
+export interface LinkedDesktopInventoryResponse {
+  readonly schema_version: 1;
+  readonly organization_id: string;
+  readonly devices: readonly LinkedDesktopResponse[];
+  readonly has_more: boolean;
+}
+
 function requireClosedObject(
   value: unknown,
   allowedKeys: readonly string[],
@@ -140,6 +154,47 @@ export class DesktopLinkController {
     private readonly membershipResolver: OrganizationMembershipResolver,
     private readonly desktopLinkService: DesktopLinkService,
   ) {}
+
+  @Get()
+  @Header('Cache-Control', 'no-store')
+  @Header('Pragma', 'no-cache')
+  public async list(
+    @Param('organizationId') rawOrganizationId: string,
+    @Req() request: FastifyRequest,
+  ): Promise<LinkedDesktopInventoryResponse> {
+    const organizationId = requireOrganizationId(rawOrganizationId);
+    const { principal } = await this.resolveAuthorizedContext(
+      request,
+      organizationId,
+    );
+
+    try {
+      const inventory = await this.desktopLinkService.listLinked(
+        principal,
+        organizationId,
+      );
+      return Object.freeze({
+        schema_version: 1 as const,
+        organization_id: organizationId,
+        devices: Object.freeze(
+          inventory.devices.map((device) =>
+            Object.freeze({
+              schema_version: 1 as const,
+              record_id: device.recordId,
+              device_id: device.deviceId,
+              linked_at: device.linkedAt,
+            }),
+          ),
+        ),
+        has_more: inventory.hasMore,
+      });
+    } catch (error: unknown) {
+      if (error instanceof DesktopLinkPersistenceUnavailableError) {
+        throw new ServiceUnavailableException('desktop link persistence unavailable');
+      }
+      throw error;
+    }
+  }
 
   @Post()
   @HttpCode(201)

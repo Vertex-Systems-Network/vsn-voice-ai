@@ -72,6 +72,10 @@ test('missing database config keeps desktop-link persistence fail-closed without
     ),
     DesktopLinkPersistenceUnavailableError,
   );
+  await assert.rejects(
+    () => store.listLatestConsumed('user_123', 'org_456', 50),
+    DesktopLinkPersistenceUnavailableError,
+  );
   assert.equal(factoryCalls, 0);
   await store.onApplicationShutdown();
 });
@@ -160,6 +164,27 @@ test('configured runtime normalizes delegate failures to persistence unavailable
       'org_456',
       '2026-09-15T00:01:00.000Z',
     ),
+    DesktopLinkPersistenceUnavailableError,
+  );
+});
+
+test('configured runtime normalizes list failures to persistence unavailable', async () => {
+  class ThrowingListClient extends FakePostgresClient {
+    public override async query<Row>(
+      _text: string,
+      _values: readonly unknown[],
+    ): Promise<PostgresQueryResult<Row>> {
+      throw new Error('sensitive list failure');
+    }
+  }
+
+  const store = createRuntimeDesktopLinkRecordStore(
+    { VSN_POSTGRES_URL: 'postgresql://vsn@db.example.com/vsn' },
+    () => new ThrowingListClient(),
+  );
+
+  await assert.rejects(
+    () => store.listLatestConsumed('user_123', 'org_456', 50),
     DesktopLinkPersistenceUnavailableError,
   );
 });

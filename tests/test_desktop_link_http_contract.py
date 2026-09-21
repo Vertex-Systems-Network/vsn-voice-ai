@@ -23,6 +23,7 @@ class DesktopLinkHttpContractTests(unittest.TestCase):
         cls.consume_request = load_validator("desktop-link-consume-request.schema.json")
         cls.consume_response = load_validator("desktop-link-consume-response.schema.json")
         cls.status_response = load_validator("desktop-link-status-response.schema.json")
+        cls.inventory_response = load_validator("desktop-link-inventory-response.schema.json")
         cls.record_id = "550e8400-e29b-41d4-a716-446655440000"
         cls.token = "A" * 43
 
@@ -115,6 +116,53 @@ class DesktopLinkHttpContractTests(unittest.TestCase):
                     "consumed_at": None,
                 }
             )
+
+
+    def test_inventory_response_is_browser_safe_and_bounded(self) -> None:
+        payload = {
+            "schema_version": 1,
+            "organization_id": "org_456",
+            "devices": [
+                {
+                    "schema_version": 1,
+                    "record_id": self.record_id,
+                    "device_id": "desktop_001",
+                    "linked_at": "2026-09-15T00:01:00.000Z",
+                }
+            ],
+            "has_more": False,
+        }
+        self.inventory_response.validate(payload)
+
+        widened = dict(payload)
+        widened["subject_id"] = "must-not-cross-boundary"
+        with self.assertRaises(ValidationError):
+            self.inventory_response.validate(widened)
+
+        secret_device = dict(payload["devices"][0])
+        secret_device["exchange_token"] = "must-not-cross-boundary"
+        secret_payload = dict(payload)
+        secret_payload["devices"] = [secret_device]
+        with self.assertRaises(ValidationError):
+            self.inventory_response.validate(secret_payload)
+
+    def test_inventory_response_caps_visible_devices(self) -> None:
+        payload = {
+            "schema_version": 1,
+            "organization_id": "org_456",
+            "devices": [
+                {
+                    "schema_version": 1,
+                    "record_id": self.record_id,
+                    "device_id": f"desktop_{index:03d}",
+                    "linked_at": "2026-09-15T00:01:00.000Z",
+                }
+                for index in range(51)
+            ],
+            "has_more": True,
+        }
+        with self.assertRaises(ValidationError):
+            self.inventory_response.validate(payload)
 
 
 if __name__ == "__main__":

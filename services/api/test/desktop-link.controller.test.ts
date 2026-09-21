@@ -255,6 +255,14 @@ class UnavailableDesktopLinkRecordStore implements DesktopLinkRecordStore {
   ): Promise<DesktopLinkRecord | undefined> {
     throw new DesktopLinkPersistenceUnavailableError();
   }
+
+  public async listLatestConsumed(
+    _subjectId: string,
+    _organizationId: string,
+    _limit: number,
+  ): Promise<readonly DesktopLinkRecord[]> {
+    throw new DesktopLinkPersistenceUnavailableError();
+  }
 }
 
 test('persistence outage maps to generic service unavailable for issue, status, revoke and consume', async () => {
@@ -454,5 +462,67 @@ test('revoke hides cross-subject records and refuses consumed exchanges', async 
   await assert.rejects(
     issuer.revoke('org_456', issued.record_id, opaqueRequest),
     NotFoundException,
+  );
+});
+
+test('linked desktop inventory returns only browser-safe device metadata', async () => {
+  const { controller } = createController();
+
+  const first = await controller.issue(
+    'org_456',
+    { device_id: 'desktop_001' },
+    opaqueRequest,
+  );
+  await controller.consume(
+    'org_456',
+    first.record_id,
+    { device_id: 'desktop_001', exchange_token: first.exchange_token },
+    opaqueRequest,
+  );
+
+  const second = await controller.issue(
+    'org_456',
+    { device_id: 'desktop_002' },
+    opaqueRequest,
+  );
+  await controller.consume(
+    'org_456',
+    second.record_id,
+    { device_id: 'desktop_002', exchange_token: second.exchange_token },
+    opaqueRequest,
+  );
+
+  const inventory = await controller.list('org_456', opaqueRequest);
+
+  assert.equal(inventory.schema_version, 1);
+  assert.equal(inventory.organization_id, 'org_456');
+  assert.equal(inventory.has_more, false);
+  assert.deepEqual(
+    inventory.devices.map((device) => device.device_id).sort(),
+    ['desktop_001', 'desktop_002'],
+  );
+  assert.deepEqual(Object.keys(inventory.devices[0] ?? {}).sort(), [
+    'device_id',
+    'linked_at',
+    'record_id',
+    'schema_version',
+  ]);
+  const serialized = JSON.stringify(inventory);
+  assert.equal(serialized.includes(first.exchange_token), false);
+  assert.equal(serialized.includes(second.exchange_token), false);
+  assert.equal(serialized.includes('user_123'), false);
+  assert.equal(serialized.includes('session_abc'), false);
+});
+
+test('linked desktop inventory maps persistence outage to generic service unavailable', async () => {
+  const controller = new DesktopLinkController(
+    new StaticPrincipalResolver(principal),
+    new StaticMembershipResolver(membership),
+    new DesktopLinkService(new UnavailableDesktopLinkRecordStore()),
+  );
+
+  await assert.rejects(
+    controller.list('org_456', opaqueRequest),
+    ServiceUnavailableException,
   );
 });

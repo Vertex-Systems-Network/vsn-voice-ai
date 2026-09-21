@@ -95,6 +95,40 @@ RETURNING
   consumed_at
 `.trim();
 
+
+const listLatestConsumedDesktopLinksSql = `
+SELECT
+  record_id,
+  token_digest,
+  subject_id,
+  organization_id,
+  device_id,
+  issued_at,
+  expires_at,
+  status,
+  consumed_at
+FROM (
+  SELECT DISTINCT ON (device_id)
+    record_id,
+    token_digest,
+    subject_id,
+    organization_id,
+    device_id,
+    issued_at,
+    expires_at,
+    status,
+    consumed_at
+  FROM desktop_link_records
+  WHERE subject_id = $1
+    AND organization_id = $2
+    AND status = 'consumed'
+    AND consumed_at IS NOT NULL
+  ORDER BY device_id, consumed_at DESC, record_id DESC
+) AS latest_per_device
+ORDER BY consumed_at DESC, device_id ASC
+LIMIT $3
+`.trim();
+
 const statuses = new Set<DesktopLinkStatus>([
   'issued',
   'consumed',
@@ -287,6 +321,35 @@ export class PostgresDesktopLinkRecordStore implements DesktopLinkRecordStore {
     const row = result.rows[0];
     return row === undefined ? undefined : toDesktopLinkRecord(row);
   }
+
+  public async listLatestConsumed(
+    subjectId: string,
+    organizationId: string,
+    limit: number,
+  ): Promise<readonly DesktopLinkRecord[]> {
+    if (
+      !isBoundedIdentifier(subjectId, 128) ||
+      !isBoundedIdentifier(organizationId, 128) ||
+      !Number.isSafeInteger(limit) ||
+      limit < 1 ||
+      limit > 100
+    ) {
+      return [];
+    }
+
+    const result = await this.client.query<PostgresDesktopLinkRow>(
+      listLatestConsumedDesktopLinksSql,
+      [subjectId, organizationId, limit],
+    );
+    const records = result.rows
+      .map((row) => toDesktopLinkRecord(row))
+      .filter((record): record is DesktopLinkRecord =>
+        record !== undefined &&
+        record.status === 'consumed' &&
+        typeof record.consumed_at === 'string'
+      );
+    return Object.freeze(records);
+  }
 }
 
 export function getDesktopLinkPersistenceSql(): Readonly<{
@@ -294,11 +357,13 @@ export function getDesktopLinkPersistenceSql(): Readonly<{
   get: string;
   consume: string;
   revoke: string;
+  listLatestConsumed: string;
 }> {
   return Object.freeze({
     insert: insertDesktopLinkSql,
     get: getDesktopLinkSql,
     consume: consumeDesktopLinkSql,
     revoke: revokeDesktopLinkSql,
+    listLatestConsumed: listLatestConsumedDesktopLinksSql,
   });
 }
