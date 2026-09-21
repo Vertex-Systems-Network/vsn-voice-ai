@@ -98,7 +98,9 @@ test('authorized issue returns only the one-time exchange contract', async () =>
   );
 
   assert.equal(principalResolver.lastRequest, opaqueRequest);
-  assert.equal(membershipResolver.lastPrincipal, principal);
+  assert.deepEqual(membershipResolver.lastPrincipal, principal);
+  assert.notEqual(membershipResolver.lastPrincipal, principal);
+  assert.equal(Object.isFrozen(membershipResolver.lastPrincipal), true);
   assert.equal(membershipResolver.lastOrganizationId, 'org_456');
   assert.equal(response.schema_version, 1);
   assert.match(response.record_id, /^[0-9a-f-]{36}$/i);

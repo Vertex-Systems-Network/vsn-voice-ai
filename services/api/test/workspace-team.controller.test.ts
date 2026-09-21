@@ -108,7 +108,9 @@ test('trusted principal and membership can load the bounded team snapshot', asyn
   const result = await controller.getTeam(' org_456 ', opaqueRequest);
 
   assert.equal(principalResolver.lastRequest, opaqueRequest);
-  assert.equal(membershipResolver.lastPrincipal, principal);
+  assert.deepEqual(membershipResolver.lastPrincipal, principal);
+  assert.notEqual(membershipResolver.lastPrincipal, principal);
+  assert.equal(Object.isFrozen(membershipResolver.lastPrincipal), true);
   assert.equal(membershipResolver.lastOrganizationId, 'org_456');
   assert.equal(repository.lastOrganizationId, 'org_456');
   assert.deepEqual(result, teamSnapshot);

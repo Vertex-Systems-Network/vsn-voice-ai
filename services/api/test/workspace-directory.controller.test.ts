@@ -88,7 +88,9 @@ test('authenticated principal receives only browser-safe workspace membership su
   const response = await controller.listWorkspaces(opaqueRequest);
 
   assert.equal(principalResolver.lastRequest, opaqueRequest);
-  assert.equal(directory.lastPrincipal, principal);
+  assert.deepEqual(directory.lastPrincipal, principal);
+  assert.notEqual(directory.lastPrincipal, principal);
+  assert.equal(Object.isFrozen(directory.lastPrincipal), true);
   assert.deepEqual(response, {
     schema_version: 1,
     workspaces: [

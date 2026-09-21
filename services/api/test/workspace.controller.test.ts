@@ -68,7 +68,9 @@ test('trusted resolvers produce tenant-authorized workspace bootstrap', async ()
   const response = await controller.getBootstrap('org_456', opaqueRequest);
 
   assert.equal(principalResolver.lastRequest, opaqueRequest);
-  assert.equal(membershipResolver.lastPrincipal, principal);
+  assert.deepEqual(membershipResolver.lastPrincipal, principal);
+  assert.notEqual(membershipResolver.lastPrincipal, principal);
+  assert.equal(Object.isFrozen(membershipResolver.lastPrincipal), true);
   assert.equal(membershipResolver.lastOrganizationId, 'org_456');
   assert.equal(response.authorization.organization_id, 'org_456');
   assert.equal(response.authorization.subject_id, 'user_123');
