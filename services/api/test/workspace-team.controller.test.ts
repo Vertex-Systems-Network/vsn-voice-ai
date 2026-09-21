@@ -189,3 +189,24 @@ test('persistence unavailability maps to a generic service-unavailable response'
     ServiceUnavailableException,
   );
 });
+
+test('malformed trusted principal fails closed before team membership access', async () => {
+  const membershipResolver = new StaticMembershipResolver(membership);
+  const repository = new StaticTeamRepository(teamSnapshot);
+  const malformed = {
+    subjectId: 'user_123',
+    sessionId: ' session_internal ',
+  } as AuthenticatedPrincipal;
+  const controller = new WorkspaceTeamController(
+    new StaticPrincipalResolver(malformed),
+    membershipResolver,
+    repository,
+  );
+
+  await assert.rejects(
+    controller.getTeam('org_456', opaqueRequest),
+    ServiceUnavailableException,
+  );
+  assert.equal(membershipResolver.lastPrincipal, null);
+  assert.equal(repository.lastOrganizationId, null);
+});

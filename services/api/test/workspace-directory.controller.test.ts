@@ -144,3 +144,18 @@ test('directory availability failure maps to generic service unavailable', async
     ServiceUnavailableException,
   );
 });
+
+test('malformed trusted principal fails closed before directory access', async () => {
+  const directory = new StaticDirectory(snapshot());
+  const malformed = { subjectId: ' user_123 ' } as AuthenticatedPrincipal;
+  const controller = new WorkspaceDirectoryController(
+    new StaticPrincipalResolver(malformed),
+    directory,
+  );
+
+  await assert.rejects(
+    controller.listWorkspaces(opaqueRequest),
+    ServiceUnavailableException,
+  );
+  assert.equal(directory.lastPrincipal, null);
+});

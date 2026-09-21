@@ -6,6 +6,7 @@ import test from 'node:test';
 import {
   BadRequestException,
   ForbiddenException,
+  ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
@@ -141,4 +142,20 @@ test('workspace bootstrap route forbids intermediary/browser caching', () => {
     headers.find((header) => header.name.toLowerCase() === 'pragma')?.value,
     'no-cache',
   );
+});
+
+test('malformed trusted principal fails closed before membership lookup', async () => {
+  const membershipResolver = new StaticMembershipResolver(membership);
+  const malformed = { subjectId: 'x'.repeat(129) } as AuthenticatedPrincipal;
+  const controller = new WorkspaceController(
+    new StaticPrincipalResolver(malformed),
+    membershipResolver,
+  );
+
+  await assert.rejects(
+    controller.getBootstrap('org_456', opaqueRequest),
+    ServiceUnavailableException,
+  );
+  assert.equal(membershipResolver.lastPrincipal, null);
+  assert.equal(membershipResolver.lastOrganizationId, null);
 });

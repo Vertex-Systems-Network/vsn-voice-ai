@@ -63,7 +63,7 @@ The owner-approved product direction is:
 - Current module completion: `0 / 1 complete (0%)`
 - Next valid product work: `MOD-014 / WU-014` — `in_progress`
 - Current WU-002 blocker: Issue #110 controlled Windows runner/acceptance evidence.
-- Active WU-014 delivery: PR #135 API persistence/status/revoke/inventory hardening is merged as `b60f2ffd2166e2bf92c243ec88452e374060b7dd`; PR #136 tenant-bound browser workspace/desktop-link lifecycle is merged as `217d672d8447d0ef6b522c9cae641f555565f71e` after exact-head AI Native run `35661618724` and Web Validation run `35661618781` passed, including 30/30 browser E2E cases; PR #134 cache/test-discovery hardening is now reconciled onto that main and requires exact-head verification.
+- Active WU-014 delivery: PR #135 API persistence/status/revoke/inventory hardening is merged as `b60f2ffd2166e2bf92c243ec88452e374060b7dd`; PR #136 tenant-bound browser workspace/desktop-link lifecycle is merged as `217d672d8447d0ef6b522c9cae641f555565f71e` after exact-head AI Native run `35661618724` and Web Validation run `35661618781` passed with 30/30 browser E2E cases; PR #134 cache/test-discovery hardening is merged as `1478fda51c639bf00dc33b276e8c05ca377f3dd6` after API Validation run `35661894607` passed 111/111 tests and AI Native run `35661894626` passed; Issue #137 is the active provider-neutral trusted-principal validation slice.
 <!-- AI-NATIVE-PROGRESS:END -->
 
 ## README Reconciliation Rule — Mandatory
@@ -122,9 +122,10 @@ Progress scale: `░░░░░░░░░░ 0%` → `███████�
 
 ## WU-014 — Active Delivery
 
-- PR #134: workspace bootstrap cache policy + deterministic API test discovery — rebased onto current `main` after PRs #135/#136 without overwriting their API/web changes; this source update also reconciles README progress and requires exact-head API + AI-Native verification before merge.
+- PR #134: workspace bootstrap cache policy + deterministic API test discovery — exact-head API Validation run `35661894607` passed 111/111 tests and AI Native Quality Gates run `35661894626` passed; squash-merged to `main` as `1478fda51c639bf00dc33b276e8c05ca377f3dd6`.
 - PR #135: desktop-link persistence fail-closed boundary + tenant-safe lifecycle status + atomic pending-exchange revoke + bounded tenant/subject-scoped linked-desktop inventory — exact-head API Validation and AI Native Quality Gates passed; squash-merged to `main` as `b60f2ffd2166e2bf92c243ec88452e374060b7dd`.
 - PR #136: active-membership workspace selection, tenant-authorized overview/team projection, browser desktop-link issue/status/revoke/inventory lifecycle, and terminal-only auth-loss selection clearing — repaired from the earlier selection loop, exact-head AI Native Quality Gates run `35661618724` and Web Validation run `35661618781` passed with 30/30 browser E2E cases; squash-merged to `main` as `217d672d8447d0ef6b522c9cae641f555565f71e`.
+- Issue #137: provider-neutral trusted-principal boundary hardening — validates canonical <=128-character subject/session identifiers, detaches and freezes valid adapter output, and collapses malformed output or resolver failures before tenant persistence/RBAC; production identity provider selection remains pending and is not activated by this slice.
 - Deterministic project completion remains `3 / 25 (12%)`; these are in-progress WU-014 delivery slices, not completed-work-unit credit.
 
 ## MOD-002 — Current Verified Boundary

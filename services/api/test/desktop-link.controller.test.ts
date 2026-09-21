@@ -526,3 +526,17 @@ test('linked desktop inventory maps persistence outage to generic service unavai
     ServiceUnavailableException,
   );
 });
+
+test('malformed trusted principal fails closed before desktop-link membership access', async () => {
+  const malformed = { subjectId: ' user_123' } as AuthenticatedPrincipal;
+  const { controller, membershipResolver } = createController(
+    malformed,
+    membership,
+  );
+
+  await assert.rejects(
+    controller.issue('org_456', { device_id: 'desktop_001' }, opaqueRequest),
+    ServiceUnavailableException,
+  );
+  assert.equal(membershipResolver.lastPrincipal, null);
+});
