@@ -4,13 +4,16 @@
 - Reconciled main: `c7ed9caf06bd44460a7717e4f419b51cf49792d4`
 - Active governance PR: #131 — `feat(ai): adopt compact supervisor resume and progress protocol`
 - Branch: `ai/supervisor-resume-protocol`
-- Previously certified PR head: `1e81536a2332ce41cf26328740906698b16624dd`
-- Exact-head AI Native Quality Gates run `35628990019`: `success`.
-- Owner explicitly approved **Apply Recommended GitHub Rules** on 2026-09-21. Issue #133 now records that the explicit-owner-decision prerequisite is satisfied.
-- Active ruleset ID `23374505` was previously observed with 0 required approvals, CODEOWNER review disabled, stale-review dismissal disabled, and last-push approval disabled.
-- The connected GitHub interface exposes ruleset reads but no ruleset administration write action, so server-side application cannot be truthfully claimed from this runtime. Issue #133 is therefore blocked on an admin-capable application surface plus authenticated re-read verification, not on owner consent.
-- Issue #132 remains open because no genuinely independent reviewer identity/team is authorized or requested for protected control-plane review.
-- Milestone status: `VERIFYING` after approval-state reconciliation. This state-only commit changes the PR head and requires one fresh exact-head CI/status observation.
-- Product work remains focused on WU-002 / MOD-002; Issue #110 controlled physical Windows acceptance remains externally blocked and is not authorized by this governance approval.
+- Previously certified exact PR head: `632a603d3917cf044a0637cb6c45680ff36572d9`
+- AI Native Quality Gates run `35630766749`: `success`.
+- AI-Native plan/flow audit found and repairs two repository-memory inconsistencies:
+  - `config/ai/project-state.json` still asked whether to apply GitHub Rules even though owner approval was already granted;
+  - `config/github/ruleset-policy.json` still recorded a pending user decision and a stale status-check label.
+- Source governance now records owner decision **Apply Recommended GitHub Rules = approved**, application status `blocked_admin_capable_interface`, enforcement unverified, and the live required status context `repository-integrity`.
+- The Supervisor/runtime protocol now formalizes a remote terminal-evidence overlay so exact-head CI success/failure can be persisted on immutable GitHub status surfaces without creating a source-only commit that changes and invalidates the exact head.
+- Issue #133 remains open until an admin-capable GitHub surface applies the approved rules and authenticated re-read verifies them.
+- Issue #132 remains open until a genuinely independent reviewer/team approves the protected control-plane PR.
+- Issue #110 controlled physical Windows acceptance remains externally blocked and was not authorized by this governance milestone.
+- Milestone status: `VERIFYING` after this plan/flow reconciliation commit; one fresh exact-head CI/status observation is required.
 - No Supervisor lease, destructive authority, deployment authority, provider activation authority, production authority, or controlled-runner execution authority is claimed.
-- Next safe action: resolve PR #131 exact current head and perform one consolidated CI/status refresh. If green, remain blocked until Issue #133 rules are applied/verified through an admin-capable GitHub surface and Issue #132 receives eligible independent approval.
+- Next safe action: resolve the new PR #131 head and perform one consolidated exact-head CI/status refresh. Persist terminal result via the remote evidence overlay; do not create another source-only commit merely to restate CI.

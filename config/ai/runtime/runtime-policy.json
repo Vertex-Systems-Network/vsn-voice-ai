@@ -64,5 +64,18 @@
     "security_controls_must_not_be_weakened_for_green_ci": true,
     "pending_skipped_running_work_must_not_be_reported_pass": true,
     "destructive_provider_production_deployment_release_authority_must_be_current_and_explicit": true
+  },
+  "terminal_remote_evidence_overlay": {
+    "purpose": "prevent exact-head CI evidence self-invalidation by source-only state commits",
+    "allowed_terminal_surfaces": [
+      "pull_request_comment",
+      "issue_comment",
+      "github_workflow_run_or_commit_status"
+    ],
+    "source_compact_state_may_remain_pre_terminal_check_snapshot": true,
+    "source_only_commit_to_restate_terminal_ci_forbidden": true,
+    "resume_must_reconcile_overlay_before_next_action": true,
+    "next_material_source_change_must_fold_overlay_into_compact_state_and_runner_benchmark": true,
+    "negative_or_failed_terminal_evidence_blocks_merge": true
   }
 }

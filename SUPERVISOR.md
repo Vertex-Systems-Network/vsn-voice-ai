@@ -189,6 +189,8 @@ Batch related read-only calls where supported and read only state required for t
 
 Before final exact-head CI observation, persist the milestone as `VERIFYING` or `WAITING_EXTERNAL` when remote checks are expected. If required CI is still running after the consolidated refresh, do not create another source commit only to record pending CI. Persist run IDs on a PR/Issue status surface where possible, report the pending state, and end the milestone. The next `continue` performs one fresh consolidated refresh against the current exact head.
 
+When exact-head CI reaches a terminal success or failure, do not create a source-only state commit merely to restate that terminal result: doing so changes the exact head and self-invalidates the evidence. Persist the terminal result on an immutable GitHub PR/Issue comment, workflow run, or commit-status surface and treat that evidence as a **remote terminal-evidence overlay** during resume. Compact source files may therefore remain a pre-terminal-check snapshot until the next material source mutation. Every resume must reconcile that overlay before choosing work, and the next material source change must fold the overlay into compact state and the Runner Benchmark before requesting new exact-head verification. Failed or negative terminal evidence remains fail-closed and blocks merge.
+
 A second same-milestone refresh is allowed only after a material security, merge, incident/recovery, or provider transition makes it necessary for a safe decision; record the exception durably.
 
 ### Issues / PRs first hard gate

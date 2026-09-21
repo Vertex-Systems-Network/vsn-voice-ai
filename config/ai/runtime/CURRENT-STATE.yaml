@@ -5,12 +5,12 @@ observed_main_sha: c7ed9caf06bd44460a7717e4f419b51cf49792d4
 active_issue: 133
 active_pr: 131
 active_branch: ai/supervisor-resume-protocol
-current_milestone: reconcile-owner-approval-for-github-rules
+current_milestone: reconcile-ai-native-plan-flow-memory-drift
 milestone_status: VERIFYING
-last_completed_milestone: "Owner explicitly approved Apply Recommended GitHub Rules; prior PR #131 exact head 1e81536a2332ce41cf26328740906698b16624dd passed AI Native Quality Gates run 35628990019"
-exact_next_safe_action: "Resolve PR #131 exact current head after this approval-state reconciliation commit and perform one consolidated CI/status refresh. If CI passes, remain blocked until an admin-capable GitHub surface applies and verifies Issue #133 rules and Issue #132 has an eligible independent reviewer approval."
+last_completed_milestone: "Owner-approval state reconciled; PR #131 head 632a603d3917cf044a0637cb6c45680ff36572d9 passed AI Native Quality Gates run 35630766749. Owner approval is granted; admin-capable ruleset application and independent review remain external blockers."
+exact_next_safe_action: "Resolve PR #131 exact current head after this AI-Native plan/flow reconciliation commit and perform one consolidated CI/status refresh. If terminal, persist result through the remote terminal-evidence overlay without a source-only restatement commit. Remain fail-closed until Issue #133 is applied/verified and Issue #132 has eligible independent approval."
 pending_runner_ids:
-  - RUN-PR-131-OWNER-APPROVAL-STATE-CI
+  - RUN-PR-131-AI-NATIVE-PLAN-FLOW-CI
   - RUN-WU-002-CONTROLLED-WINDOWS-AUDIO
 blocked_runner_ids:
   - RUN-WU-002-CONTROLLED-WINDOWS-AUDIO
@@ -18,14 +18,20 @@ current_blockers:
   - "No live authenticated Supervisor lease is present; do not claim continuous Supervisor authority."
   - "Issue #110: WU-002 controlled physical Windows acceptance requires separately authorized restricted runner infrastructure and operator evidence."
   - "Issue #132: protected control-plane PR #131 has no eligible independent reviewer identity/team yet; self-approval must not satisfy the gate."
-  - "Issue #133: owner authorization is granted, but the connected GitHub interface has no ruleset administration write action; admin-capable application and authenticated post-change verification remain required."
+  - "Issue #133: owner authorization is granted; connected GitHub surface has no ruleset administration write action, so external/admin-capable application and authenticated verification remain required."
 github_rules_authorization:
   owner_decision: approved
   approved_action: "Apply Recommended GitHub Rules"
   approval_observed_date: 2026-09-21
   application_status: blocked_admin_capable_interface
   ruleset_id: 23374505
+  verified_required_status_context: repository-integrity
   ruleset_write_capability_in_current_connector: unavailable
+terminal_remote_evidence_overlay:
+  source_compact_state_may_remain_pre_terminal_check_snapshot: true
+  source_only_commit_to_restate_terminal_ci_forbidden: true
+  resume_must_reconcile_overlay_before_next_action: true
+  fold_into_next_material_source_change: true
 timeout_control:
   consolidated_ci_status_refreshes_per_milestone_default: 1
   consolidated_ci_status_refreshes_used: 0

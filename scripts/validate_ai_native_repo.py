@@ -277,6 +277,21 @@ def validate_compact_runtime_state() -> None:
     if policy.get("issues_prs_gate", {}).get("required_before_new_development") is not True:
         fail("runtime-policy: Issues/PRs-first gate must be required")
 
+    overlay = policy.get("terminal_remote_evidence_overlay") or {}
+    for key in [
+        "source_compact_state_may_remain_pre_terminal_check_snapshot",
+        "source_only_commit_to_restate_terminal_ci_forbidden",
+        "resume_must_reconcile_overlay_before_next_action",
+        "next_material_source_change_must_fold_overlay_into_compact_state_and_runner_benchmark",
+        "negative_or_failed_terminal_evidence_blocks_merge",
+    ]:
+        if overlay.get(key) is not True:
+            fail(f"runtime-policy: terminal remote-evidence overlay must require {key}")
+    allowed_surfaces = set(overlay.get("allowed_terminal_surfaces") or [])
+    required_surfaces = {"pull_request_comment", "issue_comment", "github_workflow_run_or_commit_status"}
+    if not required_surfaces.issubset(allowed_surfaces):
+        fail(f"runtime-policy: terminal remote-evidence overlay missing surfaces: {sorted(required_surfaces - allowed_surfaces)}")
+
     required_response = {
         "repository", "milestone", "issue_pr_commit_evidence", "ci_state", "blockers",
         "exact_next_safe_action", "current_module_progress_bar", "overall_progress_bar",

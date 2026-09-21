@@ -161,8 +161,7 @@
         "repository": "Vertex-Systems-Network/vsn-voice-ai",
         "pr": 131,
         "branch": "ai/supervisor-resume-protocol",
-        "parent_head_sha": "1e81536a2332ce41cf26328740906698b16624dd",
-        "execution_rule": "resolve immutable current PR head after this state-only commit, then perform one consolidated CI/status refresh; do not reuse parent-head evidence for the changed head"
+        "certified_head_sha": "632a603d3917cf044a0637cb6c45680ff36572d9"
       },
       "environment_matrix_input_fixture_identity": {
         "provider": "GitHub Actions",
@@ -175,6 +174,45 @@
       "merge_blocking": true,
       "expected_runner_time": "provider_managed_duration_unknown_no_polling",
       "deterministic_dedup_key": "PR-131|owner-approval-state-ci|issue-133-v1",
+      "status": "success",
+      "immutable_evidence": [
+        {
+          "workflow_run_id": 35630766749,
+          "workflow_name": "AI Native Quality Gates",
+          "exact_head_sha": "632a603d3917cf044a0637cb6c45680ff36572d9",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "task_id": "RUN-PR-131-AI-NATIVE-PLAN-FLOW-CI",
+      "source": {
+        "pr": 131,
+        "issues": [
+          132,
+          133
+        ],
+        "work_package": "AI-Native plan/flow memory-drift and terminal-evidence-overlay reconciliation"
+      },
+      "command_workflow": "AI Native Quality Gates",
+      "exact_source_identity": {
+        "repository": "Vertex-Systems-Network/vsn-voice-ai",
+        "pr": 131,
+        "branch": "ai/supervisor-resume-protocol",
+        "parent_head_sha": "632a603d3917cf044a0637cb6c45680ff36572d9",
+        "execution_rule": "resolve immutable current PR head after this reconciliation commit, then perform one consolidated CI/status refresh; terminal outcome is persisted via remote evidence overlay without a source-only restatement commit"
+      },
+      "environment_matrix_input_fixture_identity": {
+        "provider": "GitHub Actions",
+        "trigger": "pull_request",
+        "base_branch": "main",
+        "affected_scope": "protected AI control-plane, runtime policy, governance memory and repository validator"
+      },
+      "authorization_state": "repository_ci_only_no_deployment_or_production_authority",
+      "security_critical": true,
+      "merge_blocking": true,
+      "expected_runner_time": "provider_managed_duration_unknown_no_polling",
+      "deterministic_dedup_key": "PR-131|ai-native-plan-flow-drift-ci|terminal-overlay-v1",
       "status": "registered_verify_exact_head",
       "immutable_evidence": []
     }
