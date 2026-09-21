@@ -1,3 +1,5 @@
+import 'reflect-metadata';
+
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
@@ -121,4 +123,22 @@ test('blank organization id fails before either trust resolver executes', async 
   );
   assert.equal(principalResolver.lastRequest, null);
   assert.equal(membershipResolver.lastPrincipal, null);
+});
+
+
+test('workspace bootstrap route forbids intermediary/browser caching', () => {
+  const headers = Reflect.getMetadata(
+    '__headers__',
+    WorkspaceController.prototype.getBootstrap,
+  ) as readonly { readonly name: string; readonly value: string }[] | undefined;
+
+  assert.ok(headers);
+  assert.equal(
+    headers.find((header) => header.name.toLowerCase() === 'cache-control')?.value,
+    'no-store',
+  );
+  assert.equal(
+    headers.find((header) => header.name.toLowerCase() === 'pragma')?.value,
+    'no-cache',
+  );
 });
