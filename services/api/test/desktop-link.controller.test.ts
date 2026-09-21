@@ -4,17 +4,23 @@ import test from 'node:test';
 import {
   BadRequestException,
   ForbiddenException,
+  ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 
 import { DesktopLinkController } from '../src/device-link/desktop-link.controller.js';
-import { InMemoryDesktopLinkRecordStore } from '../src/device-link/desktop-link-record.js';
+import {
+  type DesktopLinkRecord,
+  type DesktopLinkRecordStore,
+  InMemoryDesktopLinkRecordStore,
+} from '../src/device-link/desktop-link-record.js';
 import { DesktopLinkService } from '../src/device-link/desktop-link.service.js';
 import type { AuthenticatedPrincipal } from '../src/identity/authenticated-principal.js';
 import type { TrustedPrincipalResolver } from '../src/identity/trusted-principal-resolver.js';
 import type { OrganizationMembership } from '../src/organizations/organization-membership.js';
 import type { OrganizationMembershipResolver } from '../src/organizations/organization-membership-resolver.js';
+import { DesktopLinkPersistenceUnavailableError } from '../src/device-link/runtime-desktop-link-record-store.js';
 
 const principal: AuthenticatedPrincipal = {
   subjectId: 'user_123',
@@ -220,4 +226,46 @@ test('malformed consume secrets are rejected before resolver execution', async (
     BadRequestException,
   );
   assert.equal(principalResolver.lastRequest, null);
+});
+
+
+class UnavailableDesktopLinkRecordStore implements DesktopLinkRecordStore {
+  public async put(_record: DesktopLinkRecord): Promise<void> {
+    throw new DesktopLinkPersistenceUnavailableError();
+  }
+
+  public async get(_recordId: string): Promise<DesktopLinkRecord | undefined> {
+    throw new DesktopLinkPersistenceUnavailableError();
+  }
+
+  public async consumeIfIssued(
+    _recordId: string,
+    _expectedDigest: string,
+    _consumedAt: string,
+  ): Promise<DesktopLinkRecord | undefined> {
+    throw new DesktopLinkPersistenceUnavailableError();
+  }
+}
+
+test('persistence outage maps to generic service unavailable for issue and consume', async () => {
+  const controller = new DesktopLinkController(
+    new StaticPrincipalResolver(principal),
+    new StaticMembershipResolver(membership),
+    new DesktopLinkService(new UnavailableDesktopLinkRecordStore()),
+  );
+
+  await assert.rejects(
+    controller.issue('org_456', { device_id: 'desktop_001' }, opaqueRequest),
+    ServiceUnavailableException,
+  );
+
+  await assert.rejects(
+    controller.consume(
+      'org_456',
+      '00000000-0000-4000-8000-000000000000',
+      { device_id: 'desktop_001', exchange_token: 'A'.repeat(43) },
+      opaqueRequest,
+    ),
+    ServiceUnavailableException,
+  );
 });

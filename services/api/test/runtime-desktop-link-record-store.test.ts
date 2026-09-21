@@ -54,14 +54,14 @@ test('missing database config keeps desktop-link persistence fail-closed without
   );
 
   await assert.rejects(() => store.put(issuedRecord), DesktopLinkPersistenceUnavailableError);
-  assert.equal(await store.get('record_123'), undefined);
-  assert.equal(
-    await store.consumeIfIssued(
+  await assert.rejects(() => store.get('record_123'), DesktopLinkPersistenceUnavailableError);
+  await assert.rejects(
+    () => store.consumeIfIssued(
       'record_123',
       issuedRecord.token_digest,
       '2026-09-15T00:01:00.000Z',
     ),
-    undefined,
+    DesktopLinkPersistenceUnavailableError,
   );
   assert.equal(factoryCalls, 0);
   await store.onApplicationShutdown();
@@ -124,4 +124,24 @@ test('invalid database config fails before desktop-link pool creation', () => {
     },
   ));
   assert.equal(factoryCalls, 0);
+});
+
+
+test('configured runtime normalizes delegate failures to persistence unavailable', async () => {
+  class ThrowingPostgresClient extends FakePostgresClient {
+    public override async query<Row>(
+      _text: string,
+      _values: readonly unknown[],
+    ): Promise<PostgresQueryResult<Row>> {
+      throw new Error('sensitive database transport detail');
+    }
+  }
+
+  const store = createRuntimeDesktopLinkRecordStore(
+    { VSN_POSTGRES_URL: 'postgresql://vsn@db.example.com/vsn' },
+    () => new ThrowingPostgresClient(),
+  );
+
+  await assert.rejects(() => store.put(issuedRecord), DesktopLinkPersistenceUnavailableError);
+  await assert.rejects(() => store.get('record_123'), DesktopLinkPersistenceUnavailableError);
 });

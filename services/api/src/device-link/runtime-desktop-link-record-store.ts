@@ -23,7 +23,7 @@ class RejectingDesktopLinkRecordStore implements DesktopLinkRecordStore {
   }
 
   public async get(_recordId: string): Promise<DesktopLinkRecord | undefined> {
-    return undefined;
+    throw new DesktopLinkPersistenceUnavailableError();
   }
 
   public async consumeIfIssued(
@@ -31,7 +31,7 @@ class RejectingDesktopLinkRecordStore implements DesktopLinkRecordStore {
     _expectedDigest: string,
     _consumedAt: string,
   ): Promise<DesktopLinkRecord | undefined> {
-    return undefined;
+    throw new DesktopLinkPersistenceUnavailableError();
   }
 }
 
@@ -60,20 +60,41 @@ export class RuntimeDesktopLinkRecordStore
     private readonly closeClient: (() => Promise<void>) | null,
   ) {}
 
-  public put(record: DesktopLinkRecord): Promise<void> {
-    return this.delegate.put(record);
+  public async put(record: DesktopLinkRecord): Promise<void> {
+    try {
+      await this.delegate.put(record);
+    } catch (error: unknown) {
+      if (error instanceof DesktopLinkPersistenceUnavailableError) {
+        throw error;
+      }
+      throw new DesktopLinkPersistenceUnavailableError();
+    }
   }
 
-  public get(recordId: string): Promise<DesktopLinkRecord | undefined> {
-    return this.delegate.get(recordId);
+  public async get(recordId: string): Promise<DesktopLinkRecord | undefined> {
+    try {
+      return await this.delegate.get(recordId);
+    } catch (error: unknown) {
+      if (error instanceof DesktopLinkPersistenceUnavailableError) {
+        throw error;
+      }
+      throw new DesktopLinkPersistenceUnavailableError();
+    }
   }
 
-  public consumeIfIssued(
+  public async consumeIfIssued(
     recordId: string,
     expectedDigest: string,
     consumedAt: string,
   ): Promise<DesktopLinkRecord | undefined> {
-    return this.delegate.consumeIfIssued(recordId, expectedDigest, consumedAt);
+    try {
+      return await this.delegate.consumeIfIssued(recordId, expectedDigest, consumedAt);
+    } catch (error: unknown) {
+      if (error instanceof DesktopLinkPersistenceUnavailableError) {
+        throw error;
+      }
+      throw new DesktopLinkPersistenceUnavailableError();
+    }
   }
 
   public onApplicationShutdown(): Promise<void> {

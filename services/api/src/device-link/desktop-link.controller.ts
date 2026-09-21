@@ -9,6 +9,7 @@ import {
   Param,
   Post,
   Req,
+  ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
@@ -29,6 +30,7 @@ import {
   DesktopLinkDeniedError,
   DesktopLinkService,
 } from './desktop-link.service.js';
+import { DesktopLinkPersistenceUnavailableError } from './runtime-desktop-link-record-store.js';
 
 const DEVICE_LINK_PERMISSION = 'device.link';
 const MAX_IDENTIFIER_LENGTH = 256;
@@ -157,6 +159,9 @@ export class DesktopLinkController {
         expires_at: issued.expiresAt,
       });
     } catch (error: unknown) {
+      if (error instanceof DesktopLinkPersistenceUnavailableError) {
+        throw new ServiceUnavailableException('desktop link persistence unavailable');
+      }
       if (error instanceof DesktopLinkDeniedError) {
         throw new BadRequestException('desktop link request is invalid');
       }
@@ -199,6 +204,9 @@ export class DesktopLinkController {
         consumed_at: binding.consumedAt,
       });
     } catch (error: unknown) {
+      if (error instanceof DesktopLinkPersistenceUnavailableError) {
+        throw new ServiceUnavailableException('desktop link persistence unavailable');
+      }
       if (error instanceof DesktopLinkDeniedError) {
         throw new ForbiddenException('desktop link exchange denied');
       }
