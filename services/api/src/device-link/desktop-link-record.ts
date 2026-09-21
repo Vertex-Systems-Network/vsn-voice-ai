@@ -23,6 +23,12 @@ export interface DesktopLinkRecordStore {
     expectedDigest: string,
     consumedAt: string,
   ): Promise<DesktopLinkRecord | undefined>;
+  revokeIfIssued(
+    recordId: string,
+    subjectId: string,
+    organizationId: string,
+    revokedAt: string,
+  ): Promise<DesktopLinkRecord | undefined>;
 }
 
 export class InMemoryDesktopLinkRecordStore implements DesktopLinkRecordStore {
@@ -60,5 +66,33 @@ export class InMemoryDesktopLinkRecordStore implements DesktopLinkRecordStore {
     });
     this.records.set(recordId, consumed);
     return consumed;
+  }
+
+  public async revokeIfIssued(
+    recordId: string,
+    subjectId: string,
+    organizationId: string,
+    revokedAt: string,
+  ): Promise<DesktopLinkRecord | undefined> {
+    const current = this.records.get(recordId);
+    const revokedAtMs = Date.parse(revokedAt);
+    if (
+      current === undefined ||
+      current.status !== 'issued' ||
+      current.subject_id !== subjectId ||
+      current.organization_id !== organizationId ||
+      !Number.isFinite(revokedAtMs) ||
+      revokedAtMs < Date.parse(current.issued_at) ||
+      revokedAtMs >= Date.parse(current.expires_at)
+    ) {
+      return undefined;
+    }
+
+    const revoked: DesktopLinkRecord = Object.freeze({
+      ...current,
+      status: 'revoked',
+    });
+    this.records.set(recordId, revoked);
+    return revoked;
   }
 }

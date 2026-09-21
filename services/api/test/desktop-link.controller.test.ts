@@ -246,9 +246,18 @@ class UnavailableDesktopLinkRecordStore implements DesktopLinkRecordStore {
   ): Promise<DesktopLinkRecord | undefined> {
     throw new DesktopLinkPersistenceUnavailableError();
   }
+
+  public async revokeIfIssued(
+    _recordId: string,
+    _subjectId: string,
+    _organizationId: string,
+    _revokedAt: string,
+  ): Promise<DesktopLinkRecord | undefined> {
+    throw new DesktopLinkPersistenceUnavailableError();
+  }
 }
 
-test('persistence outage maps to generic service unavailable for issue, status and consume', async () => {
+test('persistence outage maps to generic service unavailable for issue, status, revoke and consume', async () => {
   const controller = new DesktopLinkController(
     new StaticPrincipalResolver(principal),
     new StaticMembershipResolver(membership),
@@ -257,6 +266,15 @@ test('persistence outage maps to generic service unavailable for issue, status a
 
   await assert.rejects(
     controller.issue('org_456', { device_id: 'desktop_001' }, opaqueRequest),
+    ServiceUnavailableException,
+  );
+
+  await assert.rejects(
+    controller.revoke(
+      'org_456',
+      '00000000-0000-4000-8000-000000000000',
+      opaqueRequest,
+    ),
     ServiceUnavailableException,
   );
 
@@ -353,6 +371,88 @@ test('status hides unknown or cross-subject desktop-link records', async () => {
       '00000000-0000-4000-8000-000000000000',
       opaqueRequest,
     ),
+    NotFoundException,
+  );
+});
+
+test('authorized revoke cancels a pending exchange without exposing secrets', async () => {
+  const { controller } = createController();
+  const issued = await controller.issue(
+    'org_456',
+    { device_id: 'desktop_001' },
+    opaqueRequest,
+  );
+
+  const revoked = await controller.revoke(
+    'org_456',
+    issued.record_id,
+    opaqueRequest,
+  );
+  assert.deepEqual(revoked, {
+    schema_version: 1,
+    record_id: issued.record_id,
+    organization_id: 'org_456',
+    device_id: 'desktop_001',
+    status: 'revoked',
+    expires_at: issued.expires_at,
+    consumed_at: null,
+  });
+  assert.equal(JSON.stringify(revoked).includes(issued.exchange_token), false);
+  assert.equal(JSON.stringify(revoked).includes('session_abc'), false);
+  assert.equal(JSON.stringify(revoked).includes('user_123'), false);
+
+  await assert.rejects(
+    controller.consume(
+      'org_456',
+      issued.record_id,
+      {
+        device_id: 'desktop_001',
+        exchange_token: issued.exchange_token,
+      },
+      opaqueRequest,
+    ),
+    ForbiddenException,
+  );
+});
+
+test('revoke hides cross-subject records and refuses consumed exchanges', async () => {
+  const sharedStore = new InMemoryDesktopLinkRecordStore();
+  const issuer = new DesktopLinkController(
+    new StaticPrincipalResolver(principal),
+    new StaticMembershipResolver(membership),
+    new DesktopLinkService(sharedStore),
+  );
+  const issued = await issuer.issue(
+    'org_456',
+    { device_id: 'desktop_001' },
+    opaqueRequest,
+  );
+
+  const otherSubject = new DesktopLinkController(
+    new StaticPrincipalResolver({ subjectId: 'user_other' }),
+    new StaticMembershipResolver({
+      ...membership,
+      subjectId: 'user_other',
+      membershipId: 'membership_other',
+    }),
+    new DesktopLinkService(sharedStore),
+  );
+  await assert.rejects(
+    otherSubject.revoke('org_456', issued.record_id, opaqueRequest),
+    NotFoundException,
+  );
+
+  await issuer.consume(
+    'org_456',
+    issued.record_id,
+    {
+      device_id: 'desktop_001',
+      exchange_token: issued.exchange_token,
+    },
+    opaqueRequest,
+  );
+  await assert.rejects(
+    issuer.revoke('org_456', issued.record_id, opaqueRequest),
     NotFoundException,
   );
 });

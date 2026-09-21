@@ -71,6 +71,30 @@ RETURNING
   consumed_at
 `.trim();
 
+const revokeDesktopLinkSql = `
+UPDATE desktop_link_records
+SET
+  status = 'revoked',
+  consumed_at = NULL,
+  updated_at = $4
+WHERE record_id = $1
+  AND subject_id = $2
+  AND organization_id = $3
+  AND status = 'issued'
+  AND issued_at <= $4
+  AND expires_at > $4
+RETURNING
+  record_id,
+  token_digest,
+  subject_id,
+  organization_id,
+  device_id,
+  issued_at,
+  expires_at,
+  status,
+  consumed_at
+`.trim();
+
 const statuses = new Set<DesktopLinkStatus>([
   'issued',
   'consumed',
@@ -236,16 +260,45 @@ export class PostgresDesktopLinkRecordStore implements DesktopLinkRecordStore {
     const row = result.rows[0];
     return row === undefined ? undefined : toDesktopLinkRecord(row);
   }
+
+  public async revokeIfIssued(
+    recordId: string,
+    subjectId: string,
+    organizationId: string,
+    revokedAt: string,
+  ): Promise<DesktopLinkRecord | undefined> {
+    const revokedAtIso = toIsoTimestamp(revokedAt);
+    if (
+      !isBoundedIdentifier(recordId, 128) ||
+      !isBoundedIdentifier(subjectId, 128) ||
+      !isBoundedIdentifier(organizationId, 128) ||
+      revokedAtIso === null
+    ) {
+      return undefined;
+    }
+
+    const result = await this.client.query<PostgresDesktopLinkRow>(
+      revokeDesktopLinkSql,
+      [recordId, subjectId, organizationId, revokedAtIso],
+    );
+    if (result.rows.length !== 1) {
+      return undefined;
+    }
+    const row = result.rows[0];
+    return row === undefined ? undefined : toDesktopLinkRecord(row);
+  }
 }
 
 export function getDesktopLinkPersistenceSql(): Readonly<{
   insert: string;
   get: string;
   consume: string;
+  revoke: string;
 }> {
   return Object.freeze({
     insert: insertDesktopLinkSql,
     get: getDesktopLinkSql,
     consume: consumeDesktopLinkSql,
+    revoke: revokeDesktopLinkSql,
   });
 }

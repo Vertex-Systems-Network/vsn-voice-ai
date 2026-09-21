@@ -222,6 +222,48 @@ export class DesktopLinkController {
     }
   }
 
+  @Post(':recordId/revoke')
+  @HttpCode(200)
+  @Header('Cache-Control', 'no-store')
+  @Header('Pragma', 'no-cache')
+  public async revoke(
+    @Param('organizationId') rawOrganizationId: string,
+    @Param('recordId') rawRecordId: string,
+    @Req() request: FastifyRequest,
+  ): Promise<DesktopLinkStatusResponse> {
+    const organizationId = requireOrganizationId(rawOrganizationId);
+    const recordId = requireRecordId(rawRecordId);
+    const { principal } = await this.resolveAuthorizedContext(
+      request,
+      organizationId,
+    );
+
+    try {
+      const snapshot = await this.desktopLinkService.revoke(
+        principal,
+        organizationId,
+        recordId,
+      );
+      return Object.freeze({
+        schema_version: 1 as const,
+        record_id: snapshot.recordId,
+        organization_id: snapshot.organizationId,
+        device_id: snapshot.deviceId,
+        status: snapshot.status,
+        expires_at: snapshot.expiresAt,
+        consumed_at: snapshot.consumedAt,
+      });
+    } catch (error: unknown) {
+      if (error instanceof DesktopLinkPersistenceUnavailableError) {
+        throw new ServiceUnavailableException('desktop link persistence unavailable');
+      }
+      if (error instanceof DesktopLinkDeniedError) {
+        throw new NotFoundException('desktop link unavailable');
+      }
+      throw error;
+    }
+  }
+
   @Post(':recordId/consume')
   @HttpCode(200)
   @Header('Cache-Control', 'no-store')

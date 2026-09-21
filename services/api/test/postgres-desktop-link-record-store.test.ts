@@ -175,3 +175,58 @@ test('consume rejects malformed inputs without touching PostgreSQL', async () =>
   );
   assert.equal(client.calls.length, 0);
 });
+
+test('revoke is atomic, tenant-bound and issued-only', async () => {
+  const revokedAt = '2026-09-15T00:01:00.000Z';
+  const client = new FakeQueryClient([[
+    postgresRow({
+      status: 'revoked',
+      consumed_at: null,
+    }),
+  ]]);
+  const store = new PostgresDesktopLinkRecordStore(client);
+
+  const record = await store.revokeIfIssued(
+    'record_123',
+    'user_123',
+    'org_456',
+    revokedAt,
+  );
+
+  assert.equal(record?.status, 'revoked');
+  assert.equal(record?.consumed_at, undefined);
+  assert.equal(client.calls[0]?.text, getDesktopLinkPersistenceSql().revoke);
+  assert.deepEqual(client.calls[0]?.values, [
+    'record_123',
+    'user_123',
+    'org_456',
+    revokedAt,
+  ]);
+  assert.match(client.calls[0]?.text ?? '', /status = 'issued'/);
+  assert.match(client.calls[0]?.text ?? '', /subject_id = \$2/);
+  assert.match(client.calls[0]?.text ?? '', /organization_id = \$3/);
+  assert.match(client.calls[0]?.text ?? '', /expires_at > \$4/);
+});
+
+test('revoke rejects malformed inputs without touching PostgreSQL', async () => {
+  const client = new FakeQueryClient();
+  const store = new PostgresDesktopLinkRecordStore(client);
+
+  assert.equal(
+    await store.revokeIfIssued('', 'user_123', 'org_456', '2026-09-15T00:01:00.000Z'),
+    undefined,
+  );
+  assert.equal(
+    await store.revokeIfIssued('record_123', '', 'org_456', '2026-09-15T00:01:00.000Z'),
+    undefined,
+  );
+  assert.equal(
+    await store.revokeIfIssued('record_123', 'user_123', '', '2026-09-15T00:01:00.000Z'),
+    undefined,
+  );
+  assert.equal(
+    await store.revokeIfIssued('record_123', 'user_123', 'org_456', 'not-a-time'),
+    undefined,
+  );
+  assert.equal(client.calls.length, 0);
+});

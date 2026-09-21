@@ -63,6 +63,15 @@ test('missing database config keeps desktop-link persistence fail-closed without
     ),
     DesktopLinkPersistenceUnavailableError,
   );
+  await assert.rejects(
+    () => store.revokeIfIssued(
+      'record_123',
+      'user_123',
+      'org_456',
+      '2026-09-15T00:01:00.000Z',
+    ),
+    DesktopLinkPersistenceUnavailableError,
+  );
   assert.equal(factoryCalls, 0);
   await store.onApplicationShutdown();
 });
@@ -144,4 +153,13 @@ test('configured runtime normalizes delegate failures to persistence unavailable
 
   await assert.rejects(() => store.put(issuedRecord), DesktopLinkPersistenceUnavailableError);
   await assert.rejects(() => store.get('record_123'), DesktopLinkPersistenceUnavailableError);
+  await assert.rejects(
+    () => store.revokeIfIssued(
+      'record_123',
+      'user_123',
+      'org_456',
+      '2026-09-15T00:01:00.000Z',
+    ),
+    DesktopLinkPersistenceUnavailableError,
+  );
 });

@@ -216,3 +216,59 @@ test('status inspection reports consumed exchange without exposing token or subj
   assert.equal(JSON.stringify(status).includes(issued.exchangeToken), false);
   assert.equal(JSON.stringify(status).includes('user_123'), false);
 });
+
+test('pending exchange can be revoked once and then cannot be consumed', async () => {
+  const { store, service } = setup();
+  const issued = await service.issue(authorization, 'device_abc');
+
+  const revoked = await service.revoke(principal, 'org_456', issued.recordId);
+  assert.equal(revoked.status, 'revoked');
+  assert.equal(revoked.organizationId, 'org_456');
+  assert.equal(revoked.deviceId, 'device_abc');
+  assert.equal(revoked.consumedAt, null);
+  assert.equal((await store.get(issued.recordId))?.status, 'revoked');
+
+  const repeated = await service.revoke(principal, 'org_456', issued.recordId);
+  assert.equal(repeated.status, 'revoked');
+
+  await expectDenied(() =>
+    service.consume(
+      principal,
+      'org_456',
+      'device_abc',
+      issued.recordId,
+      issued.exchangeToken,
+    ),
+  );
+});
+
+test('revoke is subject and tenant bound and rejects terminal non-revoked states', async () => {
+  const { clock, service } = setup();
+  const wrongSubject = await service.issue(authorization, 'device_subject');
+  await expectDenied(() =>
+    service.revoke({ subjectId: 'user_other' }, 'org_456', wrongSubject.recordId),
+  );
+
+  const wrongTenant = await service.issue(authorization, 'device_tenant');
+  await expectDenied(() =>
+    service.revoke(principal, 'org_other', wrongTenant.recordId),
+  );
+
+  const consumed = await service.issue(authorization, 'device_consumed');
+  await service.consume(
+    principal,
+    'org_456',
+    'device_consumed',
+    consumed.recordId,
+    consumed.exchangeToken,
+  );
+  await expectDenied(() =>
+    service.revoke(principal, 'org_456', consumed.recordId),
+  );
+
+  const expired = await service.issue(authorization, 'device_expired', 30_000);
+  clock.advance(30_000);
+  await expectDenied(() =>
+    service.revoke(principal, 'org_456', expired.recordId),
+  );
+});

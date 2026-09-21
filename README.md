@@ -7,7 +7,7 @@
 **Canonical module count:** **25**  
 **Machine execution plan:** **10 phases / 25 Level-1 work units**
 
-> Development is active. **PHASE-000 is complete and PHASE-001 is in progress.** The current product implementation is `MOD-002 / WU-002` (Desktop Audio Core & Virtual Devices). Paid third-party consumption, proprietary model training, production credentials/cloud spend and production deployment remain subject to their applicable provider/data/compute/release gates.
+> Development is active. **PHASE-000 is complete and PHASE-001 is in progress.** `MOD-002 / WU-002` remains the current tracked work and is completion-blocked on controlled Windows acceptance evidence; the deterministic next valid product lane is `MOD-014 / WU-014` (SaaS Web App, Accounts, Teams & Workspace), which is actively advancing through bounded tenant-safe desktop/web identity-linking slices. Paid third-party consumption, proprietary model training, production credentials/cloud spend and production deployment remain subject to their applicable provider/data/compute/release gates.
 
 ## Product Direction — Confirmed
 
@@ -26,7 +26,8 @@ The owner-approved product direction is:
 - `WU-001` governance/bootstrap/consent: **complete**.
 - `WU-010` provider-gateway foundation: **complete**; broader `MOD-010` work remains cross-cutting/in progress.
 - `WU-017` PHASE-000 privacy/security/data-governance baseline: **complete**; broader `MOD-017` work remains cross-cutting/in progress.
-- `WU-002` desktop audio core and virtual devices: **in progress** since **2026-09-10 03:43 PKT**.
+- `WU-002` desktop audio core and virtual devices: **in progress** since **2026-09-10 03:43 PKT**; completion is externally blocked by Issue #110 controlled Windows acceptance.
+- `WU-014` SaaS web app, accounts, teams and workspace: **in progress**; current bounded delivery is tenant-safe desktop/web identity linking and workspace UX.
 - Rust native workspace contains `vsn-audio-core` and `vsn-windows-audio`.
 - Windows-native capture, recovery and virtual-mic transport contracts are CI verified through the current **secure shared-memory control path + guarded protocol-v2 ring consumer + PortCls/WaveRT descriptors + fail-closed PortCls lifecycle/stream contract + secure raw WDM IRP control runtime + PortCls-primary live DriverEntry** boundary.
 - `native/windows-virtual-mic/driver/vsn_virtual_mic_control.vcxproj` is an x64 KMDF Desktop-driver project built with pinned Microsoft WDK/SDK NuGet `10.0.28000.2526`.
@@ -52,9 +53,22 @@ The owner-approved product direction is:
 
 **Latest verified green implementation CI:** AI Native Quality Gates run `34713869004` and Windows Audio Validation run `34713869035` both passed on implementation head `228a3edef05ef1598dec8f13af282950d2479764`. The Windows run passed Rust compile/Clippy/tests, restored the pinned WDK packages, built and WDK-validated `vsn_virtual_mic_control.sys` with the PortCls-primary live entry and secure raw WDM runtime linked in, and passed the native C++ virtual-mic contract suite. PR #25 merged this implementation to `main` as `14fd4c55ae6ad44d1e43af3ea574e66427f7551e`. The first Windows run for this slice (`34713657493`) correctly failed because `WdfDriverMiniportUnload` was undeclared; adding `<wdfminiport.h>` fixed the build before merge. The preceding secure raw WDM runtime merged as `6c395ef7cbd7afc5caa3daac506dee16073335fe`; raw WDM scaffold as `e31e40c0a78dcdf99396ea8a0bf3648691416b35`; architecture correction as `2665954315b52d01b3e59b6fb283f0da2a053eed`; PortCls lifecycle/WaveRT stream contracts as `78ef04bf86bf02b25b9da25ef401dc84f73f0f2b`; descriptor scaffold as `da1b0543bcbfe63ff6a342690cab3b250057bbe2`; guarded ring consumer as `9c57207482bdc20ca5dc70a06cbb43c0cfa86741`.
 
+## AI-Native Progress Snapshot
+
+<!-- AI-NATIVE-PROGRESS:START -->
+- Overall work-unit progress: `3 / 25 complete (12%)`
+- In-progress work units: `4`
+- Current phase: `PHASE-001`
+- Current tracked work: `MOD-002 / WU-002` — `in_progress`
+- Current module completion: `0 / 1 complete (0%)`
+- Next valid product work: `MOD-014 / WU-014` — `in_progress`
+- Current WU-002 blocker: Issue #110 controlled Windows runner/acceptance evidence.
+- Active WU-014 delivery: PR #134 cache/test hardening, PR #135 desktop-link persistence/status/revoke API, and PR #136 browser desktop-link issue/expiry/completion flow; deterministic completion remains unchanged until a WU completion boundary is verified.
+<!-- AI-NATIVE-PROGRESS:END -->
+
 ## README Reconciliation Rule — Mandatory
 
-After every owner query/update related to this project, the acting AI must reconcile this README against repository reality before finishing.
+After **every owner query/update** related to this project, the acting AI must reconcile this README against repository reality before finishing. Every **material source-development milestone** must update README progress/evidence in the **same source commit**. A CI/status-only turn must still reconcile README truth, but must not create a README-only source commit merely to restate remote status.
 
 1. Re-read `config/ai/modules-bank.json`; keep module count synchronized.
 2. Reconcile every module dashboard row.
@@ -81,12 +95,12 @@ Progress scale: `░░░░░░░░░░ 0%` → `███████�
 | MOD-008 | Meeting Intelligence & Knowledge | Notes, summaries, decisions, action items, topics, highlights, clips, meeting Q&A | Not started | — | `░░░░░░░░░░ 0%` | TBD | 4–7 weeks initial feature set |
 | MOD-009 | Live AI Assistant & Communication Coach | Live suggestions, clarity/pace/interruption cues, contextual Q&A | Not started | — | `░░░░░░░░░░ 0%` | TBD | 4–7 weeks |
 | MOD-010 | Hybrid AI Provider Gateway & Orchestration | Provider registry, adapters, routing, fallback, health, quality/latency/privacy/cost policy | 2026-09-10 02:31 PKT | — | `░░░░░░░░░░ 0% — in progress` | TBD | Foundation verified; adapters continuous |
-| MOD-011 | Proprietary VSN AI Runtime & Model Registry | Datasets/evaluation, model registry, training, inference, versioning, rollout/rollback | Not started | — | `░░░░░░░░░░ 0%` | TBD — data/compute authorization required before training | 6–12+ weeks runtime foundation; model R&D may take months |
+| MOD-011 | Proprietary VSN AI Runtime & Model Registry | Datasets/evaluation, model registry, training, inference, versioning, rollout/rollback | Not recorded | — | `░░░░░░░░░░ 0% — in progress` | TBD — data/compute authorization required before training | 6–12+ weeks runtime foundation; model R&D may take months |
 | MOD-012 | Voice Personalization, Identity Safety & Voice Security | Voice profiles, verification, deepfake/spoof detection, speaker-change/agent verification | Not started | — | `░░░░░░░░░░ 0%` | TBD | 4–7 weeks initial controls/security path |
 | MOD-013 | Telephony & Contact Center Integrations | SIP/PSTN/contact-center media, dialers, inbound/outbound calls, agent-assist hooks | Not started | — | `░░░░░░░░░░ 0%` | TBD | 4–8 weeks initial providers |
-| MOD-014 | SaaS Web App, Accounts, Teams & Workspace | Auth, organizations, team roles, meeting library, settings, notifications | Not started | — | `░░░░░░░░░░ 0%` | TBD | 5–8 weeks core |
+| MOD-014 | SaaS Web App, Accounts, Teams & Workspace | Auth, organizations, team roles, meeting library, settings, notifications | Not recorded | — | `░░░░░░░░░░ 0% — in progress` | TBD | 5–8 weeks core |
 | MOD-015 | Subscriptions, Entitlements & Usage Metering | Plans, trials, billing, quotas, minutes, entitlements, overages, cost ledger | Not started | — | `░░░░░░░░░░ 0%` | TBD | 3–5 weeks |
-| MOD-016 | Admin, Analytics, Observability & Cost Control | Admin, provider health, latency, usage/cost, logs/metrics/traces, SLOs | Not started | — | `░░░░░░░░░░ 0%` | TBD | 3–5 weeks foundation; continuous |
+| MOD-016 | Admin, Analytics, Observability & Cost Control | Admin, provider health, latency, usage/cost, logs/metrics/traces, SLOs | Not recorded | — | `░░░░░░░░░░ 0% — in progress` | TBD | 3–5 weeks foundation; continuous |
 | MOD-017 | Privacy, Security, Compliance & Data Governance | Threat model, consent, retention/deletion, encryption, residency, RBAC, audit | 2026-09-10 03:01 PKT | — | `░░░░░░░░░░ 0% — in progress` | TBD | PHASE-000 baseline complete; continuous implementation verification |
 | MOD-018 | Quality, Performance, Release & Desktop Updates | Product QA, audio benchmarks, E2E, signing, installers, updates, rollback | Not started | — | `░░░░░░░░░░ 0%` | TBD | Cross-cutting; release baseline 4–6 weeks |
 | MOD-019 | Public Developer API, SDKs & Webhooks | REST/realtime APIs, SDKs, API keys, webhooks, rate limits, docs, sandbox | Not started | — | `░░░░░░░░░░ 0%` | TBD — later milestone | 5–8 weeks after internal contracts stabilize |
@@ -97,13 +111,21 @@ Progress scale: `░░░░░░░░░░ 0%` → `███████�
 | MOD-024 | Agentic Actions, AI Skills & Voice Agents | Authorized actions, skills/agents, CRM/task/email/calendar writes, approvals/audit | Not started | — | `░░░░░░░░░░ 0%` | TBD | 6–10 weeks initial safe agentic layer |
 | MOD-025 | Enterprise Administration, Device Fleet & Deployment Control | SSO/SCIM, org hierarchy, device fleet, remote policy, managed/staged deployment | Not started | — | `░░░░░░░░░░ 0%` | TBD | 6–10 weeks enterprise foundation |
 
-**Machine work-unit state:** `3 / 25 complete`, `1 / 25 in progress`  
+**Machine work-unit state:** `3 / 25 complete`, `4 / 25 in progress`  
 **Verified implementation progress:** `0 / 25 modules implemented`  
 **Verified fully completed product modules:** `0 / 25` (MOD-001 is governance, not a user-facing product module)  
 **Current lifecycle:** `DEVELOPMENT / PHASE-001 IN PROGRESS`  
-**Current implementation:** `MOD-002 / WU-002 — Desktop Audio Core & Virtual Devices`  
+**Current implementation:** `MOD-002 / WU-002 — Desktop Audio Core & Virtual Devices` (current tracked work; externally completion-blocked)  
+**Active next-valid development lane:** `MOD-014 / WU-014 — SaaS Web App, Accounts, Teams & Workspace`  
 **Development consent:** `APPROVED`  
 **Technology stack:** `APPROVED`
+
+## WU-014 — Active Delivery
+
+- PR #134: workspace bootstrap cache policy + deterministic API test discovery — exact-head technical checks green.
+- PR #135: desktop-link persistence fail-closed boundary + tenant-safe lifecycle status — exact-head technical checks were green before this material update; this branch now also implements an atomic tenant/subject-bound revoke transition for pending one-time exchanges, with exact-head verification required after this commit.
+- PR #136: browser desktop-link issue, transient record/token pairing, expiry clearing and confirmed linked-state observation — exact-head technical checks green.
+- Deterministic project completion remains `3 / 25 (12%)`; these are in-progress WU-014 delivery slices, not completed-work-unit credit.
 
 ## MOD-002 — Current Verified Boundary
 

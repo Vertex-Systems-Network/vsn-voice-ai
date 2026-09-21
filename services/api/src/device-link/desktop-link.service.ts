@@ -157,6 +157,63 @@ export class DesktopLinkService {
     });
   }
 
+  public async revoke(
+    principal: AuthenticatedPrincipal,
+    organizationId: string,
+    recordId: string,
+  ): Promise<DesktopLinkStatusSnapshot> {
+    requireNonEmpty(principal.subjectId, 'subject id');
+    requireNonEmpty(organizationId, 'organization id');
+    requireNonEmpty(recordId, 'record id');
+
+    const record = await this.store.get(recordId);
+    if (
+      record === undefined ||
+      record.subject_id !== principal.subjectId ||
+      record.organization_id !== organizationId
+    ) {
+      throw new DesktopLinkDeniedError('desktop link record is unavailable');
+    }
+
+    if (record.status === 'revoked') {
+      return Object.freeze({
+        recordId: record.record_id,
+        organizationId: record.organization_id,
+        deviceId: record.device_id,
+        status: 'revoked' as const,
+        expiresAt: record.expires_at,
+        consumedAt: null,
+      });
+    }
+
+    const now = this.clock.now();
+    if (
+      record.status !== 'issued' ||
+      now.getTime() >= Date.parse(record.expires_at)
+    ) {
+      throw new DesktopLinkDeniedError('desktop link exchange cannot be revoked');
+    }
+
+    const revoked = await this.store.revokeIfIssued(
+      recordId,
+      principal.subjectId,
+      organizationId,
+      now.toISOString(),
+    );
+    if (revoked === undefined) {
+      throw new DesktopLinkDeniedError('desktop link revoke lost state race');
+    }
+
+    return Object.freeze({
+      recordId: revoked.record_id,
+      organizationId: revoked.organization_id,
+      deviceId: revoked.device_id,
+      status: 'revoked' as const,
+      expiresAt: revoked.expires_at,
+      consumedAt: null,
+    });
+  }
+
   public async consume(
     principal: AuthenticatedPrincipal,
     organizationId: string,
