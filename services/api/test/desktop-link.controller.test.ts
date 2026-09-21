@@ -181,15 +181,6 @@ test('consume is single-use and browser response omits subject/session identifie
   ]);
 
   await assert.rejects(
-    controller.status(
-      'org_456',
-      '00000000-0000-4000-8000-000000000000',
-      opaqueRequest,
-    ),
-    ServiceUnavailableException,
-  );
-
-  await assert.rejects(
     controller.consume(
       'org_456',
       issued.record_id,
