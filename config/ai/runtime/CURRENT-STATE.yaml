@@ -2,22 +2,22 @@ schema_version: 1
 repository: Vertex-Systems-Network/vsn-voice-ai
 observed_main_branch: main
 observed_main_sha: c7ed9caf06bd44460a7717e4f419b51cf49792d4
-active_issue: 110
+active_issue: 132
 active_pr: 131
 active_branch: ai/supervisor-resume-protocol
-current_milestone: adopt-compact-supervisor-resume-and-progress-protocol
+current_milestone: reconcile-independent-review-governance-blocker
 milestone_status: VERIFYING
-last_completed_milestone: "PR #122 merged immutable VSN activation review audit registry"
-exact_next_safe_action: "Resolve PR #131 exact current head and perform one consolidated CI/status refresh. If checks are pending, report WAITING_EXTERNAL and end; do not self-merge protected control-plane changes."
+last_completed_milestone: "PR #131 exact-head CI passed at 64d045993c84dbeac4455ef4448352b6c9d4d442 and governance blocker Issue #132 was opened"
+exact_next_safe_action: "Resolve PR #131 exact current head after this state-only reconciliation commit and perform one consolidated CI/status refresh. If CI passes, remain blocked on Issue #132 until an eligible independent reviewer/team is authorized, requested, and approves the exact head."
 pending_runner_ids:
-  - RUN-PR-131-EXACT-HEAD-CI
+  - RUN-PR-131-STATE-RECONCILIATION-CI
   - RUN-WU-002-CONTROLLED-WINDOWS-AUDIO
 blocked_runner_ids:
   - RUN-WU-002-CONTROLLED-WINDOWS-AUDIO
 current_blockers:
   - "No live authenticated Supervisor lease is present; do not claim continuous Supervisor authority."
-  - "WU-002 controlled physical Windows acceptance requires separately authorized restricted runner infrastructure and operator evidence."
-  - "PR #131 touches protected control-plane paths and requires independent review before merge."
+  - "Issue #110: WU-002 controlled physical Windows acceptance requires separately authorized restricted runner infrastructure and operator evidence."
+  - "Issue #132: protected control-plane PR #131 has no eligible independent reviewer identity/team yet; self-approval must not satisfy the gate."
 timeout_control:
   consolidated_ci_status_refreshes_per_milestone_default: 1
   consolidated_ci_status_refreshes_used: 0
@@ -33,8 +33,9 @@ progress:
   overall_total_non_deprecated_work_units: 25
   in_progress_work_units: 4
 open_reconciliation:
-  open_issue_count: 1
+  open_issue_count: 2
   open_pr_count: 10
   issue_110: blocked_external_authority_and_physical_runner
+  issue_132: blocked_external_independent_reviewer_identity
   active_governance_pr: 131
   dependency_prs: reconciled_not_selected_as_current_user_directed_milestone
