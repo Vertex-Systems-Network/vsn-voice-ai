@@ -63,7 +63,7 @@ The owner-approved product direction is:
 - Current module completion: `0 / 1 complete (0%)`
 - Next valid product work: `MOD-014 / WU-014` — `in_progress`
 - Current WU-002 blocker: Issue #110 controlled Windows runner/acceptance evidence.
-- Active WU-014 delivery: PR #135 persistence/status/revoke/inventory API is merged on `main` as `b60f2ffd2166e2bf92c243ec88452e374060b7dd`; PR #136 browser workspace/device lifecycle is rebased onto that main with the transient authentication recheck selection-reset regression repaired and requires exact-head verification; PR #134 cache/test hardening requires latest-main reconciliation before merge.
+- Active WU-014 delivery: PR #135 API persistence/status/revoke/inventory hardening is merged as `b60f2ffd2166e2bf92c243ec88452e374060b7dd`; PR #136 tenant-bound browser workspace/desktop-link lifecycle is merged as `217d672d8447d0ef6b522c9cae641f555565f71e` after exact-head AI Native run `35661618724` and Web Validation run `35661618781` passed, including 30/30 browser E2E cases; PR #134 cache/test-discovery hardening is now reconciled onto that main and requires exact-head verification.
 <!-- AI-NATIVE-PROGRESS:END -->
 
 ## README Reconciliation Rule — Mandatory
@@ -122,9 +122,9 @@ Progress scale: `░░░░░░░░░░ 0%` → `███████�
 
 ## WU-014 — Active Delivery
 
-- PR #134: workspace bootstrap cache policy + deterministic API test discovery — prior exact-head technical checks were green, but the branch is stale/non-mergeable after PR #135 and requires latest-main reconciliation plus exact-head reverification before merge.
+- PR #134: workspace bootstrap cache policy + deterministic API test discovery — rebased onto current `main` after PRs #135/#136 without overwriting their API/web changes; this source update also reconciles README progress and requires exact-head API + AI-Native verification before merge.
 - PR #135: desktop-link persistence fail-closed boundary + tenant-safe lifecycle status + atomic pending-exchange revoke + bounded tenant/subject-scoped linked-desktop inventory — exact-head API Validation and AI Native Quality Gates passed; squash-merged to `main` as `b60f2ffd2166e2bf92c243ec88452e374060b7dd`.
-- PR #136: browser desktop-link lifecycle, persisted linked-desktop inventory, active-membership tenant selection, workspace access overview, session-state handling and team projection — old head `96d94b3bc381099d8d198686be0bcc34c1e43967` had AI Native Quality Gates green but Web Validation run `35660496084` failed 20 Playwright cases because transient `checking` incorrectly cleared the selected workspace. Repair commit `063804dd2eab5efeeaedff0c114b7119b447b942` corrected that product state loop; its Web Validation run `35661504963` then failed earlier at contract-test step because `workspace-shell.test.mjs` still asserted the removed broad condition. The test is now tightened to require terminal `signed_out || unavailable` clearing and reject `state !== 'authenticated'`; exact-head reverification is required.
+- PR #136: active-membership workspace selection, tenant-authorized overview/team projection, browser desktop-link issue/status/revoke/inventory lifecycle, and terminal-only auth-loss selection clearing — repaired from the earlier selection loop, exact-head AI Native Quality Gates run `35661618724` and Web Validation run `35661618781` passed with 30/30 browser E2E cases; squash-merged to `main` as `217d672d8447d0ef6b522c9cae641f555565f71e`.
 - Deterministic project completion remains `3 / 25 (12%)`; these are in-progress WU-014 delivery slices, not completed-work-unit credit.
 
 ## MOD-002 — Current Verified Boundary

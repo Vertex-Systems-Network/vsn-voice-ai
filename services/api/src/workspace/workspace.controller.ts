@@ -3,6 +3,7 @@ import {
   Controller,
   ForbiddenException,
   Get,
+  Header,
   Inject,
   Param,
   Req,
@@ -34,6 +35,8 @@ export class WorkspaceController {
   ) {}
 
   @Get(':organizationId/bootstrap')
+  @Header('Cache-Control', 'no-store')
+  @Header('Pragma', 'no-cache')
   public async getBootstrap(
     @Param('organizationId') organizationId: string,
     @Req() request: FastifyRequest,
