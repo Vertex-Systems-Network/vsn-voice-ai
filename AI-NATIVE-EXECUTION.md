@@ -307,6 +307,16 @@ After meaningful work, synchronize the relevant artifacts:
 
 A completed work unit with stale planning/state metadata is not fully complete.
 
+## Compact resume index and progress reporting
+
+The detailed memory bank remains canonical for planning state, but Supervisor resumes use the compact index under `config/ai/runtime/` first. `CURRENT-STATE.yaml` and `LAST-CHECKPOINT.md` locate the correct next evidence quickly; they never outrank current Git, open Issue/PR state, runtime evidence, checks, or the detailed memory bank.
+
+The Runner Benchmark at `config/ai/runtime/RUNNER-BENCHMARK.json` tracks material remote/container/browser/runtime/full-regression/performance workloads without granting execution authority.
+
+For user-facing progress reporting, calculate completion deterministically from `config/ai/execution-plan.json`: current-module completion is complete work units in the current module divided by known non-deprecated work units in that module; overall completion is complete work units divided by all known non-deprecated work units. Show the active work-unit status separately and do not award partial numeric credit merely because a work unit is `in_progress` or `verification_required`.
+
+This keeps progress bars consistent with the rule against fake precision.
+
 ## Definition of AI-native execution
 
 AI-native development in this repository means the AI can repeatedly perform the following loop without losing project context:

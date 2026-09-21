@@ -130,7 +130,9 @@ def validate_required_files() -> None:
         "config/protocol/version.json", "config/protocol/instance.json", "config/protocol/migrations.json", "config/protocol/state-machine.json",
         "config/traceability/requirements-traceability.json", "config/integrations/project-management.json",
         "config/integrations/linear-sync.json", "config/integrations/sync-authority.json", "config/ai/agent-catalog.json",
-        "config/ai/memory-provenance.json", "config/github/ruleset-policy.json", "config/github/path-ownership.json",
+        "config/ai/memory-provenance.json", "config/ai/runtime/runtime-policy.json", "config/ai/runtime/RUNNER-BENCHMARK.json",
+        "config/ai/runtime/CURRENT-STATE.yaml", "config/ai/runtime/LAST-CHECKPOINT.md", "config/ai/runtime/EXECUTION-JOURNAL.md",
+        "config/github/ruleset-policy.json", "config/github/path-ownership.json",
         "config/quality/quality-policy.json", "config/security/control-plane-policy.json", "config/security/trust-policy.json",
         "config/security/threat-model.json", "config/runtime/budgets.json", "config/release/release-policy.json",
         "config/data/data-governance.json", "config/operations/operations-policy.json", "config/contracts/migration-policy.json",
@@ -199,6 +201,11 @@ def validate_json_schemas() -> None:
 def validate_manifest() -> None:
     doc = load_json(".ai/manifest.json")
     paths = list(doc.get("common", []))
+    resume_first = doc.get("resume_first") or []
+    if not isinstance(resume_first, list):
+        fail(".ai/manifest.json: resume_first must be a list")
+        resume_first = []
+    paths.extend(resume_first)
     roles = doc.get("roles", {})
     if not isinstance(roles, dict):
         fail(".ai/manifest.json: roles must be an object")
@@ -224,6 +231,85 @@ def validate_manifest() -> None:
         actual = set(roles.get(role, []))
         if not required.issubset(actual):
             fail(f"manifest role {role} missing hardening context: {sorted(required - actual)}")
+
+
+
+def validate_compact_runtime_state() -> None:
+    policy = load_json("config/ai/runtime/runtime-policy.json")
+    benchmark = load_json("config/ai/runtime/RUNNER-BENCHMARK.json")
+    manifest = load_json(".ai/manifest.json")
+
+    expected_resume = [
+        "config/ai/runtime/CURRENT-STATE.yaml",
+        "config/ai/runtime/LAST-CHECKPOINT.md",
+    ]
+    if manifest.get("resume_first") != expected_resume:
+        fail(".ai/manifest.json: resume_first must load compact state and checkpoint in deterministic order")
+    if policy.get("resume_first") != expected_resume:
+        fail("runtime-policy: resume_first must match manifest")
+
+    limits = policy.get("compact_limits_bytes") or {}
+    for relative, maximum in {
+        "config/ai/runtime/CURRENT-STATE.yaml": 12 * 1024,
+        "config/ai/runtime/LAST-CHECKPOINT.md": 16 * 1024,
+        "config/ai/runtime/EXECUTION-JOURNAL.md": 32 * 1024,
+    }.items():
+        path = ROOT / relative
+        if path.stat().st_size > maximum:
+            fail(f"{relative}: compact-state limit exceeded ({path.stat().st_size} > {maximum})")
+        if limits.get(relative) != maximum:
+            fail(f"runtime-policy: compact limit drift for {relative}")
+
+    state_text = (ROOT / "config/ai/runtime/CURRENT-STATE.yaml").read_text(encoding="utf-8")
+    for key in [
+        "observed_main_sha:", "active_issue:", "active_pr:", "active_branch:",
+        "current_milestone:", "milestone_status:", "last_completed_milestone:",
+        "exact_next_safe_action:", "pending_runner_ids:", "blocked_runner_ids:",
+        "current_blockers:", "timeout_control:", "progress:",
+    ]:
+        if key not in state_text:
+            fail(f"CURRENT-STATE.yaml missing required key marker: {key}")
+
+    if policy.get("remote_call_budget", {}).get("consolidated_ci_status_refreshes_per_milestone_default") != 1:
+        fail("runtime-policy: default consolidated CI/status refresh budget must be exactly one")
+    if policy.get("milestone_policy", {}).get("one_user_continue_or_resume_turn_one_logical_milestone") is not True:
+        fail("runtime-policy: one continue/resume turn must default to one logical milestone")
+    if policy.get("issues_prs_gate", {}).get("required_before_new_development") is not True:
+        fail("runtime-policy: Issues/PRs-first gate must be required")
+
+    required_response = {
+        "repository", "milestone", "issue_pr_commit_evidence", "ci_state", "blockers",
+        "exact_next_safe_action", "current_module_progress_bar", "overall_progress_bar",
+    }
+    response_fields = set(policy.get("response_contract", {}).get("required_fields", []))
+    if not required_response.issubset(response_fields):
+        fail(f"runtime-policy: response contract missing fields: {sorted(required_response - response_fields)}")
+
+    tasks = benchmark.get("tasks")
+    if not isinstance(tasks, list):
+        fail("RUNNER-BENCHMARK.json: tasks must be a list")
+        return
+    task_required = {
+        "task_id", "source", "command_workflow", "exact_source_identity",
+        "environment_matrix_input_fixture_identity", "authorization_state",
+        "security_critical", "merge_blocking", "expected_runner_time",
+        "deterministic_dedup_key", "status", "immutable_evidence",
+    }
+    seen_ids = set()
+    seen_dedup = set()
+    for task in tasks:
+        missing = task_required - set(task)
+        if missing:
+            fail(f"RUNNER-BENCHMARK task missing fields: {sorted(missing)}")
+            continue
+        if task["task_id"] in seen_ids:
+            fail(f"RUNNER-BENCHMARK duplicate task_id: {task['task_id']}")
+        if task["deterministic_dedup_key"] in seen_dedup:
+            fail(f"RUNNER-BENCHMARK duplicate dedup key: {task['deterministic_dedup_key']}")
+        seen_ids.add(task["task_id"])
+        seen_dedup.add(task["deterministic_dedup_key"])
+        if not isinstance(task["immutable_evidence"], list):
+            fail(f"RUNNER-BENCHMARK {task['task_id']}: immutable_evidence must be a list")
 
 
 def validate_protocol_versioning() -> None:
@@ -677,6 +763,7 @@ def main() -> int:
     validate_required_files()
     validate_json_schemas()
     validate_manifest()
+    validate_compact_runtime_state()
     validate_protocol_versioning()
     validate_template_boundary()
     validate_control_plane()

@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "compact_state_path": "config/ai/runtime",
+  "resume_first": [
+    "config/ai/runtime/CURRENT-STATE.yaml",
+    "config/ai/runtime/LAST-CHECKPOINT.md"
+  ],
+  "reconciliation_order": [
+    "compact_state",
+    "exact_default_branch_and_sha",
+    "open_issues",
+    "open_pull_requests",
+    "deterministic_claims_and_coordination_queue",
+    "runner_benchmark",
+    "next_safe_work"
+  ],
+  "compact_limits_bytes": {
+    "config/ai/runtime/CURRENT-STATE.yaml": 12288,
+    "config/ai/runtime/LAST-CHECKPOINT.md": 16384,
+    "config/ai/runtime/EXECUTION-JOURNAL.md": 32768
+  },
+  "milestone_policy": {
+    "one_user_continue_or_resume_turn_one_logical_milestone": true,
+    "no_unrelated_milestone_chaining": true,
+    "security_incident_tightly_coupled_exception_only_when_safer": true
+  },
+  "remote_call_budget": {
+    "consolidated_ci_status_refreshes_per_milestone_default": 1,
+    "tight_polling_forbidden": true,
+    "rerun_on_message_timeout_forbidden": true,
+    "second_refresh_requires_material_transition_and_durable_reason": true
+  },
+  "issues_prs_gate": {
+    "required_before_new_development": true,
+    "issue_reconciliation_precedes_pr_reconciliation": true,
+    "duplicate_implementation_for_issue_already_represented_by_accepted_pr_forbidden": true
+  },
+  "runner_benchmark": {
+    "path": "config/ai/runtime/RUNNER-BENCHMARK.json",
+    "registration_never_grants_execution_authority": true,
+    "historical_or_expired_authorization_reuse_forbidden": true,
+    "terminal_evidence_must_be_immutable": true
+  },
+  "response_contract": {
+    "required_fields": [
+      "repository",
+      "milestone",
+      "issue_pr_commit_evidence",
+      "ci_state",
+      "blockers",
+      "exact_next_safe_action",
+      "current_module_progress_bar",
+      "overall_progress_bar"
+    ],
+    "progress_algorithm": {
+      "numerator_status": "complete",
+      "denominator": "known_non_deprecated_work_units",
+      "partial_credit_for_in_progress": false,
+      "show_active_work_unit_status_separately": true,
+      "bar_cells": 10
+    }
+  },
+  "fail_closed": {
+    "security_controls_must_not_be_weakened_for_green_ci": true,
+    "pending_skipped_running_work_must_not_be_reported_pass": true,
+    "destructive_provider_production_deployment_release_authority_must_be_current_and_explicit": true
+  }
+}

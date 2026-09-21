@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "repository": "Vertex-Systems-Network/vsn-voice-ai",
+  "last_reconciled_main_sha": "c7ed9caf06bd44460a7717e4f419b51cf49792d4",
+  "tasks": [
+    {
+      "task_id": "RUN-WU-002-CONTROLLED-WINDOWS-AUDIO",
+      "source": {
+        "issue": 110,
+        "module_id": "MOD-002",
+        "work_unit_id": "WU-002",
+        "work_package": "controlled physical Windows acceptance evidence"
+      },
+      "command_workflow": ".github/workflows/windows-audio-controlled.yml",
+      "exact_source_identity": {
+        "repository": "Vertex-Systems-Network/vsn-voice-ai",
+        "branch": "main",
+        "sha": "c7ed9caf06bd44460a7717e4f419b51cf49792d4",
+        "must_reconcile_sha_before_execution": true
+      },
+      "environment_matrix_input_fixture_identity": {
+        "runner_group": "vsn-controlled-audio-restricted",
+        "runner_labels": [
+          "self-hosted",
+          "windows",
+          "x64",
+          "vsn-controlled-audio"
+        ],
+        "machine": "physical Windows x64 controlled machine",
+        "inputs": [
+          "controlled checks JSON leaf filename",
+          "controlled performance samples JSON leaf filename"
+        ],
+        "evidence_directory": "VSN_CONTROLLED_EVIDENCE_DIR outside repository checkout"
+      },
+      "authorization_state": "not_granted_in_current_runtime",
+      "security_critical": true,
+      "merge_blocking": false,
+      "completion_blocking_for": [
+        "WU-002",
+        "MOD-002"
+      ],
+      "expected_runner_time": "operator_estimate_required_before_authorized_execution",
+      "deterministic_dedup_key": "WU-002|windows-audio-controlled|physical-windows-x64|acceptance-evidence-v1",
+      "status": "blocked_authorization_and_external_machine",
+      "immutable_evidence": []
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+schema_version: 1
+repository: Vertex-Systems-Network/vsn-voice-ai
+observed_main_branch: main
+observed_main_sha: c7ed9caf06bd44460a7717e4f419b51cf49792d4
+active_issue: 110
+active_pr: null
+active_branch: ai/supervisor-resume-protocol
+current_milestone: adopt-compact-supervisor-resume-and-progress-protocol
+milestone_status: IMPLEMENTED_AWAITING_PR
+last_completed_milestone: "PR #122 merged immutable VSN activation review audit registry"
+exact_next_safe_action: "Create protected-path review PR, persist its number/head, then perform one consolidated exact-head CI refresh without self-merging."
+pending_runner_ids:
+  - RUN-WU-002-CONTROLLED-WINDOWS-AUDIO
+blocked_runner_ids:
+  - RUN-WU-002-CONTROLLED-WINDOWS-AUDIO
+current_blockers:
+  - "No live authenticated Supervisor lease is present; do not claim continuous Supervisor authority."
+  - "WU-002 controlled physical Windows acceptance requires separately authorized restricted runner infrastructure and operator evidence."
+  - "This control-plane change requires independent review before merge."
+timeout_control:
+  consolidated_ci_status_refreshes_per_milestone_default: 1
+  tight_polling_forbidden: true
+  rerun_on_message_timeout_forbidden: true
+progress:
+  current_phase: PHASE-001
+  current_module: MOD-002
+  current_work_unit: WU-002
+  current_module_complete_work_units: 0
+  current_module_total_non_deprecated_work_units: 1
+  overall_complete_work_units: 3
+  overall_total_non_deprecated_work_units: 25
+  in_progress_work_units: 4
+open_reconciliation:
+  open_issue_count: 1
+  open_pr_count: 9
+  issue_110: blocked_external_authority_and_physical_runner
+  dependency_prs: reconciled_not_selected_as_current_user_directed_milestone
