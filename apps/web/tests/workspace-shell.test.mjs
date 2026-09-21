@@ -32,7 +32,11 @@ test('root team flow requires explicit authenticated organization selection', ()
   assert.match(workspaceFlowSource, /onSelectWorkspace=\{setOrganizationId\}/);
   assert.match(workspaceFlowSource, /onInvalidateWorkspaceSelection=\{handleWorkspaceSelectionInvalidated\}/);
   assert.match(workspaceFlowSource, /handleSessionStateChange/);
-  assert.match(workspaceFlowSource, /state !== 'authenticated'/);
+  assert.match(
+    workspaceFlowSource,
+    /state === 'signed_out' \|\| state === 'unavailable'/,
+  );
+  assert.doesNotMatch(workspaceFlowSource, /state !== 'authenticated'/);
   assert.match(workspaceFlowSource, /organizationId === null/);
   assert.match(workspaceFlowSource, /<WorkspaceDesktopLinkPanel organizationId=\{organizationId\}/);
   assert.match(workspaceFlowSource, /<WorkspaceTeamPanel organizationId=\{organizationId\}/);
