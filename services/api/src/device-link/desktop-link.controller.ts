@@ -155,7 +155,7 @@ export class DesktopLinkController {
     private readonly desktopLinkService: DesktopLinkService,
   ) {}
 
-  @Get()
+  @Get('linked')
   @Header('Cache-Control', 'no-store')
   @Header('Pragma', 'no-cache')
   public async list(

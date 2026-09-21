@@ -123,7 +123,7 @@ Progress scale: `░░░░░░░░░░ 0%` → `███████�
 ## WU-014 — Active Delivery
 
 - PR #134: workspace bootstrap cache policy + deterministic API test discovery — exact-head technical checks green.
-- PR #135: desktop-link persistence fail-closed boundary + tenant-safe lifecycle status + atomic pending-exchange revoke were exact-head green before this material update; this branch now also implements a bounded tenant/subject-scoped linked-desktop inventory using the latest consumed record per device, with new exact-head verification required.
+- PR #135: desktop-link persistence fail-closed boundary + tenant-safe lifecycle status + atomic pending-exchange revoke were exact-head green before this material update; this branch now also implements a bounded tenant/subject-scoped `GET /desktop-links/linked` inventory using the latest consumed record per device, with new exact-head verification required.
 - PR #136: browser desktop-link issue, transient record/token pairing, expiry clearing, confirmed linked-state observation and user cancellation — exact-head technical checks green.
 - Deterministic project completion remains `3 / 25 (12%)`; these are in-progress WU-014 delivery slices, not completed-work-unit credit.
 
