@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "compact_state_path": "config/ai/runtime",
+  "resume_first": [
+    "config/ai/runtime/CURRENT-STATE.yaml",
+    "config/ai/runtime/LAST-CHECKPOINT.md"
+  ],
+  "reconciliation_order": [
+    "compact_state",
+    "exact_default_branch_and_sha",
+    "open_issues",
+    "open_pull_requests",
+    "deterministic_claims_and_coordination_queue",
+    "runner_benchmark",
+    "next_safe_work"
+  ],
+  "compact_limits_bytes": {
+    "config/ai/runtime/CURRENT-STATE.yaml": 12288,
+    "config/ai/runtime/LAST-CHECKPOINT.md": 16384,
+    "config/ai/runtime/EXECUTION-JOURNAL.md": 32768
+  },
+  "milestone_policy": {
+    "one_user_continue_or_resume_turn_one_logical_milestone": true,
+    "no_unrelated_milestone_chaining": true,
+    "security_incident_tightly_coupled_exception_only_when_safer": true
+  },
+  "remote_call_budget": {
+    "consolidated_ci_status_refreshes_per_milestone_default": 1,
+    "tight_polling_forbidden": true,
+    "rerun_on_message_timeout_forbidden": true,
+    "second_refresh_requires_material_transition_and_durable_reason": true
+  },
+  "issues_prs_gate": {
+    "required_before_new_development": true,
+    "issue_reconciliation_precedes_pr_reconciliation": true,
+    "duplicate_implementation_for_issue_already_represented_by_accepted_pr_forbidden": true
+  },
+  "runner_benchmark": {
+    "path": "config/ai/runtime/RUNNER-BENCHMARK.json",
+    "registration_never_grants_execution_authority": true,
+    "historical_or_expired_authorization_reuse_forbidden": true,
+    "terminal_evidence_must_be_immutable": true
+  },
+  "response_contract": {
+    "required_fields": [
+      "repository",
+      "milestone",
+      "issue_pr_commit_evidence",
+      "ci_state",
+      "blockers",
+      "exact_next_safe_action",
+      "current_module_progress_bar",
+      "overall_progress_bar"
+    ],
+    "progress_algorithm": {
+      "numerator_status": "complete",
+      "denominator": "known_non_deprecated_work_units",
+      "partial_credit_for_in_progress": false,
+      "show_active_work_unit_status_separately": true,
+      "bar_cells": 10
+    }
+  },
+  "fail_closed": {
+    "security_controls_must_not_be_weakened_for_green_ci": true,
+    "pending_skipped_running_work_must_not_be_reported_pass": true,
+    "destructive_provider_production_deployment_release_authority_must_be_current_and_explicit": true
+  },
+  "terminal_remote_evidence_overlay": {
+    "purpose": "prevent exact-head CI evidence self-invalidation by source-only state commits",
+    "allowed_terminal_surfaces": [
+      "pull_request_comment",
+      "issue_comment",
+      "github_workflow_run_or_commit_status"
+    ],
+    "source_compact_state_may_remain_pre_terminal_check_snapshot": true,
+    "source_only_commit_to_restate_terminal_ci_forbidden": true,
+    "resume_must_reconcile_overlay_before_next_action": true,
+    "next_material_source_change_must_fold_overlay_into_compact_state_and_runner_benchmark": true,
+    "negative_or_failed_terminal_evidence_blocks_merge": true
+  },
+  "next_work_selection": {
+    "dependencies_must_be_complete": true,
+    "prefer_current_phase": true,
+    "blocked_unit_not_selected_when_unblocked_same_phase_candidate_exists": true,
+    "choose_highest_priority_same_phase_unblocked_candidate": true,
+    "externally_blocked_current_unit_may_remain_current_while_next_valid_advances": true
+  },
+  "readme_progress_sync": {
+    "reconcile_on_every_supervisor_turn": true,
+    "material_source_milestone_requires_same_commit_readme_sync": true,
+    "machine_progress_block_required": true,
+    "progress_block_must_match_execution_plan_and_project_state": true,
+    "in_progress_work_must_not_receive_partial_completion_credit": true,
+    "material_delivery_evidence_may_update_without_percentage_inflation": true,
+    "ci_or_status_only_turn_must_not_create_readme_only_commit": true,
+    "terminal_remote_evidence_overlay_preserves_exact_head": true
+  }
+}

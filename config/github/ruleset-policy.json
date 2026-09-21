@@ -1,6 +1,6 @@
 {
   "schema_version": 3,
-  "status": "pending_user_decision",
+  "status": "approved_pending_application",
   "activation_scope": "child_project",
   "template_source_enforcement": "not_applicable",
   "scope": "default_branch_and_coordination_refs",
@@ -14,13 +14,17 @@
     "never_claim_applied_without_github_verification": true
   },
   "setup_state": {
-    "user_decision": null,
-    "application_status": "not_applied",
+    "user_decision": "apply_recommended_github_rules",
+    "application_status": "blocked_admin_capable_interface",
     "enforcement_verified": false,
     "governance_audit_installed": false,
-    "capability_note": "Repository ruleset API returned upgrade/public-repository requirement for the current private repository; do not claim server-side rules enforcement."
+    "capability_note": "Owner approval granted on 2026-09-21. Active ruleset 23374505 is readable and currently weaker than repository policy, but the connected GitHub surface exposes no ruleset administration write. Apply through an external/admin-capable GitHub surface, then authenticated re-read before marking enforcement verified."
   },
-  "repository_settings": {"delete_branch_on_merge":true,"secret_scanning_preferred_when_available":true,"push_protection_preferred_when_available":true},
+  "repository_settings": {
+    "delete_branch_on_merge": true,
+    "secret_scanning_preferred_when_available": true,
+    "push_protection_preferred_when_available": true
+  },
   "rules": {
     "require_pull_request": true,
     "required_approving_reviews": 1,
@@ -33,11 +37,45 @@
     "block_force_pushes": true,
     "block_branch_deletion": true,
     "require_linear_history": true,
-    "required_status_checks": ["AI Native Quality Gates / repository-integrity"],
-    "conditional_status_checks": ["Dependency Review / dependency-review","CodeQL / analyze-actions","OpenSSF Scorecard / analysis","stack-specific checks discovered after technology approval"]
+    "required_status_checks": [
+      "repository-integrity"
+    ],
+    "conditional_status_checks": [
+      "Dependency Review / dependency-review",
+      "CodeQL / analyze-actions",
+      "OpenSSF Scorecard / analysis",
+      "stack-specific checks discovered after technology approval"
+    ]
   },
-  "coordination_ref_policy": {"patterns":["refs/heads/claims/**","refs/heads/supervisor/**"],"purpose":"distributed Worker/Supervisor lock namespaces","restrict_create_update_delete_to_trusted_runtime_when_supported":true,"normal_worker_direct_mutation_forbidden":true,"fallback_when_ruleset_cannot_protect":"enforce through authenticated orchestrator gateway and audit every mutation"},
-  "merge_policy": {"preferred_method":"squash","allow_merge_commit":false,"allow_rebase_merge":false,"allow_squash_merge":true,"allow_auto_merge":true,"allow_update_branch":true,"merge_queue":"recommended_when_available"},
-  "review_policy": {"control_plane_changes_require_codeowner_review":true,"control_plane_gate_changes_require_independent_review":true,"supervisor_cannot_self_approve_high_risk_changes":true,"security_critical_changes_require_independent_review":true,"shared_coordination_state_requires_supervisor_review":true},
-  "notes": ["Desired child-project governance policy; server-side enforcement remains pending explicit owner decision and supported GitHub plan/features.","Only require status checks that have run successfully in this child repository.","Control-plane and lock-namespace protection is a security boundary."]
+  "coordination_ref_policy": {
+    "patterns": [
+      "refs/heads/claims/**",
+      "refs/heads/supervisor/**"
+    ],
+    "purpose": "distributed Worker/Supervisor lock namespaces",
+    "restrict_create_update_delete_to_trusted_runtime_when_supported": true,
+    "normal_worker_direct_mutation_forbidden": true,
+    "fallback_when_ruleset_cannot_protect": "enforce through authenticated orchestrator gateway and audit every mutation"
+  },
+  "merge_policy": {
+    "preferred_method": "squash",
+    "allow_merge_commit": false,
+    "allow_rebase_merge": false,
+    "allow_squash_merge": true,
+    "allow_auto_merge": true,
+    "allow_update_branch": true,
+    "merge_queue": "recommended_when_available"
+  },
+  "review_policy": {
+    "control_plane_changes_require_codeowner_review": true,
+    "control_plane_gate_changes_require_independent_review": true,
+    "supervisor_cannot_self_approve_high_risk_changes": true,
+    "security_critical_changes_require_independent_review": true,
+    "shared_coordination_state_requires_supervisor_review": true
+  },
+  "notes": [
+    "Owner decision is complete: Apply Recommended GitHub Rules is approved. Server-side enforcement remains pending an admin-capable GitHub write plus authenticated post-change verification.",
+    "Only require status checks that have run successfully in this child repository.",
+    "Control-plane and lock-namespace protection is a security boundary."
+  ]
 }

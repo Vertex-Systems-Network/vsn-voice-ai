@@ -262,6 +262,18 @@ It should expose at minimum:
 
 Do not fake precision. If progress percentages cannot be credibly calculated, use work-unit counts and status summaries instead.
 
+## README Progress Contract
+
+`README.md` is a mandatory AI-Native progress surface, not an optional narrative.
+
+- Reconcile README on every owner turn before the final response.
+- Every material source-development milestone must update the machine-readable README progress snapshot and affected dashboard/evidence lines in the same source commit.
+- The snapshot must agree with `config/ai/execution-plan.json`, `config/ai/project-state.json`, and the relevant module state.
+- Work-unit completion percentages count only `complete` non-deprecated work units. In-progress, blocked, verification-required, deferred and not-started work receive no partial numeric credit.
+- Material delivery evidence may be added while a work unit remains in progress, but it must not inflate deterministic completion percentage.
+- CI/status-only turns reconcile README truth but must not create a README-only source commit just to restate a workflow result; terminal remote evidence stays on the remote evidence overlay until the next material source mutation.
+- If README progress drifts from machine state, repository validation must fail closed.
+
 ## Autonomous next-work selection
 
 When the user has authorized AI-native development and no human decision blocks progress, the AI should determine the next valid work item rather than asking the user which module to work on.
@@ -277,6 +289,8 @@ Choose work using evidence such as:
 7. ability to complete and verify a small slice quickly
 
 Never choose a task solely because it is easy.
+
+If the current work unit is waiting only on an external authority/runtime/acceptance dependency and no safe remaining slice can execute locally, keep that unit represented as current/in-progress or verification-pending as appropriate, record the blocker explicitly, and set `next_valid_work_unit` to the highest-priority dependency-satisfied unblocked work unit in the active phase. Do not hide the blocked unit by falsely marking it complete, and do not let a blocked current unit prevent unrelated safe work when the Supervisor Issues/PR gate explicitly permits externally blocked items to coexist with unrelated safe work.
 
 ## Update and delete discipline
 
@@ -306,6 +320,16 @@ After meaningful work, synchronize the relevant artifacts:
 - decisions/rationale
 
 A completed work unit with stale planning/state metadata is not fully complete.
+
+## Compact resume index and progress reporting
+
+The detailed memory bank remains canonical for planning state, but Supervisor resumes use the compact index under `config/ai/runtime/` first. `CURRENT-STATE.yaml` and `LAST-CHECKPOINT.md` locate the correct next evidence quickly; they never outrank current Git, open Issue/PR state, runtime evidence, checks, or the detailed memory bank.
+
+The Runner Benchmark at `config/ai/runtime/RUNNER-BENCHMARK.json` tracks material remote/container/browser/runtime/full-regression/performance workloads without granting execution authority.
+
+For user-facing progress reporting, calculate completion deterministically from `config/ai/execution-plan.json`: current-module completion is complete work units in the current module divided by known non-deprecated work units in that module; overall completion is complete work units divided by all known non-deprecated work units. Show the active work-unit status separately and do not award partial numeric credit merely because a work unit is `in_progress` or `verification_required`.
+
+This keeps progress bars consistent with the rule against fake precision.
 
 ## Definition of AI-native execution
 

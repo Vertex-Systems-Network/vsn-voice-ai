@@ -130,7 +130,9 @@ def validate_required_files() -> None:
         "config/protocol/version.json", "config/protocol/instance.json", "config/protocol/migrations.json", "config/protocol/state-machine.json",
         "config/traceability/requirements-traceability.json", "config/integrations/project-management.json",
         "config/integrations/linear-sync.json", "config/integrations/sync-authority.json", "config/ai/agent-catalog.json",
-        "config/ai/memory-provenance.json", "config/github/ruleset-policy.json", "config/github/path-ownership.json",
+        "config/ai/memory-provenance.json", "config/ai/runtime/runtime-policy.json", "config/ai/runtime/RUNNER-BENCHMARK.json",
+        "config/ai/runtime/CURRENT-STATE.yaml", "config/ai/runtime/LAST-CHECKPOINT.md", "config/ai/runtime/EXECUTION-JOURNAL.md",
+        "config/github/ruleset-policy.json", "config/github/path-ownership.json",
         "config/quality/quality-policy.json", "config/security/control-plane-policy.json", "config/security/trust-policy.json",
         "config/security/threat-model.json", "config/runtime/budgets.json", "config/release/release-policy.json",
         "config/data/data-governance.json", "config/operations/operations-policy.json", "config/contracts/migration-policy.json",
@@ -199,6 +201,11 @@ def validate_json_schemas() -> None:
 def validate_manifest() -> None:
     doc = load_json(".ai/manifest.json")
     paths = list(doc.get("common", []))
+    resume_first = doc.get("resume_first") or []
+    if not isinstance(resume_first, list):
+        fail(".ai/manifest.json: resume_first must be a list")
+        resume_first = []
+    paths.extend(resume_first)
     roles = doc.get("roles", {})
     if not isinstance(roles, dict):
         fail(".ai/manifest.json: roles must be an object")
@@ -224,6 +231,208 @@ def validate_manifest() -> None:
         actual = set(roles.get(role, []))
         if not required.issubset(actual):
             fail(f"manifest role {role} missing hardening context: {sorted(required - actual)}")
+
+
+
+def validate_compact_runtime_state() -> None:
+    policy = load_json("config/ai/runtime/runtime-policy.json")
+    benchmark = load_json("config/ai/runtime/RUNNER-BENCHMARK.json")
+    manifest = load_json(".ai/manifest.json")
+
+    expected_resume = [
+        "config/ai/runtime/CURRENT-STATE.yaml",
+        "config/ai/runtime/LAST-CHECKPOINT.md",
+    ]
+    if manifest.get("resume_first") != expected_resume:
+        fail(".ai/manifest.json: resume_first must load compact state and checkpoint in deterministic order")
+    if policy.get("resume_first") != expected_resume:
+        fail("runtime-policy: resume_first must match manifest")
+
+    limits = policy.get("compact_limits_bytes") or {}
+    for relative, maximum in {
+        "config/ai/runtime/CURRENT-STATE.yaml": 12 * 1024,
+        "config/ai/runtime/LAST-CHECKPOINT.md": 16 * 1024,
+        "config/ai/runtime/EXECUTION-JOURNAL.md": 32 * 1024,
+    }.items():
+        path = ROOT / relative
+        if path.stat().st_size > maximum:
+            fail(f"{relative}: compact-state limit exceeded ({path.stat().st_size} > {maximum})")
+        if limits.get(relative) != maximum:
+            fail(f"runtime-policy: compact limit drift for {relative}")
+
+    state_text = (ROOT / "config/ai/runtime/CURRENT-STATE.yaml").read_text(encoding="utf-8")
+    for key in [
+        "observed_main_sha:", "active_issue:", "active_pr:", "active_branch:",
+        "current_milestone:", "milestone_status:", "last_completed_milestone:",
+        "exact_next_safe_action:", "pending_runner_ids:", "blocked_runner_ids:",
+        "current_blockers:", "timeout_control:", "progress:",
+    ]:
+        if key not in state_text:
+            fail(f"CURRENT-STATE.yaml missing required key marker: {key}")
+
+    if policy.get("remote_call_budget", {}).get("consolidated_ci_status_refreshes_per_milestone_default") != 1:
+        fail("runtime-policy: default consolidated CI/status refresh budget must be exactly one")
+    if policy.get("milestone_policy", {}).get("one_user_continue_or_resume_turn_one_logical_milestone") is not True:
+        fail("runtime-policy: one continue/resume turn must default to one logical milestone")
+    if policy.get("issues_prs_gate", {}).get("required_before_new_development") is not True:
+        fail("runtime-policy: Issues/PRs-first gate must be required")
+
+    next_work = policy.get("next_work_selection") or {}
+    for key in [
+        "dependencies_must_be_complete",
+        "prefer_current_phase",
+        "blocked_unit_not_selected_when_unblocked_same_phase_candidate_exists",
+        "choose_highest_priority_same_phase_unblocked_candidate",
+        "externally_blocked_current_unit_may_remain_current_while_next_valid_advances",
+    ]:
+        if next_work.get(key) is not True:
+            fail(f"runtime-policy: next-work selection must require {key}")
+
+    overlay = policy.get("terminal_remote_evidence_overlay") or {}
+    for key in [
+        "source_compact_state_may_remain_pre_terminal_check_snapshot",
+        "source_only_commit_to_restate_terminal_ci_forbidden",
+        "resume_must_reconcile_overlay_before_next_action",
+        "next_material_source_change_must_fold_overlay_into_compact_state_and_runner_benchmark",
+        "negative_or_failed_terminal_evidence_blocks_merge",
+    ]:
+        if overlay.get(key) is not True:
+            fail(f"runtime-policy: terminal remote-evidence overlay must require {key}")
+    allowed_surfaces = set(overlay.get("allowed_terminal_surfaces") or [])
+    required_surfaces = {"pull_request_comment", "issue_comment", "github_workflow_run_or_commit_status"}
+    if not required_surfaces.issubset(allowed_surfaces):
+        fail(f"runtime-policy: terminal remote-evidence overlay missing surfaces: {sorted(required_surfaces - allowed_surfaces)}")
+
+    required_response = {
+        "repository", "milestone", "issue_pr_commit_evidence", "ci_state", "blockers",
+        "exact_next_safe_action", "current_module_progress_bar", "overall_progress_bar",
+    }
+    response_fields = set(policy.get("response_contract", {}).get("required_fields", []))
+    if not required_response.issubset(response_fields):
+        fail(f"runtime-policy: response contract missing fields: {sorted(required_response - response_fields)}")
+
+    tasks = benchmark.get("tasks")
+    if not isinstance(tasks, list):
+        fail("RUNNER-BENCHMARK.json: tasks must be a list")
+        return
+    task_required = {
+        "task_id", "source", "command_workflow", "exact_source_identity",
+        "environment_matrix_input_fixture_identity", "authorization_state",
+        "security_critical", "merge_blocking", "expected_runner_time",
+        "deterministic_dedup_key", "status", "immutable_evidence",
+    }
+    seen_ids = set()
+    seen_dedup = set()
+    for task in tasks:
+        missing = task_required - set(task)
+        if missing:
+            fail(f"RUNNER-BENCHMARK task missing fields: {sorted(missing)}")
+            continue
+        if task["task_id"] in seen_ids:
+            fail(f"RUNNER-BENCHMARK duplicate task_id: {task['task_id']}")
+        if task["deterministic_dedup_key"] in seen_dedup:
+            fail(f"RUNNER-BENCHMARK duplicate dedup key: {task['deterministic_dedup_key']}")
+        seen_ids.add(task["task_id"])
+        seen_dedup.add(task["deterministic_dedup_key"])
+        if not isinstance(task["immutable_evidence"], list):
+            fail(f"RUNNER-BENCHMARK {task['task_id']}: immutable_evidence must be a list")
+
+
+def validate_readme_progress() -> None:
+    readme_path = ROOT / "README.md"
+    if not readme_path.exists():
+        fail("README.md is required for AI-Native progress synchronization")
+        return
+
+    text = readme_path.read_text(encoding="utf-8")
+    start_marker = "<!-- AI-NATIVE-PROGRESS:START -->"
+    end_marker = "<!-- AI-NATIVE-PROGRESS:END -->"
+    if text.count(start_marker) != 1 or text.count(end_marker) != 1:
+        fail("README.md must contain exactly one AI-NATIVE-PROGRESS marker pair")
+        return
+    start = text.index(start_marker) + len(start_marker)
+    end = text.index(end_marker)
+    if end <= start:
+        fail("README.md AI-NATIVE-PROGRESS markers are malformed")
+        return
+    block = text[start:end]
+
+    execution = load_json("config/ai/execution-plan.json")
+    state = load_json("config/ai/project-state.json")
+    modules_doc = load_json("config/ai/modules-bank.json")
+    work_units = [
+        unit for unit in execution.get("work_units", [])
+        if isinstance(unit, dict) and unit.get("status") != "deprecated"
+    ]
+    total = len(work_units)
+    complete = sum(1 for unit in work_units if unit.get("status") == "complete")
+    in_progress = sum(1 for unit in work_units if unit.get("status") == "in_progress")
+    overall_percent = 0 if total == 0 else (complete * 100) // total
+
+    current_module = state.get("current_module")
+    current_work_unit = state.get("current_work_unit")
+    current_phase = state.get("current_phase")
+    next_valid = state.get("next_valid_work_unit")
+    by_id = {unit.get("id"): unit for unit in work_units if unit.get("id")}
+    current = by_id.get(current_work_unit) or {}
+    next_unit = by_id.get(next_valid) or {}
+    current_module_units = [unit for unit in work_units if unit.get("module_id") == current_module]
+    current_module_total = len(current_module_units)
+    current_module_complete = sum(
+        1 for unit in current_module_units if unit.get("status") == "complete"
+    )
+    current_module_percent = (
+        0 if current_module_total == 0
+        else (current_module_complete * 100) // current_module_total
+    )
+
+    expected_lines = [
+        f"- Overall work-unit progress: `{complete} / {total} complete ({overall_percent}%)`",
+        f"- In-progress work units: `{in_progress}`",
+        f"- Current phase: `{current_phase}`",
+        f"- Current tracked work: `{current_module} / {current_work_unit}` — `{current.get('status')}`",
+        f"- Current module completion: `{current_module_complete} / {current_module_total} complete ({current_module_percent}%)`",
+        f"- Next valid product work: `{next_unit.get('module_id')} / {next_valid}` — `{next_unit.get('status')}`",
+    ]
+    for line in expected_lines:
+        if line not in block:
+            fail(f"README.md AI-Native progress snapshot missing or stale line: {line}")
+
+    dashboard_lines = {
+        line.split("|")[1].strip(): line
+        for line in text.splitlines()
+        if line.startswith("| MOD-")
+    }
+    for module in modules_doc.get("modules", []):
+        if not isinstance(module, dict) or not module.get("id"):
+            continue
+        module_id = module["id"]
+        status = module.get("status")
+        line = dashboard_lines.get(module_id)
+        if line is None:
+            fail(f"README.md module dashboard missing {module_id}")
+            continue
+        if status == "complete" and "100%" not in line:
+            fail(f"README.md module dashboard {module_id} must show 100% for complete state")
+        elif status == "in_progress" and "in progress" not in line:
+            fail(f"README.md module dashboard {module_id} must show in progress")
+        elif status == "not_started" and ("Not started" not in line or "in progress" in line):
+            fail(f"README.md module dashboard {module_id} must show not started")
+
+    policy = load_json("config/ai/runtime/runtime-policy.json")
+    readme_policy = policy.get("readme_progress_sync") or {}
+    for key in [
+        "reconcile_on_every_supervisor_turn",
+        "material_source_milestone_requires_same_commit_readme_sync",
+        "machine_progress_block_required",
+        "progress_block_must_match_execution_plan_and_project_state",
+        "in_progress_work_must_not_receive_partial_completion_credit",
+        "material_delivery_evidence_may_update_without_percentage_inflation",
+        "ci_or_status_only_turn_must_not_create_readme_only_commit",
+        "terminal_remote_evidence_overlay_preserves_exact_head",
+    ]:
+        if readme_policy.get(key) is not True:
+            fail(f"runtime-policy: README progress synchronization must require {key}")
 
 
 def validate_protocol_versioning() -> None:
@@ -421,6 +630,7 @@ def validate_ai_graph() -> None:
     options_doc = load_json("config/ai/options-bank.json")
     modules_doc = load_json("config/ai/modules-bank.json")
     execution_doc = load_json("config/ai/execution-plan.json")
+    project_state_doc = load_json("config/ai/project-state.json")
     queue_doc = load_json("config/coordination/agent-work-queue.json")
     alerts_doc = load_json("config/coordination/agent-alerts.json")
     consents_doc = load_json("config/consent/consent-requests.json")
@@ -449,6 +659,39 @@ def validate_ai_graph() -> None:
             if unit.get("module_id") and unit.get("module_id") not in module_ids:
                 fail(f"work unit {unit.get('id')}: unknown module_id {unit.get('module_id')}")
             check_refs(unit.get("dependencies", []), work_unit_ids, f"work unit {unit.get('id')} dependencies")
+    work_units = [unit for unit in execution_doc.get("work_units", []) if isinstance(unit, dict)]
+    work_by_id = {unit.get("id"): unit for unit in work_units if unit.get("id")}
+    next_valid = project_state_doc.get("next_valid_work_unit")
+    if next_valid:
+        selected = work_by_id.get(next_valid)
+        if not selected:
+            fail(f"project-state next_valid_work_unit references unknown work unit {next_valid}")
+        else:
+            for dep in selected.get("dependencies", []) or []:
+                dep_unit = work_by_id.get(dep)
+                if not dep_unit or dep_unit.get("status") != "complete":
+                    fail(f"project-state next_valid_work_unit {next_valid} has incomplete dependency {dep}")
+            current_phase = project_state_doc.get("current_phase")
+            selectable_statuses = {"not_started", "ready", "in_progress", "verification_required", "needs_update"}
+            same_phase_unblocked = []
+            for unit in work_units:
+                if unit.get("phase_id") != current_phase or unit.get("status") not in selectable_statuses:
+                    continue
+                if unit.get("blockers"):
+                    continue
+                if all((work_by_id.get(dep) or {}).get("status") == "complete" for dep in unit.get("dependencies", []) or []):
+                    same_phase_unblocked.append(unit)
+            if same_phase_unblocked:
+                expected = sorted(
+                    same_phase_unblocked,
+                    key=lambda unit: (-int(unit.get("priority", 0)), str(unit.get("id", ""))),
+                )[0]
+                if next_valid != expected.get("id"):
+                    fail(
+                        f"project-state next_valid_work_unit {next_valid} must be highest-priority "
+                        f"dependency-satisfied unblocked unit in current phase: {expected.get('id')}"
+                    )
+
     for link in trace_doc.get("links", []):
         if isinstance(link, dict):
             rid = str(link.get("requirement_id", "<unknown>"))
@@ -677,6 +920,8 @@ def main() -> int:
     validate_required_files()
     validate_json_schemas()
     validate_manifest()
+    validate_compact_runtime_state()
+    validate_readme_progress()
     validate_protocol_versioning()
     validate_template_boundary()
     validate_control_plane()

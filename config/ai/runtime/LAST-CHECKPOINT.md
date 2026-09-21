@@ -1,0 +1,30 @@
+# Last Checkpoint
+
+- Repository: `Vertex-Systems-Network/vsn-voice-ai`
+- Reconciled main: `c7ed9caf06bd44460a7717e4f419b51cf49792d4`
+- Active governance PR: #131 — `feat(ai): adopt compact supervisor resume and progress protocol`
+- Branch: `ai/supervisor-resume-protocol`
+- Previously certified governance head: `c250180b8c37b586faabf93b0b002a1796113489`
+- AI Native Quality Gates run `35641796156`: `success`.
+- Owner identified README progress drift. Audit confirmed README was advisory-only and stale:
+  - machine work-unit truth is 3/25 complete and 4 in progress, while README still said 1 in progress;
+  - MOD-011, MOD-014 and MOD-016 are `in_progress` in the canonical module bank but README still showed them as not started.
+- This milestone makes README a mandatory AI-Native progress surface:
+  - every owner turn reconciles README before reporting;
+  - every material source-development milestone updates README progress/evidence in the same source commit;
+  - CI/status-only turns reconcile but do not create README-only commits;
+  - repository validation fails when the machine-readable README snapshot disagrees with execution plan/project state or when module dashboard status disagrees with the canonical module bank.
+- README is synchronized to current deterministic truth:
+  - overall 3/25 complete = 12%;
+  - 4 work units in progress;
+  - WU-002/MOD-002 remains current and externally completion-blocked;
+  - WU-014/MOD-014 is the next-valid active development lane;
+  - MOD-011, MOD-014 and MOD-016 dashboard rows are corrected to in progress.
+- WU-014 current product delivery evidence:
+  - PR #134 exact head `7a7848d73c555f0f5a655927abb831f5823883f7`: API Validation `35647881877` success; AI Native Quality Gates `35647881968` success.
+  - PR #135 exact head `cea25b371d666ae73ada531a4ef897e335c29172`: API Validation `35652937526` success; AI Native Quality Gates `35652939711` success.
+  - PR #136 exact head `4008907d403e0015a4411890dc4767a918b6b524`: Web Validation `35653050905` success; AI Native Quality Gates `35653051105` success.
+- These product PRs remain open/unmerged; technical green is not counted as completed WU credit.
+- Issues #110/#132/#133 remain externally blocked as previously recorded.
+- Milestone status: `VERIFYING`; one fresh exact-head AI Native Quality Gates observation is required for this protected README/protocol/validator change.
+- Next safe action: resolve the new PR #131 exact head and perform one consolidated CI/status refresh. Persist terminal result via the remote evidence overlay; do not create a source-only commit merely to restate CI.

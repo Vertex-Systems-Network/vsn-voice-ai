@@ -1,45 +1,894 @@
 {
   "schema_version": 1,
   "phases": [
-    {"id":"PHASE-000","name":"Initialization & Architecture Gates","objective":"Establish project identity, hybrid provider architecture, security/data baselines and approved technology stack before Phase 1 product implementation.","module_ids":["MOD-001","MOD-010","MOD-017"],"dependencies":[],"status":"complete","exit_criteria":["Child state and CI are healthy","Provider architecture is documented","Voice AI threat/data baselines are defined","CONSENT-000002 technology stack approval is recorded","PHASE-000 foundation has repository verification evidence"]},
-    {"id":"PHASE-001","name":"Realtime Audio Commercial Core","objective":"Deliver platform-independent realtime audio foundation, hybrid routing and first usable accent/audio path.","module_ids":["MOD-002","MOD-003","MOD-004","MOD-014","MOD-016","MOD-018"],"dependencies":["PHASE-000"],"status":"in_progress","exit_criteria":["Realtime audio runs through safe virtual routing","Initial enhancement/accent provider path is verified","Base SaaS/telemetry/release foundation exists"]},
-    {"id":"PHASE-002","name":"Translation & Live Transcription","objective":"Add realtime translation, captions, diarization and finalized transcript reconciliation.","module_ids":["MOD-005","MOD-006"],"dependencies":["PHASE-001"],"status":"not_started","exit_criteria":["Translation/transcription meet approved quality and latency targets","Live/final transcript states reconcile"]},
-    {"id":"PHASE-003","name":"Meeting Intelligence & Multi-Platform Capture","objective":"Capture meetings across major surfaces and convert them into useful artifacts.","module_ids":["MOD-007","MOD-008","MOD-020"],"dependencies":["PHASE-002"],"status":"not_started","exit_criteria":["Initial meeting platforms capture reliably","Notes/summaries/actions are source-traceable","Initial mobile/browser/in-person capture is verified"]},
-    {"id":"PHASE-004","name":"Commercial SaaS & Business Integrations","objective":"Commercialize access and connect conversation outcomes to customer work systems.","module_ids":["MOD-015","MOD-021"],"dependencies":["PHASE-003"],"status":"not_started","exit_criteria":["Entitlements/usage are metered correctly","Initial CRM/calendar/email/chat integration pack is revocable and auditable"]},
-    {"id":"PHASE-005","name":"Conversation Intelligence & Enterprise","objective":"Add contact-center intelligence, QA/compliance and enterprise administration.","module_ids":["MOD-013","MOD-022","MOD-025"],"dependencies":["PHASE-004"],"status":"not_started","exit_criteria":["Initial telephony/contact-center path is stable","QA/compliance scores link to evidence","Enterprise identity/fleet policies are enforceable"]},
-    {"id":"PHASE-006","name":"Unified Knowledge & Agentic Automation","objective":"Create cross-app knowledge and safe authorized action execution.","module_ids":["MOD-023","MOD-024"],"dependencies":["PHASE-004"],"status":"not_started","exit_criteria":["Cross-app search inherits source permissions","AI actions require correct scopes/approvals and are auditable/idempotent"]},
-    {"id":"PHASE-007","name":"Live Assistant & Telephony Expansion","objective":"Expand realtime communication coaching and contextual assistance.","module_ids":["MOD-009"],"dependencies":["PHASE-005"],"status":"not_started","exit_criteria":["Live assistance meets approved latency/factuality controls and cannot break base call audio"]},
-    {"id":"PHASE-008","name":"Proprietary VSN AI Expansion","objective":"Build VSN-owned models as first-class providers without blocking initial hybrid commercial path.","module_ids":["MOD-011","MOD-012"],"dependencies":["PHASE-000"],"status":"not_started","exit_criteria":["Approved datasets/compute/provenance exist","VSN models pass benchmark/security gates before production routing"]},
-    {"id":"PHASE-009","name":"Developer Platform","objective":"Expose stable internal capabilities through secure public APIs, SDKs and webhooks.","module_ids":["MOD-019"],"dependencies":["PHASE-005","PHASE-006"],"status":"not_started","exit_criteria":["Public contracts are versioned, secure, metered and documented"]}
+    {
+      "id": "PHASE-000",
+      "name": "Initialization & Architecture Gates",
+      "objective": "Establish project identity, hybrid provider architecture, security/data baselines and approved technology stack before Phase 1 product implementation.",
+      "module_ids": [
+        "MOD-001",
+        "MOD-010",
+        "MOD-017"
+      ],
+      "dependencies": [],
+      "status": "complete",
+      "exit_criteria": [
+        "Child state and CI are healthy",
+        "Provider architecture is documented",
+        "Voice AI threat/data baselines are defined",
+        "CONSENT-000002 technology stack approval is recorded",
+        "PHASE-000 foundation has repository verification evidence"
+      ]
+    },
+    {
+      "id": "PHASE-001",
+      "name": "Realtime Audio Commercial Core",
+      "objective": "Deliver platform-independent realtime audio foundation, hybrid routing and first usable accent/audio path.",
+      "module_ids": [
+        "MOD-002",
+        "MOD-003",
+        "MOD-004",
+        "MOD-014",
+        "MOD-016",
+        "MOD-018"
+      ],
+      "dependencies": [
+        "PHASE-000"
+      ],
+      "status": "in_progress",
+      "exit_criteria": [
+        "Realtime audio runs through safe virtual routing",
+        "Initial enhancement/accent provider path is verified",
+        "Base SaaS/telemetry/release foundation exists"
+      ]
+    },
+    {
+      "id": "PHASE-002",
+      "name": "Translation & Live Transcription",
+      "objective": "Add realtime translation, captions, diarization and finalized transcript reconciliation.",
+      "module_ids": [
+        "MOD-005",
+        "MOD-006"
+      ],
+      "dependencies": [
+        "PHASE-001"
+      ],
+      "status": "not_started",
+      "exit_criteria": [
+        "Translation/transcription meet approved quality and latency targets",
+        "Live/final transcript states reconcile"
+      ]
+    },
+    {
+      "id": "PHASE-003",
+      "name": "Meeting Intelligence & Multi-Platform Capture",
+      "objective": "Capture meetings across major surfaces and convert them into useful artifacts.",
+      "module_ids": [
+        "MOD-007",
+        "MOD-008",
+        "MOD-020"
+      ],
+      "dependencies": [
+        "PHASE-002"
+      ],
+      "status": "not_started",
+      "exit_criteria": [
+        "Initial meeting platforms capture reliably",
+        "Notes/summaries/actions are source-traceable",
+        "Initial mobile/browser/in-person capture is verified"
+      ]
+    },
+    {
+      "id": "PHASE-004",
+      "name": "Commercial SaaS & Business Integrations",
+      "objective": "Commercialize access and connect conversation outcomes to customer work systems.",
+      "module_ids": [
+        "MOD-015",
+        "MOD-021"
+      ],
+      "dependencies": [
+        "PHASE-003"
+      ],
+      "status": "not_started",
+      "exit_criteria": [
+        "Entitlements/usage are metered correctly",
+        "Initial CRM/calendar/email/chat integration pack is revocable and auditable"
+      ]
+    },
+    {
+      "id": "PHASE-005",
+      "name": "Conversation Intelligence & Enterprise",
+      "objective": "Add contact-center intelligence, QA/compliance and enterprise administration.",
+      "module_ids": [
+        "MOD-013",
+        "MOD-022",
+        "MOD-025"
+      ],
+      "dependencies": [
+        "PHASE-004"
+      ],
+      "status": "not_started",
+      "exit_criteria": [
+        "Initial telephony/contact-center path is stable",
+        "QA/compliance scores link to evidence",
+        "Enterprise identity/fleet policies are enforceable"
+      ]
+    },
+    {
+      "id": "PHASE-006",
+      "name": "Unified Knowledge & Agentic Automation",
+      "objective": "Create cross-app knowledge and safe authorized action execution.",
+      "module_ids": [
+        "MOD-023",
+        "MOD-024"
+      ],
+      "dependencies": [
+        "PHASE-004"
+      ],
+      "status": "not_started",
+      "exit_criteria": [
+        "Cross-app search inherits source permissions",
+        "AI actions require correct scopes/approvals and are auditable/idempotent"
+      ]
+    },
+    {
+      "id": "PHASE-007",
+      "name": "Live Assistant & Telephony Expansion",
+      "objective": "Expand realtime communication coaching and contextual assistance.",
+      "module_ids": [
+        "MOD-009"
+      ],
+      "dependencies": [
+        "PHASE-005"
+      ],
+      "status": "not_started",
+      "exit_criteria": [
+        "Live assistance meets approved latency/factuality controls and cannot break base call audio"
+      ]
+    },
+    {
+      "id": "PHASE-008",
+      "name": "Proprietary VSN AI Expansion",
+      "objective": "Build VSN-owned models as first-class providers without blocking initial hybrid commercial path.",
+      "module_ids": [
+        "MOD-011",
+        "MOD-012"
+      ],
+      "dependencies": [
+        "PHASE-000"
+      ],
+      "status": "not_started",
+      "exit_criteria": [
+        "Approved datasets/compute/provenance exist",
+        "VSN models pass benchmark/security gates before production routing"
+      ]
+    },
+    {
+      "id": "PHASE-009",
+      "name": "Developer Platform",
+      "objective": "Expose stable internal capabilities through secure public APIs, SDKs and webhooks.",
+      "module_ids": [
+        "MOD-019"
+      ],
+      "dependencies": [
+        "PHASE-005",
+        "PHASE-006"
+      ],
+      "status": "not_started",
+      "exit_criteria": [
+        "Public contracts are versioned, secure, metered and documented"
+      ]
+    }
   ],
   "work_units": [
-    {"id":"WU-001","phase_id":"PHASE-000","module_id":"MOD-001","title":"Project governance, bootstrap and consent","objective":"Complete project identity/governance and record owner approvals.","dependencies":[],"priority":99,"status":"complete","blockers":[],"acceptance_criteria":["Project identity/state reconciled and consent boundary enforceable"],"required_checks":["ANPOS repository-integrity validation"],"completion_evidence":["config/protocol/instance.json active_project/bootstrap_completed=true","CONSENT-000001 approved","CONSENT-000002 approved","GitHub Actions baseline passed"]},
-    {"id":"WU-002","phase_id":"PHASE-001","module_id":"MOD-002","title":"Desktop audio core and virtual devices","objective":"Deliver realtime desktop audio capture/routing and safe virtual devices.","dependencies":["WU-001"],"priority":98,"status":"in_progress","blockers":[],"acceptance_criteria":["Approved desktop calling apps consume processed audio with safe bypass"],"required_checks":["latency/jitter/device lifecycle compatibility tests"],"completion_evidence":["Rust native workspace and vsn-audio-core initialized at commit 047d974c2dd5b5f65b51a63311fcd2ff84c46883","AudioFrame/AudioFormat validation, bounded frame queue and safe-bypass pipeline implemented","Platform-neutral DeviceCatalog preferred/default/fallback lifecycle logic implemented","DeviceSelectionController provides deterministic device event/reselection behavior","StreamController provides bounded invalidation recovery, exponential reopen backoff and processing safe-bypass state transitions","GitHub Actions run 34415564226 passed initial Rust audio-core quality gates","GitHub Actions run 34416070554 passed device-catalog rustfmt, Clippy, unit tests, Go gateway tests, schemas and ANPOS checks","GitHub Actions run 34416846345 passed device selection/recovery controller checks","GitHub Actions run 34417205364 passed bounded stream-recovery controller checks","native/windows-audio workspace crate implements cross-platform EndpointSnapshot mapping plus Windows-only MMDevice enumeration/default-role code","GitHub Actions run 34420328611 passed ANPOS, Go, rustfmt, Clippy, workspace tests, schemas, YAML and whitespace checks on Ubuntu","EnginePeriodRange validates IAudioClient3-style fundamental/min/max/default period constraints and selects the nearest supported period; frames_for_duration derives exact target audio-frame counts","GitHub Actions run 34420942799 passed rustfmt, Clippy, workspace unit tests and repository gates for the engine-period planning slice","SharedCapturePlan separates WASAPI engine-period callbacks from pipeline frame/sample cadence and marks accumulator-required paths","GitHub Actions run 34421431894 passed repository gates for SharedCapturePlan",".github/workflows/windows-audio.yml provides Windows-native compile/Clippy/test validation","GitHub Actions Windows run 34423457612 passed Windows compile, Clippy and tests","GitHub Actions Windows run 34423605516 passed the MMDevice runtime snapshot smoke test on Windows Server 2025","Default-capture IAudioClient3 probe compiles on Windows, activates the communications endpoint when available, reads GetMixFormat and validates GetSharedModeEnginePeriod output","GitHub Actions run 34424232264 passed the full Ubuntu repository-integrity gate and Windows run 34424232265 passed Windows compile, Clippy and 14/14 Windows audio tests on the same commit","Event-driven WASAPI capture session, native sample decoding and packet-to-AudioFrame assembly are implemented; assembler boundary passed Ubuntu run 34500603127 and Windows run 34500603073","CapturePump waits for WASAPI packet events and drains queued packets into validated frames with a bounded packet budget; Ubuntu run 34503117516 and Windows run 34503117617 passed","WASAPI device/resource/audio-service lifecycle HRESULTs are structured as recoverable capture failures; Ubuntu run 34503799448 and Windows run 34503799282 passed","Runtime stream failure transitions are separated from optional processing bypass; Ubuntu run 34504361389 and Windows run 34504361377 passed","CaptureRuntime performs externally scheduled bounded reopen recovery, preserves sequence continuity and contains no internal unbounded retry/sleep loop; Ubuntu run 34504968258 and Windows run 34504968283 passed","IMMNotificationClient callback registration runs on a dedicated Windows MTA thread and publishes to a bounded non-blocking queue with drop accounting; Ubuntu run 34508512647 and Windows run 34508512649 passed, including Windows register/unregister smoke","Owner-thread notification bridge triggers at most one recovery transition for a relevant active capture route change while unrelated/same-default events remain no-ops; Ubuntu run 34509104650 and Windows run 34509104681 passed","VirtualMicStagingBuffer provides fixed-format bounded user-mode virtual-mic staging, drops oldest data on overflow to bound latency, emits fresh silence on underrun and tracks accepted/drop/underrun counters; Ubuntu run 34522446261 and Windows run 34522445865 passed","VirtualMicOutputBridge sends both successfully processed frames and AudioPipeline safe-bypass originals into the same staging path; Ubuntu run 34522943083 and Windows run 34522943093 passed","Versioned C-compatible virtual microphone transport protocol defines magic/version/header sizing, session generation, fixed audio geometry and monotonic producer/consumer cursors; cyclic ring planning normalizes overruns by discarding oldest frames. Ubuntu run 34525486454 and Windows run 34525486333 passed on implementation head aa0792b81746a11d99b3b3451c3086e363714ee8","MSVC x64 C++ driver-facing ABI mirror in native/windows-virtual-mic locks 40-byte ProtocolHeader/CursorSnapshot sizes, 8-byte alignment, exact field offsets, protocol validation and matching cyclic-ring/session/cursor semantics; Ubuntu run 34528681411 and Windows run 34528681382 passed on implementation head 93c166709e3fad6aecd924a0378316761a9e318f","Windows x64 shared-cursor synchronization uses aligned Interlocked 64-bit publication, bounded stable snapshots, session-generation fencing, monotonic producer/consumer checks and atomic overrun/underrun counters; Ubuntu run 34530771449 and Windows run 34530771628 passed on implementation head 29df8cf88878f14ec319e249562f3d25aa2efe30","Deterministic 64-byte-aligned shared-region planning defines header/cursor/PCM-ring offsets and overflow-safe total mapping sizing; the 48 kHz mono F32 10 ms four-frame reference is 7,808 bytes total. Ubuntu run 34531204947 and Windows run 34531204951 passed on implementation head fafd5100d430d0880fe1dfe0671edf7537683fcf","Custom topology/WaveRT miniports, PortCls subdevice registration and physical bridge wiring, a concrete WaveRT capture stream and guarded transport bridge are present in native/windows-virtual-mic and compile in the real WDK target","PR #49 merged the fixed 10 ms guarded WaveRT realtime scheduler as fb240a40e265780f6b14fad3898e83549ddaf059 after Windows Audio Validation and AI Native Quality Gates passed","PR #51 merged the capture-only INF/test package as 80649e33cb8dcaaa03dd13b3687d55bd76d6f37c after WDK build, InfVerif and Inf2Cat passed","PR #53 merged the installed endpoint/control runtime smoke harness as 4720af358b9db8b0b106017b76b855b27c9d6a90 after Windows Audio Validation and AI Native Quality Gates passed; real installed-endpoint/calling-app evidence remains pending","docs/architecture/WINDOWS-AUDIO-IMPLEMENTATION.md defines pending physical-device verification and OS-visible virtual-mic implementation/release boundary","PR #86 merged bounded Windows virtual-mic verification evidence collection; hosted CI evidence is classified verification_required and cannot claim controlled-machine acceptance","PR #88 merged content-safe synchronous pipeline processing measurements with monotonic timing; these measurements are not controlled-hardware latency compliance proof","PR #102 merged a controlled-machine performance summary contract that binds latency/jitter evidence to the same test_run_id and derives the existing NFR-AUD-002 safe-bypass <=250 ms target without claiming completion","PR #103 merged a numeric-only raw performance-sample contract and deterministic nearest-rank p95 summarizer; hosted CI fixture results verify the contract only and are not controlled-hardware evidence","PR #104 merged a fail-closed controlled Windows verification runner and runbook with exact repository-SHA provenance; successful output is only an acceptance evidence candidate","PR #105 requires default-device change, disable/enable, sleep/wake and audio-service restart recovery evidence before a controlled candidate can be produced; USB/Bluetooth are profile-specific additions","A real controlled Windows installation, approved calling-app processed-audio/safe-bypass observations, the required lifecycle matrix and controlled latency/jitter measurements have not yet been executed/reviewed; WU-002 remains in progress, not complete"]},
-    {"id":"WU-003","phase_id":"PHASE-001","module_id":"MOD-003","title":"Realtime audio enhancement","objective":"Deliver noise/background-voice/echo cleanup through hybrid provider contracts.","dependencies":["WU-002","WU-010"],"priority":97,"status":"not_started","blockers":[],"acceptance_criteria":["Enhancement improves clarity and degrades safely on provider/runtime failure"],"required_checks":["objective/subjective audio and CPU/latency benchmarks"],"completion_evidence":[]},
-    {"id":"WU-004","phase_id":"PHASE-001","module_id":"MOD-004","title":"Accent conversion and voice preservation","objective":"Deliver initial verified accent conversion while preserving speaker identity.","dependencies":["WU-002","WU-003","WU-010"],"priority":96,"status":"not_started","blockers":[],"acceptance_criteria":["Initial target accent path meets approved intelligibility/identity/latency thresholds"],"required_checks":["listening, speaker-similarity, accent and latency benchmarks"],"completion_evidence":[]},
-    {"id":"WU-005","phase_id":"PHASE-002","module_id":"MOD-005","title":"Realtime speech translation","objective":"Deliver verified bidirectional speech translation through normalized provider adapters.","dependencies":["WU-002","WU-003","WU-010"],"priority":95,"status":"not_started","blockers":[],"acceptance_criteria":["Approved language pairs understandable and provider/session provenance traceable"],"required_checks":["translation quality, code-switching and latency tests"],"completion_evidence":[]},
-    {"id":"WU-006","phase_id":"PHASE-002","module_id":"MOD-006","title":"Live transcription, captions and diarization","objective":"Deliver streaming/final transcript and speaker-aware caption pipelines.","dependencies":["WU-002","WU-010"],"priority":94,"status":"not_started","blockers":[],"acceptance_criteria":["Live transcript streams reliably and final output reconciles provisional words/speakers"],"required_checks":["WER/cpWER, overlap/noise and multilingual tests"],"completion_evidence":[]},
-    {"id":"WU-007","phase_id":"PHASE-003","module_id":"MOD-007","title":"Meeting capture and platform connectors","objective":"Deliver authorized meeting capture abstraction across initial conferencing platforms.","dependencies":["WU-001","WU-010","WU-017"],"priority":93,"status":"not_started","blockers":[],"acceptance_criteria":["Initial platform capture/join/webhook flows reliable and revocable"],"required_checks":["platform matrix, OAuth revocation and webhook idempotency tests"],"completion_evidence":[]},
-    {"id":"WU-008","phase_id":"PHASE-003","module_id":"MOD-008","title":"Meeting intelligence and knowledge","objective":"Generate source-traceable notes, summaries, decisions, actions, highlights and Q&A.","dependencies":["WU-006","WU-007","WU-010","WU-017"],"priority":92,"status":"not_started","blockers":[],"acceptance_criteria":["Meeting artifacts trace to transcript evidence and respect permissions"],"required_checks":["factuality, extraction and permission tests"],"completion_evidence":[]},
-    {"id":"WU-009","phase_id":"PHASE-007","module_id":"MOD-009","title":"Live AI assistant and communication coach","objective":"Deliver opt-in realtime contextual assistance and coaching.","dependencies":["WU-006","WU-008","WU-010","WU-017"],"priority":91,"status":"not_started","blockers":[],"acceptance_criteria":["Suggestions arrive within approved latency and cannot block base audio"],"required_checks":["latency, factuality and prompt-injection tests"],"completion_evidence":[]},
-    {"id":"WU-010","phase_id":"PHASE-000","module_id":"MOD-010","title":"Hybrid AI provider gateway foundation","objective":"Establish provider-neutral capability registration, common adapter entry, routing, health, fallback, rate-limit and content-safe telemetry foundations. Concrete provider adapters continue as later capability/provider work without reopening the architecture gate.","dependencies":["WU-001"],"priority":90,"status":"complete","blockers":[],"acceptance_criteria":["Third-party and VSN adapters use the same manifest/registration contract","Routing filters by capability/access/region/health/rate-limit and supports deterministic fallback","Routing telemetry contains only approved content-safe metadata","Circuit breaker removes failing providers from active routing"],"required_checks":["adapter contract tests","failure/fallback tests","rate-limit/quota tests","telemetry field-safety tests","product JSON Schema validation"],"completion_evidence":["services/realtime-gateway/internal/provider adapter/registry/router/health/telemetry implementation","packages/contracts/schemas provider manifest/routing contracts","GitHub Actions run 34413262925 passed Go tests, schema validation, ANPOS, YAML and formatting","docs/architecture/DEVELOPMENT-ARCHITECTURE.md defines provider-neutral architecture"]},
-    {"id":"WU-011","phase_id":"PHASE-008","module_id":"MOD-011","title":"Proprietary VSN AI runtime and model registry","objective":"Deliver approved dataset/evaluation/model lifecycle and VSN provider runtime.","dependencies":["WU-001","WU-010","WU-017"],"priority":89,"status":"in_progress","blockers":["Separate dataset/compute authorization required before model training or material paid GPU use"],"acceptance_criteria":["Versioned VSN model plugs into provider gateway with benchmark/rollback evidence"],"required_checks":["dataset provenance, leakage, model regression and artifact integrity tests"],"completion_evidence":["PR #111 merged the metadata-only versioned VSN model manifest contract with normalized capabilities, artifact digest metadata, dataset-registry provenance references and fail-closed verification gates","PR #112 merged an immutable in-memory VSN model metadata registry with defensive reads and a verified-only metadata view that does not mutate the provider routing registry","PR #113 merged a bounded fail-closed JSON manifest loader with shared cross-language fixture validation and rejection of unknown fields, oversized input and trailing JSON","PR #114 merged bounded streaming SHA-256 artifact digest verification; a digest match is integrity evidence only and does not auto-promote model verification state","PR #115 merged a disabled VSN provider-candidate projection with explicit proof that registration alone remains non-routable","PR #116 merged the versioned cross-service provider-candidate contract with schema-locked enabled=false, verified_access=false, health=unhealthy and rate_limit=unknown plus Go/Python fixture-drift tests","PR #117 merged an opaque verification-evidence bundle that binds dataset provenance, leakage, model regression, benchmark, security, rollback and artifact-integrity references to the exact model/version/artifact digest and dataset set; provider-candidate v2 carries the evidence ID and remains fail closed","Separate dataset/compute authorization has not been granted or exercised for model training/material paid GPU use; no trained VSN model, reviewed production benchmark/security/rollback records, runtime artifact signature/release-provenance verification or production provider activation exists yet; WU-011 is therefore in progress, not complete"]},
-    {"id":"WU-012","phase_id":"PHASE-008","module_id":"MOD-012","title":"Voice personalization, identity safety and voice security","objective":"Deliver safe voice profiles, verification and spoof/deepfake controls.","dependencies":["WU-004","WU-005","WU-017"],"priority":88,"status":"not_started","blockers":[],"acceptance_criteria":["Voice personalization is consent-bound and security events auditable"],"required_checks":["authorization, deletion/revocation, spoof/deepfake and abuse tests"],"completion_evidence":[]},
-    {"id":"WU-013","phase_id":"PHASE-005","module_id":"MOD-013","title":"Telephony and contact-center integrations","objective":"Deliver initial SIP/PSTN/contact-center realtime media integration.","dependencies":["WU-002","WU-003","WU-004","WU-005","WU-006","WU-010","WU-017"],"priority":87,"status":"not_started","blockers":[],"acceptance_criteria":["Initial telephony media path stable and failures degrade safely"],"required_checks":["codec, packet loss, DTMF, fraud/rate-limit and call lifecycle tests"],"completion_evidence":[]},
-    {"id":"WU-014","phase_id":"PHASE-001","module_id":"MOD-014","title":"SaaS web app, accounts, teams and workspace","objective":"Deliver secure user/org identity and core conversation workspace.","dependencies":["WU-001","WU-017"],"priority":86,"status":"in_progress","blockers":[],"acceptance_criteria":["Tenant isolation and secure desktop/web identity linking verified"],"required_checks":["auth, RBAC, E2E, accessibility and responsive tests"],"completion_evidence":["Authorization-context and desktop-link persisted-record JSON Schemas enforce tenant binding and reject secret-bearing fields","services/api provides the approved NestJS/Fastify control API foundation with strict tenant authorization and one-time desktop linking boundaries","PR #52 merged the tenant-authorized workspace bootstrap boundary after API Validation and AI Native Quality Gates passed","PR #54 merged the workspace-bootstrap response JSON Schema and regression tests after API Validation and AI Native Quality Gates passed","PRs #80, #83 and #85 merged PostgreSQL desktop-link persistence, fail-closed runtime DI and the tenant-authorized desktop-link HTTP boundary","PR #82 keeps browser authorization summaries free of internal session identifiers","PRs #90 and #91 merged the bounded PostgreSQL workspace Team read model and authenticated tenant-bound Team HTTP route","PRs #93 and #94 merged strict browser Team validation and the authenticated Team panel with fail-closed UI states","PRs #95 and #96 merged the subject-bound workspace directory API and strict browser directory client","PRs #97 and #98 merged explicit workspace selection and root directory-to-Team E2E flow; Team fetch remains zero until explicit selection","PR #99 consolidated exact membership, directory and Team reads onto one fail-closed PostgreSQL runtime client/pool","Production trusted-principal/session provider selection and verified end-to-end desktop/web identity linking remain pending; WU-014 is therefore in progress, not complete"]},
-    {"id":"WU-015","phase_id":"PHASE-004","module_id":"MOD-015","title":"Subscriptions, entitlements and usage metering","objective":"Deliver reliable subscription state, quotas, entitlements and AI usage ledger.","dependencies":["WU-010","WU-014","WU-016","WU-017"],"priority":85,"status":"not_started","blockers":[],"acceptance_criteria":["Usage is idempotently metered and billing/entitlement state reconciles safely"],"required_checks":["billing sandbox, metering and quota-boundary tests"],"completion_evidence":[]},
-    {"id":"WU-016","phase_id":"PHASE-001","module_id":"MOD-016","title":"Admin, analytics, observability and cost control","objective":"Deliver provider/product health, latency, usage and cost observability.","dependencies":["WU-010","WU-017"],"priority":84,"status":"in_progress","blockers":[],"acceptance_criteria":["Provider cost/latency attributable and sensitive content redacted from telemetry"],"required_checks":["observability coverage, alert and cost reconciliation tests"],"completion_evidence":["PR #27 merged ProviderRoutingMetricsObserver with selection, no-eligible, provider count, p95 latency, estimated cost, health and rate-limit tracking under a content-safe field boundary","PR #31 merged the dependency-light OpenTelemetry routing metric export boundary with a closed attribute set and content-safety regression coverage","PR #81 merged aggregate cost reconciliation integrity alerts without customer content","PR #84 merged the audited routing operational snapshot combining content-safe operational state and reconciliation","PR #87 merged a browser/cross-service audited operational export with decimal-string counters and deep-cloned reconciliation issues","PR #89 merged audited operational alert dispatch through the bounded content-safe sink boundary","PR #106 merged a runnable local-only routing operations export command that composes audited operational metrics, provider cost reconciliation and content-safe alerts without exposing an unauthenticated admin or tenant endpoint","PR #107 merged a closed routing-ops-export input JSON Schema and shared cross-language fixture validated by both Python schema tests and the Go executable","Authenticated admin analytics/runtime integration remains pending; the local diagnostic process is not an admin API and WU-016 stays in progress"]},
-    {"id":"WU-017","phase_id":"PHASE-000","module_id":"MOD-017","title":"PHASE-000 privacy, security and data-governance baseline","objective":"Define the project-specific Voice AI threat model, data classifications, trust boundaries, retention/deletion defaults and downstream verification obligations before feature implementation. MOD-017 remains cross-cutting during later implementation and release work.","dependencies":["WU-001"],"priority":83,"status":"complete","blockers":[],"acceptance_criteria":["Voice AI sensitive data classes and trust boundaries are explicit","Threats map to concrete downstream controls/verification obligations","Retention/deletion/training defaults are documented","Core realtime/meeting/identity/integration/billing/deletion/model-research data flows are documented"],"required_checks":["ANPOS repository-integrity validation","structured threat/data baseline review","requirements traceability mapping"],"completion_evidence":["config/security/threat-model.json project baseline defined","config/data/data-governance.json project baseline defined","docs/data/VOICE-AI-DATA-FLOWS.md","config/traceability/requirements-traceability.json populated","docs/architecture/NON-FUNCTIONAL-REQUIREMENTS.md","GitHub Actions run 34413262925 passed repository integrity"]},
-    {"id":"WU-018","phase_id":"PHASE-001","module_id":"MOD-018","title":"Quality, performance, release and desktop updates","objective":"Deliver product-specific test/release/signing/update/rollback assurance.","dependencies":["WU-002","WU-003","WU-004","WU-005","WU-006","WU-010","WU-014","WU-017"],"priority":82,"status":"not_started","blockers":[],"acceptance_criteria":["Critical flows, latency budgets, installer/update and rollback paths verified"],"required_checks":["CI, audio benchmarks, E2E, security and install/update/rollback tests"],"completion_evidence":[]},
-    {"id":"WU-019","phase_id":"PHASE-009","module_id":"MOD-019","title":"Public developer API, SDKs and webhooks","objective":"Expose approved stable capabilities via versioned developer interfaces.","dependencies":["WU-010","WU-015","WU-016","WU-017","WU-018"],"priority":81,"status":"not_started","blockers":[],"acceptance_criteria":["Public contracts secure, metered, rate-limited, signed where applicable and documented"],"required_checks":["contract, load, security and SDK compatibility tests"],"completion_evidence":[]},
-    {"id":"WU-020","phase_id":"PHASE-003","module_id":"MOD-020","title":"Multi-platform clients and in-person capture","objective":"Deliver initial mobile/browser/in-person capture surfaces with secure sync.","dependencies":["WU-006","WU-007","WU-014","WU-017","WU-018"],"priority":80,"status":"not_started","blockers":[],"acceptance_criteria":["Supported clients capture/sync reliably and honor permission revocation"],"required_checks":["platform, lifecycle, sync, CPU/battery and permission tests"],"completion_evidence":[]},
-    {"id":"WU-021","phase_id":"PHASE-004","module_id":"MOD-021","title":"Business integrations and workflow automation","objective":"Deliver revocable integrations for calendar, email, chat, CRM, documents and automation systems.","dependencies":["WU-008","WU-014","WU-017"],"priority":79,"status":"not_started","blockers":[],"acceptance_criteria":["Initial integrations use least privilege and writes/sync are idempotent/auditable"],"required_checks":["OAuth, webhook replay, sync-conflict and rate-limit tests"],"completion_evidence":[]},
-    {"id":"WU-022","phase_id":"PHASE-005","module_id":"MOD-022","title":"Conversation intelligence, QA and compliance scoring","objective":"Deliver evidence-linked configurable scoring and manager QA workflows.","dependencies":["WU-006","WU-008","WU-013","WU-016","WU-017"],"priority":78,"status":"not_started","blockers":[],"acceptance_criteria":["Scores/flags link to evidence and scorecards are versioned"],"required_checks":["precision/recall, bias/error, permission and audit tests"],"completion_evidence":[]},
-    {"id":"WU-023","phase_id":"PHASE-006","module_id":"MOD-023","title":"Unified conversation knowledge and cross-app search","objective":"Deliver permission-aware semantic retrieval across conversations and connected work systems.","dependencies":["WU-008","WU-014","WU-017","WU-021"],"priority":77,"status":"not_started","blockers":[],"acceptance_criteria":["Search spans only authorized sources and answers cite source evidence"],"required_checks":["retrieval relevance, permission leakage, citation and deletion-propagation tests"],"completion_evidence":[]},
-    {"id":"WU-024","phase_id":"PHASE-006","module_id":"MOD-024","title":"Agentic actions, AI skills and voice agents","objective":"Deliver scoped, approval-aware and auditable agentic actions.","dependencies":["WU-009","WU-017","WU-021","WU-023"],"priority":76,"status":"not_started","blockers":[],"acceptance_criteria":["Actions execute only within scope, approvals enforced and retries cannot duplicate side effects"],"required_checks":["tool authorization, prompt-injection, idempotency and approval-bypass tests"],"completion_evidence":[]},
-    {"id":"WU-025","phase_id":"PHASE-005","module_id":"MOD-025","title":"Enterprise administration, device fleet and deployment control","objective":"Deliver enterprise identity lifecycle, fleet inventory, policy and staged deployment controls.","dependencies":["WU-014","WU-016","WU-017","WU-018","WU-020"],"priority":75,"status":"not_started","blockers":[],"acceptance_criteria":["Enterprise identity/policy/device lifecycle predictable and auditable"],"required_checks":["SSO/SCIM, RBAC, fleet policy and deployment rollback tests"],"completion_evidence":[]}
+    {
+      "id": "WU-001",
+      "phase_id": "PHASE-000",
+      "module_id": "MOD-001",
+      "title": "Project governance, bootstrap and consent",
+      "objective": "Complete project identity/governance and record owner approvals.",
+      "dependencies": [],
+      "priority": 99,
+      "status": "complete",
+      "blockers": [],
+      "acceptance_criteria": [
+        "Project identity/state reconciled and consent boundary enforceable"
+      ],
+      "required_checks": [
+        "ANPOS repository-integrity validation"
+      ],
+      "completion_evidence": [
+        "config/protocol/instance.json active_project/bootstrap_completed=true",
+        "CONSENT-000001 approved",
+        "CONSENT-000002 approved",
+        "GitHub Actions baseline passed"
+      ]
+    },
+    {
+      "id": "WU-002",
+      "phase_id": "PHASE-001",
+      "module_id": "MOD-002",
+      "title": "Desktop audio core and virtual devices",
+      "objective": "Deliver realtime desktop audio capture/routing and safe virtual devices.",
+      "dependencies": [
+        "WU-001"
+      ],
+      "priority": 98,
+      "status": "in_progress",
+      "blockers": [
+        "Issue #110: controlled physical Windows runner/machine authorization and acceptance evidence are required for installed endpoint, approved calling-app routing, lifecycle recovery matrix, and controlled latency/jitter verification before WU-002 can complete."
+      ],
+      "acceptance_criteria": [
+        "Approved desktop calling apps consume processed audio with safe bypass"
+      ],
+      "required_checks": [
+        "latency/jitter/device lifecycle compatibility tests"
+      ],
+      "completion_evidence": [
+        "Rust native workspace and vsn-audio-core initialized at commit 047d974c2dd5b5f65b51a63311fcd2ff84c46883",
+        "AudioFrame/AudioFormat validation, bounded frame queue and safe-bypass pipeline implemented",
+        "Platform-neutral DeviceCatalog preferred/default/fallback lifecycle logic implemented",
+        "DeviceSelectionController provides deterministic device event/reselection behavior",
+        "StreamController provides bounded invalidation recovery, exponential reopen backoff and processing safe-bypass state transitions",
+        "GitHub Actions run 34415564226 passed initial Rust audio-core quality gates",
+        "GitHub Actions run 34416070554 passed device-catalog rustfmt, Clippy, unit tests, Go gateway tests, schemas and ANPOS checks",
+        "GitHub Actions run 34416846345 passed device selection/recovery controller checks",
+        "GitHub Actions run 34417205364 passed bounded stream-recovery controller checks",
+        "native/windows-audio workspace crate implements cross-platform EndpointSnapshot mapping plus Windows-only MMDevice enumeration/default-role code",
+        "GitHub Actions run 34420328611 passed ANPOS, Go, rustfmt, Clippy, workspace tests, schemas, YAML and whitespace checks on Ubuntu",
+        "EnginePeriodRange validates IAudioClient3-style fundamental/min/max/default period constraints and selects the nearest supported period; frames_for_duration derives exact target audio-frame counts",
+        "GitHub Actions run 34420942799 passed rustfmt, Clippy, workspace unit tests and repository gates for the engine-period planning slice",
+        "SharedCapturePlan separates WASAPI engine-period callbacks from pipeline frame/sample cadence and marks accumulator-required paths",
+        "GitHub Actions run 34421431894 passed repository gates for SharedCapturePlan",
+        ".github/workflows/windows-audio.yml provides Windows-native compile/Clippy/test validation",
+        "GitHub Actions Windows run 34423457612 passed Windows compile, Clippy and tests",
+        "GitHub Actions Windows run 34423605516 passed the MMDevice runtime snapshot smoke test on Windows Server 2025",
+        "Default-capture IAudioClient3 probe compiles on Windows, activates the communications endpoint when available, reads GetMixFormat and validates GetSharedModeEnginePeriod output",
+        "GitHub Actions run 34424232264 passed the full Ubuntu repository-integrity gate and Windows run 34424232265 passed Windows compile, Clippy and 14/14 Windows audio tests on the same commit",
+        "Event-driven WASAPI capture session, native sample decoding and packet-to-AudioFrame assembly are implemented; assembler boundary passed Ubuntu run 34500603127 and Windows run 34500603073",
+        "CapturePump waits for WASAPI packet events and drains queued packets into validated frames with a bounded packet budget; Ubuntu run 34503117516 and Windows run 34503117617 passed",
+        "WASAPI device/resource/audio-service lifecycle HRESULTs are structured as recoverable capture failures; Ubuntu run 34503799448 and Windows run 34503799282 passed",
+        "Runtime stream failure transitions are separated from optional processing bypass; Ubuntu run 34504361389 and Windows run 34504361377 passed",
+        "CaptureRuntime performs externally scheduled bounded reopen recovery, preserves sequence continuity and contains no internal unbounded retry/sleep loop; Ubuntu run 34504968258 and Windows run 34504968283 passed",
+        "IMMNotificationClient callback registration runs on a dedicated Windows MTA thread and publishes to a bounded non-blocking queue with drop accounting; Ubuntu run 34508512647 and Windows run 34508512649 passed, including Windows register/unregister smoke",
+        "Owner-thread notification bridge triggers at most one recovery transition for a relevant active capture route change while unrelated/same-default events remain no-ops; Ubuntu run 34509104650 and Windows run 34509104681 passed",
+        "VirtualMicStagingBuffer provides fixed-format bounded user-mode virtual-mic staging, drops oldest data on overflow to bound latency, emits fresh silence on underrun and tracks accepted/drop/underrun counters; Ubuntu run 34522446261 and Windows run 34522445865 passed",
+        "VirtualMicOutputBridge sends both successfully processed frames and AudioPipeline safe-bypass originals into the same staging path; Ubuntu run 34522943083 and Windows run 34522943093 passed",
+        "Versioned C-compatible virtual microphone transport protocol defines magic/version/header sizing, session generation, fixed audio geometry and monotonic producer/consumer cursors; cyclic ring planning normalizes overruns by discarding oldest frames. Ubuntu run 34525486454 and Windows run 34525486333 passed on implementation head aa0792b81746a11d99b3b3451c3086e363714ee8",
+        "MSVC x64 C++ driver-facing ABI mirror in native/windows-virtual-mic locks 40-byte ProtocolHeader/CursorSnapshot sizes, 8-byte alignment, exact field offsets, protocol validation and matching cyclic-ring/session/cursor semantics; Ubuntu run 34528681411 and Windows run 34528681382 passed on implementation head 93c166709e3fad6aecd924a0378316761a9e318f",
+        "Windows x64 shared-cursor synchronization uses aligned Interlocked 64-bit publication, bounded stable snapshots, session-generation fencing, monotonic producer/consumer checks and atomic overrun/underrun counters; Ubuntu run 34530771449 and Windows run 34530771628 passed on implementation head 29df8cf88878f14ec319e249562f3d25aa2efe30",
+        "Deterministic 64-byte-aligned shared-region planning defines header/cursor/PCM-ring offsets and overflow-safe total mapping sizing; the 48 kHz mono F32 10 ms four-frame reference is 7,808 bytes total. Ubuntu run 34531204947 and Windows run 34531204951 passed on implementation head fafd5100d430d0880fe1dfe0671edf7537683fcf",
+        "Custom topology/WaveRT miniports, PortCls subdevice registration and physical bridge wiring, a concrete WaveRT capture stream and guarded transport bridge are present in native/windows-virtual-mic and compile in the real WDK target",
+        "PR #49 merged the fixed 10 ms guarded WaveRT realtime scheduler as fb240a40e265780f6b14fad3898e83549ddaf059 after Windows Audio Validation and AI Native Quality Gates passed",
+        "PR #51 merged the capture-only INF/test package as 80649e33cb8dcaaa03dd13b3687d55bd76d6f37c after WDK build, InfVerif and Inf2Cat passed",
+        "PR #53 merged the installed endpoint/control runtime smoke harness as 4720af358b9db8b0b106017b76b855b27c9d6a90 after Windows Audio Validation and AI Native Quality Gates passed; real installed-endpoint/calling-app evidence remains pending",
+        "docs/architecture/WINDOWS-AUDIO-IMPLEMENTATION.md defines pending physical-device verification and OS-visible virtual-mic implementation/release boundary",
+        "PR #86 merged bounded Windows virtual-mic verification evidence collection; hosted CI evidence is classified verification_required and cannot claim controlled-machine acceptance",
+        "PR #88 merged content-safe synchronous pipeline processing measurements with monotonic timing; these measurements are not controlled-hardware latency compliance proof",
+        "PR #102 merged a controlled-machine performance summary contract that binds latency/jitter evidence to the same test_run_id and derives the existing NFR-AUD-002 safe-bypass <=250 ms target without claiming completion",
+        "PR #103 merged a numeric-only raw performance-sample contract and deterministic nearest-rank p95 summarizer; hosted CI fixture results verify the contract only and are not controlled-hardware evidence",
+        "PR #104 merged a fail-closed controlled Windows verification runner and runbook with exact repository-SHA provenance; successful output is only an acceptance evidence candidate",
+        "PR #105 requires default-device change, disable/enable, sleep/wake and audio-service restart recovery evidence before a controlled candidate can be produced; USB/Bluetooth are profile-specific additions",
+        "A real controlled Windows installation, approved calling-app processed-audio/safe-bypass observations, the required lifecycle matrix and controlled latency/jitter measurements have not yet been executed/reviewed; WU-002 remains in progress, not complete"
+      ]
+    },
+    {
+      "id": "WU-003",
+      "phase_id": "PHASE-001",
+      "module_id": "MOD-003",
+      "title": "Realtime audio enhancement",
+      "objective": "Deliver noise/background-voice/echo cleanup through hybrid provider contracts.",
+      "dependencies": [
+        "WU-002",
+        "WU-010"
+      ],
+      "priority": 97,
+      "status": "not_started",
+      "blockers": [],
+      "acceptance_criteria": [
+        "Enhancement improves clarity and degrades safely on provider/runtime failure"
+      ],
+      "required_checks": [
+        "objective/subjective audio and CPU/latency benchmarks"
+      ],
+      "completion_evidence": []
+    },
+    {
+      "id": "WU-004",
+      "phase_id": "PHASE-001",
+      "module_id": "MOD-004",
+      "title": "Accent conversion and voice preservation",
+      "objective": "Deliver initial verified accent conversion while preserving speaker identity.",
+      "dependencies": [
+        "WU-002",
+        "WU-003",
+        "WU-010"
+      ],
+      "priority": 96,
+      "status": "not_started",
+      "blockers": [],
+      "acceptance_criteria": [
+        "Initial target accent path meets approved intelligibility/identity/latency thresholds"
+      ],
+      "required_checks": [
+        "listening, speaker-similarity, accent and latency benchmarks"
+      ],
+      "completion_evidence": []
+    },
+    {
+      "id": "WU-005",
+      "phase_id": "PHASE-002",
+      "module_id": "MOD-005",
+      "title": "Realtime speech translation",
+      "objective": "Deliver verified bidirectional speech translation through normalized provider adapters.",
+      "dependencies": [
+        "WU-002",
+        "WU-003",
+        "WU-010"
+      ],
+      "priority": 95,
+      "status": "not_started",
+      "blockers": [],
+      "acceptance_criteria": [
+        "Approved language pairs understandable and provider/session provenance traceable"
+      ],
+      "required_checks": [
+        "translation quality, code-switching and latency tests"
+      ],
+      "completion_evidence": []
+    },
+    {
+      "id": "WU-006",
+      "phase_id": "PHASE-002",
+      "module_id": "MOD-006",
+      "title": "Live transcription, captions and diarization",
+      "objective": "Deliver streaming/final transcript and speaker-aware caption pipelines.",
+      "dependencies": [
+        "WU-002",
+        "WU-010"
+      ],
+      "priority": 94,
+      "status": "not_started",
+      "blockers": [],
+      "acceptance_criteria": [
+        "Live transcript streams reliably and final output reconciles provisional words/speakers"
+      ],
+      "required_checks": [
+        "WER/cpWER, overlap/noise and multilingual tests"
+      ],
+      "completion_evidence": []
+    },
+    {
+      "id": "WU-007",
+      "phase_id": "PHASE-003",
+      "module_id": "MOD-007",
+      "title": "Meeting capture and platform connectors",
+      "objective": "Deliver authorized meeting capture abstraction across initial conferencing platforms.",
+      "dependencies": [
+        "WU-001",
+        "WU-010",
+        "WU-017"
+      ],
+      "priority": 93,
+      "status": "not_started",
+      "blockers": [],
+      "acceptance_criteria": [
+        "Initial platform capture/join/webhook flows reliable and revocable"
+      ],
+      "required_checks": [
+        "platform matrix, OAuth revocation and webhook idempotency tests"
+      ],
+      "completion_evidence": []
+    },
+    {
+      "id": "WU-008",
+      "phase_id": "PHASE-003",
+      "module_id": "MOD-008",
+      "title": "Meeting intelligence and knowledge",
+      "objective": "Generate source-traceable notes, summaries, decisions, actions, highlights and Q&A.",
+      "dependencies": [
+        "WU-006",
+        "WU-007",
+        "WU-010",
+        "WU-017"
+      ],
+      "priority": 92,
+      "status": "not_started",
+      "blockers": [],
+      "acceptance_criteria": [
+        "Meeting artifacts trace to transcript evidence and respect permissions"
+      ],
+      "required_checks": [
+        "factuality, extraction and permission tests"
+      ],
+      "completion_evidence": []
+    },
+    {
+      "id": "WU-009",
+      "phase_id": "PHASE-007",
+      "module_id": "MOD-009",
+      "title": "Live AI assistant and communication coach",
+      "objective": "Deliver opt-in realtime contextual assistance and coaching.",
+      "dependencies": [
+        "WU-006",
+        "WU-008",
+        "WU-010",
+        "WU-017"
+      ],
+      "priority": 91,
+      "status": "not_started",
+      "blockers": [],
+      "acceptance_criteria": [
+        "Suggestions arrive within approved latency and cannot block base audio"
+      ],
+      "required_checks": [
+        "latency, factuality and prompt-injection tests"
+      ],
+      "completion_evidence": []
+    },
+    {
+      "id": "WU-010",
+      "phase_id": "PHASE-000",
+      "module_id": "MOD-010",
+      "title": "Hybrid AI provider gateway foundation",
+      "objective": "Establish provider-neutral capability registration, common adapter entry, routing, health, fallback, rate-limit and content-safe telemetry foundations. Concrete provider adapters continue as later capability/provider work without reopening the architecture gate.",
+      "dependencies": [
+        "WU-001"
+      ],
+      "priority": 90,
+      "status": "complete",
+      "blockers": [],
+      "acceptance_criteria": [
+        "Third-party and VSN adapters use the same manifest/registration contract",
+        "Routing filters by capability/access/region/health/rate-limit and supports deterministic fallback",
+        "Routing telemetry contains only approved content-safe metadata",
+        "Circuit breaker removes failing providers from active routing"
+      ],
+      "required_checks": [
+        "adapter contract tests",
+        "failure/fallback tests",
+        "rate-limit/quota tests",
+        "telemetry field-safety tests",
+        "product JSON Schema validation"
+      ],
+      "completion_evidence": [
+        "services/realtime-gateway/internal/provider adapter/registry/router/health/telemetry implementation",
+        "packages/contracts/schemas provider manifest/routing contracts",
+        "GitHub Actions run 34413262925 passed Go tests, schema validation, ANPOS, YAML and formatting",
+        "docs/architecture/DEVELOPMENT-ARCHITECTURE.md defines provider-neutral architecture"
+      ]
+    },
+    {
+      "id": "WU-011",
+      "phase_id": "PHASE-008",
+      "module_id": "MOD-011",
+      "title": "Proprietary VSN AI runtime and model registry",
+      "objective": "Deliver approved dataset/evaluation/model lifecycle and VSN provider runtime.",
+      "dependencies": [
+        "WU-001",
+        "WU-010",
+        "WU-017"
+      ],
+      "priority": 89,
+      "status": "in_progress",
+      "blockers": [
+        "Separate dataset/compute authorization required before model training or material paid GPU use"
+      ],
+      "acceptance_criteria": [
+        "Versioned VSN model plugs into provider gateway with benchmark/rollback evidence"
+      ],
+      "required_checks": [
+        "dataset provenance, leakage, model regression and artifact integrity tests"
+      ],
+      "completion_evidence": [
+        "PR #111 merged the metadata-only versioned VSN model manifest contract with normalized capabilities, artifact digest metadata, dataset-registry provenance references and fail-closed verification gates",
+        "PR #112 merged an immutable in-memory VSN model metadata registry with defensive reads and a verified-only metadata view that does not mutate the provider routing registry",
+        "PR #113 merged a bounded fail-closed JSON manifest loader with shared cross-language fixture validation and rejection of unknown fields, oversized input and trailing JSON",
+        "PR #114 merged bounded streaming SHA-256 artifact digest verification; a digest match is integrity evidence only and does not auto-promote model verification state",
+        "PR #115 merged a disabled VSN provider-candidate projection with explicit proof that registration alone remains non-routable",
+        "PR #116 merged the versioned cross-service provider-candidate contract with schema-locked enabled=false, verified_access=false, health=unhealthy and rate_limit=unknown plus Go/Python fixture-drift tests",
+        "PR #117 merged an opaque verification-evidence bundle that binds dataset provenance, leakage, model regression, benchmark, security, rollback and artifact-integrity references to the exact model/version/artifact digest and dataset set; provider-candidate v2 carries the evidence ID and remains fail closed",
+        "Separate dataset/compute authorization has not been granted or exercised for model training/material paid GPU use; no trained VSN model, reviewed production benchmark/security/rollback records, runtime artifact signature/release-provenance verification or production provider activation exists yet; WU-011 is therefore in progress, not complete",
+        "PR #118 reconciled WU-011 from not_started to in_progress without changing its authorization blocker or acceptance boundary",
+        "PR #119 merged a metadata-only immutable VSN dataset provenance registry with restricted/segregated classification, fail-closed customer-content defaults, rights/deletion-lineage evidence references and shared Go/Python fixture validation",
+        "PR #120 bound provider-candidate projection to verified manifest-referenced dataset provenance while preserving disabled, unverified, unhealthy and non-routable provider state",
+        "PR #121 merged a non-activating provider activation-review contract that binds exact candidate identity to runtime-access, artifact-signature, release-provenance, benchmark-policy and rollback-readiness evidence references without granting activation",
+        "PR #122 merged an append-only immutable activation-review audit registry with duplicate/replacement rejection, defensive copies, deterministic snapshots and zero-write behavior for invalid/mismatched review packets; routing remains disconnected and non-authorized"
+      ]
+    },
+    {
+      "id": "WU-012",
+      "phase_id": "PHASE-008",
+      "module_id": "MOD-012",
+      "title": "Voice personalization, identity safety and voice security",
+      "objective": "Deliver safe voice profiles, verification and spoof/deepfake controls.",
+      "dependencies": [
+        "WU-004",
+        "WU-005",
+        "WU-017"
+      ],
+      "priority": 88,
+      "status": "not_started",
+      "blockers": [],
+      "acceptance_criteria": [
+        "Voice personalization is consent-bound and security events auditable"
+      ],
+      "required_checks": [
+        "authorization, deletion/revocation, spoof/deepfake and abuse tests"
+      ],
+      "completion_evidence": []
+    },
+    {
+      "id": "WU-013",
+      "phase_id": "PHASE-005",
+      "module_id": "MOD-013",
+      "title": "Telephony and contact-center integrations",
+      "objective": "Deliver initial SIP/PSTN/contact-center realtime media integration.",
+      "dependencies": [
+        "WU-002",
+        "WU-003",
+        "WU-004",
+        "WU-005",
+        "WU-006",
+        "WU-010",
+        "WU-017"
+      ],
+      "priority": 87,
+      "status": "not_started",
+      "blockers": [],
+      "acceptance_criteria": [
+        "Initial telephony media path stable and failures degrade safely"
+      ],
+      "required_checks": [
+        "codec, packet loss, DTMF, fraud/rate-limit and call lifecycle tests"
+      ],
+      "completion_evidence": []
+    },
+    {
+      "id": "WU-014",
+      "phase_id": "PHASE-001",
+      "module_id": "MOD-014",
+      "title": "SaaS web app, accounts, teams and workspace",
+      "objective": "Deliver secure user/org identity and core conversation workspace.",
+      "dependencies": [
+        "WU-001",
+        "WU-017"
+      ],
+      "priority": 86,
+      "status": "in_progress",
+      "blockers": [],
+      "acceptance_criteria": [
+        "Tenant isolation and secure desktop/web identity linking verified"
+      ],
+      "required_checks": [
+        "auth, RBAC, E2E, accessibility and responsive tests"
+      ],
+      "completion_evidence": [
+        "Authorization-context and desktop-link persisted-record JSON Schemas enforce tenant binding and reject secret-bearing fields",
+        "services/api provides the approved NestJS/Fastify control API foundation with strict tenant authorization and one-time desktop linking boundaries",
+        "PR #52 merged the tenant-authorized workspace bootstrap boundary after API Validation and AI Native Quality Gates passed",
+        "PR #54 merged the workspace-bootstrap response JSON Schema and regression tests after API Validation and AI Native Quality Gates passed",
+        "PRs #80, #83 and #85 merged PostgreSQL desktop-link persistence, fail-closed runtime DI and the tenant-authorized desktop-link HTTP boundary",
+        "PR #82 keeps browser authorization summaries free of internal session identifiers",
+        "PRs #90 and #91 merged the bounded PostgreSQL workspace Team read model and authenticated tenant-bound Team HTTP route",
+        "PRs #93 and #94 merged strict browser Team validation and the authenticated Team panel with fail-closed UI states",
+        "PRs #95 and #96 merged the subject-bound workspace directory API and strict browser directory client",
+        "PRs #97 and #98 merged explicit workspace selection and root directory-to-Team E2E flow; Team fetch remains zero until explicit selection",
+        "PR #99 consolidated exact membership, directory and Team reads onto one fail-closed PostgreSQL runtime client/pool",
+        "Production trusted-principal/session provider selection and verified end-to-end desktop/web identity linking remain pending; WU-014 is therefore in progress, not complete"
+      ]
+    },
+    {
+      "id": "WU-015",
+      "phase_id": "PHASE-004",
+      "module_id": "MOD-015",
+      "title": "Subscriptions, entitlements and usage metering",
+      "objective": "Deliver reliable subscription state, quotas, entitlements and AI usage ledger.",
+      "dependencies": [
+        "WU-010",
+        "WU-014",
+        "WU-016",
+        "WU-017"
+      ],
+      "priority": 85,
+      "status": "not_started",
+      "blockers": [],
+      "acceptance_criteria": [
+        "Usage is idempotently metered and billing/entitlement state reconciles safely"
+      ],
+      "required_checks": [
+        "billing sandbox, metering and quota-boundary tests"
+      ],
+      "completion_evidence": []
+    },
+    {
+      "id": "WU-016",
+      "phase_id": "PHASE-001",
+      "module_id": "MOD-016",
+      "title": "Admin, analytics, observability and cost control",
+      "objective": "Deliver provider/product health, latency, usage and cost observability.",
+      "dependencies": [
+        "WU-010",
+        "WU-017"
+      ],
+      "priority": 84,
+      "status": "in_progress",
+      "blockers": [],
+      "acceptance_criteria": [
+        "Provider cost/latency attributable and sensitive content redacted from telemetry"
+      ],
+      "required_checks": [
+        "observability coverage, alert and cost reconciliation tests"
+      ],
+      "completion_evidence": [
+        "PR #27 merged ProviderRoutingMetricsObserver with selection, no-eligible, provider count, p95 latency, estimated cost, health and rate-limit tracking under a content-safe field boundary",
+        "PR #31 merged the dependency-light OpenTelemetry routing metric export boundary with a closed attribute set and content-safety regression coverage",
+        "PR #81 merged aggregate cost reconciliation integrity alerts without customer content",
+        "PR #84 merged the audited routing operational snapshot combining content-safe operational state and reconciliation",
+        "PR #87 merged a browser/cross-service audited operational export with decimal-string counters and deep-cloned reconciliation issues",
+        "PR #89 merged audited operational alert dispatch through the bounded content-safe sink boundary",
+        "PR #106 merged a runnable local-only routing operations export command that composes audited operational metrics, provider cost reconciliation and content-safe alerts without exposing an unauthenticated admin or tenant endpoint",
+        "PR #107 merged a closed routing-ops-export input JSON Schema and shared cross-language fixture validated by both Python schema tests and the Go executable",
+        "Authenticated admin analytics/runtime integration remains pending; the local diagnostic process is not an admin API and WU-016 stays in progress"
+      ]
+    },
+    {
+      "id": "WU-017",
+      "phase_id": "PHASE-000",
+      "module_id": "MOD-017",
+      "title": "PHASE-000 privacy, security and data-governance baseline",
+      "objective": "Define the project-specific Voice AI threat model, data classifications, trust boundaries, retention/deletion defaults and downstream verification obligations before feature implementation. MOD-017 remains cross-cutting during later implementation and release work.",
+      "dependencies": [
+        "WU-001"
+      ],
+      "priority": 83,
+      "status": "complete",
+      "blockers": [],
+      "acceptance_criteria": [
+        "Voice AI sensitive data classes and trust boundaries are explicit",
+        "Threats map to concrete downstream controls/verification obligations",
+        "Retention/deletion/training defaults are documented",
+        "Core realtime/meeting/identity/integration/billing/deletion/model-research data flows are documented"
+      ],
+      "required_checks": [
+        "ANPOS repository-integrity validation",
+        "structured threat/data baseline review",
+        "requirements traceability mapping"
+      ],
+      "completion_evidence": [
+        "config/security/threat-model.json project baseline defined",
+        "config/data/data-governance.json project baseline defined",
+        "docs/data/VOICE-AI-DATA-FLOWS.md",
+        "config/traceability/requirements-traceability.json populated",
+        "docs/architecture/NON-FUNCTIONAL-REQUIREMENTS.md",
+        "GitHub Actions run 34413262925 passed repository integrity"
+      ]
+    },
+    {
+      "id": "WU-018",
+      "phase_id": "PHASE-001",
+      "module_id": "MOD-018",
+      "title": "Quality, performance, release and desktop updates",
+      "objective": "Deliver product-specific test/release/signing/update/rollback assurance.",
+      "dependencies": [
+        "WU-002",
+        "WU-003",
+        "WU-004",
+        "WU-005",
+        "WU-006",
+        "WU-010",
+        "WU-014",
+        "WU-017"
+      ],
+      "priority": 82,
+      "status": "not_started",
+      "blockers": [],
+      "acceptance_criteria": [
+        "Critical flows, latency budgets, installer/update and rollback paths verified"
+      ],
+      "required_checks": [
+        "CI, audio benchmarks, E2E, security and install/update/rollback tests"
+      ],
+      "completion_evidence": []
+    },
+    {
+      "id": "WU-019",
+      "phase_id": "PHASE-009",
+      "module_id": "MOD-019",
+      "title": "Public developer API, SDKs and webhooks",
+      "objective": "Expose approved stable capabilities via versioned developer interfaces.",
+      "dependencies": [
+        "WU-010",
+        "WU-015",
+        "WU-016",
+        "WU-017",
+        "WU-018"
+      ],
+      "priority": 81,
+      "status": "not_started",
+      "blockers": [],
+      "acceptance_criteria": [
+        "Public contracts secure, metered, rate-limited, signed where applicable and documented"
+      ],
+      "required_checks": [
+        "contract, load, security and SDK compatibility tests"
+      ],
+      "completion_evidence": []
+    },
+    {
+      "id": "WU-020",
+      "phase_id": "PHASE-003",
+      "module_id": "MOD-020",
+      "title": "Multi-platform clients and in-person capture",
+      "objective": "Deliver initial mobile/browser/in-person capture surfaces with secure sync.",
+      "dependencies": [
+        "WU-006",
+        "WU-007",
+        "WU-014",
+        "WU-017",
+        "WU-018"
+      ],
+      "priority": 80,
+      "status": "not_started",
+      "blockers": [],
+      "acceptance_criteria": [
+        "Supported clients capture/sync reliably and honor permission revocation"
+      ],
+      "required_checks": [
+        "platform, lifecycle, sync, CPU/battery and permission tests"
+      ],
+      "completion_evidence": []
+    },
+    {
+      "id": "WU-021",
+      "phase_id": "PHASE-004",
+      "module_id": "MOD-021",
+      "title": "Business integrations and workflow automation",
+      "objective": "Deliver revocable integrations for calendar, email, chat, CRM, documents and automation systems.",
+      "dependencies": [
+        "WU-008",
+        "WU-014",
+        "WU-017"
+      ],
+      "priority": 79,
+      "status": "not_started",
+      "blockers": [],
+      "acceptance_criteria": [
+        "Initial integrations use least privilege and writes/sync are idempotent/auditable"
+      ],
+      "required_checks": [
+        "OAuth, webhook replay, sync-conflict and rate-limit tests"
+      ],
+      "completion_evidence": []
+    },
+    {
+      "id": "WU-022",
+      "phase_id": "PHASE-005",
+      "module_id": "MOD-022",
+      "title": "Conversation intelligence, QA and compliance scoring",
+      "objective": "Deliver evidence-linked configurable scoring and manager QA workflows.",
+      "dependencies": [
+        "WU-006",
+        "WU-008",
+        "WU-013",
+        "WU-016",
+        "WU-017"
+      ],
+      "priority": 78,
+      "status": "not_started",
+      "blockers": [],
+      "acceptance_criteria": [
+        "Scores/flags link to evidence and scorecards are versioned"
+      ],
+      "required_checks": [
+        "precision/recall, bias/error, permission and audit tests"
+      ],
+      "completion_evidence": []
+    },
+    {
+      "id": "WU-023",
+      "phase_id": "PHASE-006",
+      "module_id": "MOD-023",
+      "title": "Unified conversation knowledge and cross-app search",
+      "objective": "Deliver permission-aware semantic retrieval across conversations and connected work systems.",
+      "dependencies": [
+        "WU-008",
+        "WU-014",
+        "WU-017",
+        "WU-021"
+      ],
+      "priority": 77,
+      "status": "not_started",
+      "blockers": [],
+      "acceptance_criteria": [
+        "Search spans only authorized sources and answers cite source evidence"
+      ],
+      "required_checks": [
+        "retrieval relevance, permission leakage, citation and deletion-propagation tests"
+      ],
+      "completion_evidence": []
+    },
+    {
+      "id": "WU-024",
+      "phase_id": "PHASE-006",
+      "module_id": "MOD-024",
+      "title": "Agentic actions, AI skills and voice agents",
+      "objective": "Deliver scoped, approval-aware and auditable agentic actions.",
+      "dependencies": [
+        "WU-009",
+        "WU-017",
+        "WU-021",
+        "WU-023"
+      ],
+      "priority": 76,
+      "status": "not_started",
+      "blockers": [],
+      "acceptance_criteria": [
+        "Actions execute only within scope, approvals enforced and retries cannot duplicate side effects"
+      ],
+      "required_checks": [
+        "tool authorization, prompt-injection, idempotency and approval-bypass tests"
+      ],
+      "completion_evidence": []
+    },
+    {
+      "id": "WU-025",
+      "phase_id": "PHASE-005",
+      "module_id": "MOD-025",
+      "title": "Enterprise administration, device fleet and deployment control",
+      "objective": "Deliver enterprise identity lifecycle, fleet inventory, policy and staged deployment controls.",
+      "dependencies": [
+        "WU-014",
+        "WU-016",
+        "WU-017",
+        "WU-018",
+        "WU-020"
+      ],
+      "priority": 75,
+      "status": "not_started",
+      "blockers": [],
+      "acceptance_criteria": [
+        "Enterprise identity/policy/device lifecycle predictable and auditable"
+      ],
+      "required_checks": [
+        "SSO/SCIM, RBAC, fleet policy and deployment rollback tests"
+      ],
+      "completion_evidence": []
+    }
   ],
-  "status_values": ["not_started","ready","in_progress","blocked","needs_update","needs_removal","verification_required","complete","deferred","deprecated"],
-  "phase_template": {"id":"PHASE-EXAMPLE","name":"Example phase","objective":"Outcome boundary for a group of modules/work units.","module_ids":[],"dependencies":[],"status":"not_started","exit_criteria":[]},
-  "work_unit_template": {"id":"WU-EXAMPLE","phase_id":"PHASE-EXAMPLE","module_id":"MOD-EXAMPLE","title":"Small independently executable and verifiable slice","objective":"Clear outcome","dependencies":[],"priority":null,"status":"not_started","blockers":[],"acceptance_criteria":[],"required_checks":[],"completion_evidence":[]}
+  "status_values": [
+    "not_started",
+    "ready",
+    "in_progress",
+    "blocked",
+    "needs_update",
+    "needs_removal",
+    "verification_required",
+    "complete",
+    "deferred",
+    "deprecated"
+  ],
+  "phase_template": {
+    "id": "PHASE-EXAMPLE",
+    "name": "Example phase",
+    "objective": "Outcome boundary for a group of modules/work units.",
+    "module_ids": [],
+    "dependencies": [],
+    "status": "not_started",
+    "exit_criteria": []
+  },
+  "work_unit_template": {
+    "id": "WU-EXAMPLE",
+    "phase_id": "PHASE-EXAMPLE",
+    "module_id": "MOD-EXAMPLE",
+    "title": "Small independently executable and verifiable slice",
+    "objective": "Clear outcome",
+    "dependencies": [],
+    "priority": null,
+    "status": "not_started",
+    "blockers": [],
+    "acceptance_criteria": [],
+    "required_checks": [],
+    "completion_evidence": []
+  }
 }
