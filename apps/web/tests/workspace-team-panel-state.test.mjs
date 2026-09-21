@@ -33,7 +33,7 @@ test('loading view contains no membership data', () => {
   assert.equal(Object.isFrozen(view.members), true);
 });
 
-test('ready view carries only validated client members and bounded pagination state', () => {
+test('ready view projects only display-safe status and roles', () => {
   const result = readyResult(2, true);
   const view = panelState.workspaceTeamPanelView(result);
 
@@ -43,7 +43,17 @@ test('ready view carries only validated client members and bounded pagination st
   assert.equal(view.members.length, 2);
   assert.equal(view.hasMore, true);
   assert.notEqual(view.members, result.data.members);
+  assert.deepEqual(view.members[0], {
+    status: 'active',
+    roles: ['member'],
+  });
   assert.equal(Object.isFrozen(view.members), true);
+  assert.equal(Object.isFrozen(view.members[0]), true);
+  assert.equal(Object.isFrozen(view.members[0].roles), true);
+
+  const serialized = JSON.stringify(view);
+  assert.equal(serialized.includes('membership_0'), false);
+  assert.equal(serialized.includes('user_0'), false);
 });
 
 test('empty ready result remains explicit instead of inventing users', () => {

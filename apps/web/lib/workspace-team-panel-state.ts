@@ -1,16 +1,21 @@
 import type {
+  WorkspaceMembershipStatus,
   WorkspaceTeamLoadResult,
-  WorkspaceTeamMember,
 } from './workspace-team-client';
 
 export type WorkspaceTeamPanelTone = 'neutral' | 'ready' | 'warning';
+
+export interface WorkspaceTeamMemberView {
+  readonly status: WorkspaceMembershipStatus;
+  readonly roles: readonly string[];
+}
 
 export interface WorkspaceTeamPanelView {
   readonly heading: string;
   readonly description: string;
   readonly badge: string;
   readonly tone: WorkspaceTeamPanelTone;
-  readonly members: readonly WorkspaceTeamMember[];
+  readonly members: readonly WorkspaceTeamMemberView[];
   readonly hasMore: boolean;
 }
 
@@ -41,7 +46,14 @@ export function workspaceTeamPanelView(
           : 'Tenant-authorized membership and role data is loaded.',
         badge: 'Tenant data',
         tone: 'ready' as const,
-        members: Object.freeze([...result.data.members]),
+        members: Object.freeze(
+          result.data.members.map((member) =>
+            Object.freeze({
+              status: member.status,
+              roles: Object.freeze([...member.roles]),
+            }),
+          ),
+        ),
         hasMore: result.data.has_more,
       });
     }

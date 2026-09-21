@@ -63,7 +63,7 @@ The owner-approved product direction is:
 - Current module completion: `0 / 1 complete (0%)`
 - Next valid product work: `MOD-014 / WU-014` — `in_progress`
 - Current WU-002 blocker: Issue #110 controlled Windows runner/acceptance evidence.
-- Active WU-014 delivery: PR #134 cache/test hardening, PR #135 desktop-link persistence/status/revoke/inventory API, and PR #136 browser desktop-link issue/expiry/status/link/cancel UX; deterministic completion remains unchanged until a WU completion boundary is verified.
+- Active WU-014 delivery: PR #135 persistence/status/revoke/inventory API is merged on `main` as `b60f2ffd2166e2bf92c243ec88452e374060b7dd`; PR #136 browser workspace/device lifecycle is rebased onto that main with the transient authentication recheck selection-reset regression repaired and requires exact-head verification; PR #134 cache/test hardening requires latest-main reconciliation before merge.
 <!-- AI-NATIVE-PROGRESS:END -->
 
 ## README Reconciliation Rule — Mandatory
@@ -122,9 +122,9 @@ Progress scale: `░░░░░░░░░░ 0%` → `███████�
 
 ## WU-014 — Active Delivery
 
-- PR #134: workspace bootstrap cache policy + deterministic API test discovery — exact-head technical checks green.
-- PR #135: desktop-link persistence fail-closed boundary + tenant-safe lifecycle status + atomic pending-exchange revoke were exact-head green before this material update; this branch now also implements a bounded tenant/subject-scoped `GET /desktop-links/linked` inventory using the latest consumed record per device, with new exact-head verification required.
-- PR #136: browser desktop-link issue, transient record/token pairing, expiry clearing, confirmed linked-state observation and user cancellation — exact-head technical checks green.
+- PR #134: workspace bootstrap cache policy + deterministic API test discovery — prior exact-head technical checks were green, but the branch is stale/non-mergeable after PR #135 and requires latest-main reconciliation plus exact-head reverification before merge.
+- PR #135: desktop-link persistence fail-closed boundary + tenant-safe lifecycle status + atomic pending-exchange revoke + bounded tenant/subject-scoped linked-desktop inventory — exact-head API Validation and AI Native Quality Gates passed; squash-merged to `main` as `b60f2ffd2166e2bf92c243ec88452e374060b7dd`.
+- PR #136: browser desktop-link lifecycle, persisted linked-desktop inventory, active-membership tenant selection, workspace access overview, session-state handling and team projection — old head `96d94b3bc381099d8d198686be0bcc34c1e43967` had AI Native Quality Gates green but Web Validation run `35660496084` failed 20 Playwright cases because transient `checking` incorrectly cleared the selected workspace. Repair commit `063804dd2eab5efeeaedff0c114b7119b447b942` corrected that product state loop; its Web Validation run `35661504963` then failed earlier at contract-test step because `workspace-shell.test.mjs` still asserted the removed broad condition. The test is now tightened to require terminal `signed_out || unavailable` clearing and reject `state !== 'authenticated'`; exact-head reverification is required.
 - Deterministic project completion remains `3 / 25 (12%)`; these are in-progress WU-014 delivery slices, not completed-work-unit credit.
 
 ## MOD-002 — Current Verified Boundary

@@ -1,16 +1,47 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
+import type { WorkspaceSessionState } from '../lib/workspace-session-state';
+
+import { WorkspaceDesktopLinkPanel } from './workspace-desktop-link-panel';
 import { WorkspaceDirectoryPanel } from './workspace-directory-panel';
+import { WorkspaceOverviewPanel } from './workspace-overview-panel';
 import { WorkspaceTeamPanel } from './workspace-team-panel';
 
-export function WorkspaceTeamWorkspace() {
+export interface WorkspaceTeamWorkspaceProps {
+  readonly onSessionStateChange: (state: WorkspaceSessionState) => void;
+}
+
+export function WorkspaceTeamWorkspace({
+  onSessionStateChange,
+}: WorkspaceTeamWorkspaceProps) {
   const [organizationId, setOrganizationId] = useState<string | null>(null);
+
+  const handleWorkspaceSelectionInvalidated = useCallback(() => {
+    setOrganizationId(null);
+  }, []);
+
+  const handleSessionStateChange = useCallback(
+    (state: WorkspaceSessionState) => {
+      if (state === 'signed_out' || state === 'unavailable') {
+        setOrganizationId(null);
+      }
+      onSessionStateChange(state);
+    },
+    [onSessionStateChange],
+  );
 
   return (
     <>
-      <WorkspaceDirectoryPanel onSelectWorkspace={setOrganizationId} />
+      <WorkspaceDirectoryPanel
+        selectedOrganizationId={organizationId}
+        onSelectWorkspace={setOrganizationId}
+        onInvalidateWorkspaceSelection={handleWorkspaceSelectionInvalidated}
+        onSessionStateChange={handleSessionStateChange}
+      />
+      <WorkspaceOverviewPanel organizationId={organizationId} />
+      <WorkspaceDesktopLinkPanel organizationId={organizationId} />
       {organizationId === null ? (
         <section
           className="area-card workspace-team-panel"

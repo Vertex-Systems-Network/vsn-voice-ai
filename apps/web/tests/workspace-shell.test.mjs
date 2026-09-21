@@ -14,9 +14,12 @@ const packageJson = JSON.parse(
 );
 
 test('workspace shell keeps unverified account and tenant state explicit', () => {
-  assert.match(pageSource, /Authentication not connected/);
+  assert.match(pageSource, /workspaceSessionView/);
+  assert.match(pageSource, /onSessionStateChange=\{setSessionState\}/);
+  assert.doesNotMatch(pageSource, /Authentication not connected/);
   assert.match(pageSource, /No meetings yet/);
-  assert.match(pageSource, /No linked desktop shown/);
+  assert.match(workspaceFlowSource, /WorkspaceOverviewPanel/);
+  assert.match(workspaceFlowSource, /WorkspaceDesktopLinkPanel/);
   assert.match(pageSource, /Settings are not connected yet/);
   assert.match(pageSource, /WorkspaceTeamWorkspace/);
   assert.match(workspaceFlowSource, /Select a workspace first/);
@@ -27,7 +30,15 @@ test('workspace shell keeps unverified account and tenant state explicit', () =>
 test('root team flow requires explicit authenticated organization selection', () => {
   assert.match(workspaceFlowSource, /useState<string \| null>\(null\)/);
   assert.match(workspaceFlowSource, /onSelectWorkspace=\{setOrganizationId\}/);
+  assert.match(workspaceFlowSource, /onInvalidateWorkspaceSelection=\{handleWorkspaceSelectionInvalidated\}/);
+  assert.match(workspaceFlowSource, /handleSessionStateChange/);
+  assert.match(
+    workspaceFlowSource,
+    /state === 'signed_out' \|\| state === 'unavailable'/,
+  );
+  assert.doesNotMatch(workspaceFlowSource, /state !== 'authenticated'/);
   assert.match(workspaceFlowSource, /organizationId === null/);
+  assert.match(workspaceFlowSource, /<WorkspaceDesktopLinkPanel organizationId=\{organizationId\}/);
   assert.match(workspaceFlowSource, /<WorkspaceTeamPanel organizationId=\{organizationId\}/);
 });
 
