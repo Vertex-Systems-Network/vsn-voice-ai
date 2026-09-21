@@ -5,12 +5,12 @@ observed_main_sha: c7ed9caf06bd44460a7717e4f419b51cf49792d4
 active_issue: 133
 active_pr: 131
 active_branch: ai/supervisor-resume-protocol
-current_milestone: reconcile-github-review-enforcement-drift
+current_milestone: reconcile-owner-approval-for-github-rules
 milestone_status: VERIFYING
-last_completed_milestone: "PR #131 exact-head CI passed at cd9562c2ba2d0f5a5a4099e76d20d288bb8d2cfc; reviewer blocker #132 and ruleset enforcement blocker #133 are open"
-exact_next_safe_action: "Resolve PR #131 exact current head after this state-only reconciliation commit and perform one consolidated CI/status refresh. If CI passes, do not merge until Issue #132 has an eligible independent approval path and Issue #133 has explicit owner authorization plus verified server-side rules enforcement."
+last_completed_milestone: "Owner explicitly approved Apply Recommended GitHub Rules; prior PR #131 exact head 1e81536a2332ce41cf26328740906698b16624dd passed AI Native Quality Gates run 35628990019"
+exact_next_safe_action: "Resolve PR #131 exact current head after this approval-state reconciliation commit and perform one consolidated CI/status refresh. If CI passes, remain blocked until an admin-capable GitHub surface applies and verifies Issue #133 rules and Issue #132 has an eligible independent reviewer approval."
 pending_runner_ids:
-  - RUN-PR-131-RULESET-DRIFT-STATE-CI
+  - RUN-PR-131-OWNER-APPROVAL-STATE-CI
   - RUN-WU-002-CONTROLLED-WINDOWS-AUDIO
 blocked_runner_ids:
   - RUN-WU-002-CONTROLLED-WINDOWS-AUDIO
@@ -18,7 +18,14 @@ current_blockers:
   - "No live authenticated Supervisor lease is present; do not claim continuous Supervisor authority."
   - "Issue #110: WU-002 controlled physical Windows acceptance requires separately authorized restricted runner infrastructure and operator evidence."
   - "Issue #132: protected control-plane PR #131 has no eligible independent reviewer identity/team yet; self-approval must not satisfy the gate."
-  - "Issue #133: active main ruleset enforcement is weaker than repository review policy; admin mutation requires explicit owner authorization and post-change verification."
+  - "Issue #133: owner authorization is granted, but the connected GitHub interface has no ruleset administration write action; admin-capable application and authenticated post-change verification remain required."
+github_rules_authorization:
+  owner_decision: approved
+  approved_action: "Apply Recommended GitHub Rules"
+  approval_observed_date: 2026-09-21
+  application_status: blocked_admin_capable_interface
+  ruleset_id: 23374505
+  ruleset_write_capability_in_current_connector: unavailable
 timeout_control:
   consolidated_ci_status_refreshes_per_milestone_default: 1
   consolidated_ci_status_refreshes_used: 0
@@ -38,6 +45,6 @@ open_reconciliation:
   open_pr_count: 10
   issue_110: blocked_external_authority_and_physical_runner
   issue_132: blocked_external_independent_reviewer_identity
-  issue_133: blocked_owner_admin_action_and_ruleset_enforcement_drift
+  issue_133: owner_approved_blocked_admin_capable_application
   active_governance_pr: 131
   dependency_prs: reconciled_not_selected_as_current_user_directed_milestone

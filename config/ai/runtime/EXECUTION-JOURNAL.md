@@ -27,3 +27,11 @@ Authenticated re-read of active main ruleset ID `23374505` found `required_appro
 ## 2026-09-21 — compact state reconciliation for Issue #133
 
 Open Issues are now #110, #132, and #133. This state-only milestone records Issue #133, upgrades run `35627515382` to immutable terminal evidence for head `cd9562c2ba2d0f5a5a4099e76d20d288bb8d2cfc`, and registers one fresh exact-head CI task for the changed state commit. No product or GitHub admin settings are changed.
+
+## 2026-09-21 — exact-head CI after ruleset-drift reconciliation
+
+PR #131 head `1e81536a2332ce41cf26328740906698b16624dd` completed AI Native Quality Gates run `35628990019` successfully. PR remained mergeable with zero submitted reviews and no requested reviewers or teams. No source mutation was made merely to restate pending policy gates.
+
+## 2026-09-21 — owner approved recommended GitHub rules
+
+The repository owner explicitly approved **Apply Recommended GitHub Rules** in the active Supervisor conversation. Issue #133 now records that owner consent is satisfied. The connected GitHub interface exposes ruleset reads but no ruleset administration write action, so no server-side mutation is claimed. The remaining #133 blocker is an admin-capable application surface followed by authenticated ruleset re-read verification. This state-only milestone persists that transition and registers one fresh exact-head CI task for the changed PR head.
