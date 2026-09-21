@@ -215,7 +215,9 @@
       ],
       "priority": 98,
       "status": "in_progress",
-      "blockers": [],
+      "blockers": [
+        "Issue #110: controlled physical Windows runner/machine authorization and acceptance evidence are required for installed endpoint, approved calling-app routing, lifecycle recovery matrix, and controlled latency/jitter verification before WU-002 can complete."
+      ],
       "acceptance_criteria": [
         "Approved desktop calling apps consume processed audio with safe bypass"
       ],

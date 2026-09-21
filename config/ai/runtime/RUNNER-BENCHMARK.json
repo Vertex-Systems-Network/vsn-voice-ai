@@ -199,8 +199,7 @@
         "repository": "Vertex-Systems-Network/vsn-voice-ai",
         "pr": 131,
         "branch": "ai/supervisor-resume-protocol",
-        "parent_head_sha": "632a603d3917cf044a0637cb6c45680ff36572d9",
-        "execution_rule": "resolve immutable current PR head after this reconciliation commit, then perform one consolidated CI/status refresh; terminal outcome is persisted via remote evidence overlay without a source-only restatement commit"
+        "certified_head_sha": "cff0c21976530cedc6fa1ff266b9fc3723a099fa"
       },
       "environment_matrix_input_fixture_identity": {
         "provider": "GitHub Actions",
@@ -213,6 +212,46 @@
       "merge_blocking": true,
       "expected_runner_time": "provider_managed_duration_unknown_no_polling",
       "deterministic_dedup_key": "PR-131|ai-native-plan-flow-drift-ci|terminal-overlay-v1",
+      "status": "success",
+      "immutable_evidence": [
+        {
+          "workflow_run_id": 35640781642,
+          "workflow_name": "AI Native Quality Gates",
+          "exact_head_sha": "cff0c21976530cedc6fa1ff266b9fc3723a099fa",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "task_id": "RUN-PR-131-NEXT-WORK-SELECTION-CI",
+      "source": {
+        "pr": 131,
+        "issues": [
+          110,
+          132,
+          133
+        ],
+        "work_package": "AI-Native next-valid work selection and WU-002 blocker reconciliation"
+      },
+      "command_workflow": "AI Native Quality Gates",
+      "exact_source_identity": {
+        "repository": "Vertex-Systems-Network/vsn-voice-ai",
+        "pr": 131,
+        "branch": "ai/supervisor-resume-protocol",
+        "parent_head_sha": "cff0c21976530cedc6fa1ff266b9fc3723a099fa",
+        "execution_rule": "resolve immutable current PR head after this reconciliation commit, then perform one consolidated CI/status refresh; terminal outcome is persisted via remote evidence overlay without a source-only restatement commit"
+      },
+      "environment_matrix_input_fixture_identity": {
+        "provider": "GitHub Actions",
+        "trigger": "pull_request",
+        "base_branch": "main",
+        "affected_scope": "execution-plan, project-state, AI-Native next-work policy, runtime policy, validator and compact state"
+      },
+      "authorization_state": "repository_ci_only_no_deployment_or_production_authority",
+      "security_critical": true,
+      "merge_blocking": true,
+      "expected_runner_time": "provider_managed_duration_unknown_no_polling",
+      "deterministic_dedup_key": "PR-131|next-valid-work-selection|wu002-blocker-v1",
       "status": "registered_verify_exact_head",
       "immutable_evidence": []
     }

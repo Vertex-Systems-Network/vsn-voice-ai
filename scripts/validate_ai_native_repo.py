@@ -277,6 +277,17 @@ def validate_compact_runtime_state() -> None:
     if policy.get("issues_prs_gate", {}).get("required_before_new_development") is not True:
         fail("runtime-policy: Issues/PRs-first gate must be required")
 
+    next_work = policy.get("next_work_selection") or {}
+    for key in [
+        "dependencies_must_be_complete",
+        "prefer_current_phase",
+        "blocked_unit_not_selected_when_unblocked_same_phase_candidate_exists",
+        "choose_highest_priority_same_phase_unblocked_candidate",
+        "externally_blocked_current_unit_may_remain_current_while_next_valid_advances",
+    ]:
+        if next_work.get(key) is not True:
+            fail(f"runtime-policy: next-work selection must require {key}")
+
     overlay = policy.get("terminal_remote_evidence_overlay") or {}
     for key in [
         "source_compact_state_may_remain_pre_terminal_check_snapshot",
@@ -522,6 +533,7 @@ def validate_ai_graph() -> None:
     options_doc = load_json("config/ai/options-bank.json")
     modules_doc = load_json("config/ai/modules-bank.json")
     execution_doc = load_json("config/ai/execution-plan.json")
+    project_state_doc = load_json("config/ai/project-state.json")
     queue_doc = load_json("config/coordination/agent-work-queue.json")
     alerts_doc = load_json("config/coordination/agent-alerts.json")
     consents_doc = load_json("config/consent/consent-requests.json")
@@ -550,6 +562,39 @@ def validate_ai_graph() -> None:
             if unit.get("module_id") and unit.get("module_id") not in module_ids:
                 fail(f"work unit {unit.get('id')}: unknown module_id {unit.get('module_id')}")
             check_refs(unit.get("dependencies", []), work_unit_ids, f"work unit {unit.get('id')} dependencies")
+    work_units = [unit for unit in execution_doc.get("work_units", []) if isinstance(unit, dict)]
+    work_by_id = {unit.get("id"): unit for unit in work_units if unit.get("id")}
+    next_valid = project_state_doc.get("next_valid_work_unit")
+    if next_valid:
+        selected = work_by_id.get(next_valid)
+        if not selected:
+            fail(f"project-state next_valid_work_unit references unknown work unit {next_valid}")
+        else:
+            for dep in selected.get("dependencies", []) or []:
+                dep_unit = work_by_id.get(dep)
+                if not dep_unit or dep_unit.get("status") != "complete":
+                    fail(f"project-state next_valid_work_unit {next_valid} has incomplete dependency {dep}")
+            current_phase = project_state_doc.get("current_phase")
+            selectable_statuses = {"not_started", "ready", "in_progress", "verification_required", "needs_update"}
+            same_phase_unblocked = []
+            for unit in work_units:
+                if unit.get("phase_id") != current_phase or unit.get("status") not in selectable_statuses:
+                    continue
+                if unit.get("blockers"):
+                    continue
+                if all((work_by_id.get(dep) or {}).get("status") == "complete" for dep in unit.get("dependencies", []) or []):
+                    same_phase_unblocked.append(unit)
+            if same_phase_unblocked:
+                expected = sorted(
+                    same_phase_unblocked,
+                    key=lambda unit: (-int(unit.get("priority", 0)), str(unit.get("id", ""))),
+                )[0]
+                if next_valid != expected.get("id"):
+                    fail(
+                        f"project-state next_valid_work_unit {next_valid} must be highest-priority "
+                        f"dependency-satisfied unblocked unit in current phase: {expected.get('id')}"
+                    )
+
     for link in trace_doc.get("links", []):
         if isinstance(link, dict):
             rid = str(link.get("requirement_id", "<unknown>"))

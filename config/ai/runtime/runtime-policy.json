@@ -77,5 +77,12 @@
     "resume_must_reconcile_overlay_before_next_action": true,
     "next_material_source_change_must_fold_overlay_into_compact_state_and_runner_benchmark": true,
     "negative_or_failed_terminal_evidence_blocks_merge": true
+  },
+  "next_work_selection": {
+    "dependencies_must_be_complete": true,
+    "prefer_current_phase": true,
+    "blocked_unit_not_selected_when_unblocked_same_phase_candidate_exists": true,
+    "choose_highest_priority_same_phase_unblocked_candidate": true,
+    "externally_blocked_current_unit_may_remain_current_while_next_valid_advances": true
   }
 }

@@ -278,6 +278,8 @@ Choose work using evidence such as:
 
 Never choose a task solely because it is easy.
 
+If the current work unit is waiting only on an external authority/runtime/acceptance dependency and no safe remaining slice can execute locally, keep that unit represented as current/in-progress or verification-pending as appropriate, record the blocker explicitly, and set `next_valid_work_unit` to the highest-priority dependency-satisfied unblocked work unit in the active phase. Do not hide the blocked unit by falsely marking it complete, and do not let a blocked current unit prevent unrelated safe work when the Supervisor Issues/PR gate explicitly permits externally blocked items to coexist with unrelated safe work.
+
 ## Update and delete discipline
 
 The AI must recognize that development includes more than adding code.
