@@ -23,7 +23,7 @@ class RejectingDesktopLinkRecordStore implements DesktopLinkRecordStore {
   }
 
   public async get(_recordId: string): Promise<DesktopLinkRecord | undefined> {
-    return undefined;
+    throw new DesktopLinkPersistenceUnavailableError();
   }
 
   public async consumeIfIssued(
@@ -31,7 +31,24 @@ class RejectingDesktopLinkRecordStore implements DesktopLinkRecordStore {
     _expectedDigest: string,
     _consumedAt: string,
   ): Promise<DesktopLinkRecord | undefined> {
-    return undefined;
+    throw new DesktopLinkPersistenceUnavailableError();
+  }
+
+  public async revokeIfIssued(
+    _recordId: string,
+    _subjectId: string,
+    _organizationId: string,
+    _revokedAt: string,
+  ): Promise<DesktopLinkRecord | undefined> {
+    throw new DesktopLinkPersistenceUnavailableError();
+  }
+
+  public async listLatestConsumed(
+    _subjectId: string,
+    _organizationId: string,
+    _limit: number,
+  ): Promise<readonly DesktopLinkRecord[]> {
+    throw new DesktopLinkPersistenceUnavailableError();
   }
 }
 
@@ -60,20 +77,81 @@ export class RuntimeDesktopLinkRecordStore
     private readonly closeClient: (() => Promise<void>) | null,
   ) {}
 
-  public put(record: DesktopLinkRecord): Promise<void> {
-    return this.delegate.put(record);
+  public async put(record: DesktopLinkRecord): Promise<void> {
+    try {
+      await this.delegate.put(record);
+    } catch (error: unknown) {
+      if (error instanceof DesktopLinkPersistenceUnavailableError) {
+        throw error;
+      }
+      throw new DesktopLinkPersistenceUnavailableError();
+    }
   }
 
-  public get(recordId: string): Promise<DesktopLinkRecord | undefined> {
-    return this.delegate.get(recordId);
+  public async get(recordId: string): Promise<DesktopLinkRecord | undefined> {
+    try {
+      return await this.delegate.get(recordId);
+    } catch (error: unknown) {
+      if (error instanceof DesktopLinkPersistenceUnavailableError) {
+        throw error;
+      }
+      throw new DesktopLinkPersistenceUnavailableError();
+    }
   }
 
-  public consumeIfIssued(
+  public async consumeIfIssued(
     recordId: string,
     expectedDigest: string,
     consumedAt: string,
   ): Promise<DesktopLinkRecord | undefined> {
-    return this.delegate.consumeIfIssued(recordId, expectedDigest, consumedAt);
+    try {
+      return await this.delegate.consumeIfIssued(recordId, expectedDigest, consumedAt);
+    } catch (error: unknown) {
+      if (error instanceof DesktopLinkPersistenceUnavailableError) {
+        throw error;
+      }
+      throw new DesktopLinkPersistenceUnavailableError();
+    }
+  }
+
+  public async revokeIfIssued(
+    recordId: string,
+    subjectId: string,
+    organizationId: string,
+    revokedAt: string,
+  ): Promise<DesktopLinkRecord | undefined> {
+    try {
+      return await this.delegate.revokeIfIssued(
+        recordId,
+        subjectId,
+        organizationId,
+        revokedAt,
+      );
+    } catch (error: unknown) {
+      if (error instanceof DesktopLinkPersistenceUnavailableError) {
+        throw error;
+      }
+      throw new DesktopLinkPersistenceUnavailableError();
+    }
+  }
+
+  public async listLatestConsumed(
+    subjectId: string,
+    organizationId: string,
+    limit: number,
+  ): Promise<readonly DesktopLinkRecord[]> {
+    try {
+      return await this.delegate.listLatestConsumed(
+        subjectId,
+        organizationId,
+        limit,
+      );
+    } catch (error: unknown) {
+      if (error instanceof DesktopLinkPersistenceUnavailableError) {
+        throw error;
+      }
+      throw new DesktopLinkPersistenceUnavailableError();
+    }
   }
 
   public onApplicationShutdown(): Promise<void> {

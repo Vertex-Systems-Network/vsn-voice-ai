@@ -4,17 +4,24 @@ import test from 'node:test';
 import {
   BadRequestException,
   ForbiddenException,
+  NotFoundException,
+  ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 
 import { DesktopLinkController } from '../src/device-link/desktop-link.controller.js';
-import { InMemoryDesktopLinkRecordStore } from '../src/device-link/desktop-link-record.js';
+import {
+  type DesktopLinkRecord,
+  type DesktopLinkRecordStore,
+  InMemoryDesktopLinkRecordStore,
+} from '../src/device-link/desktop-link-record.js';
 import { DesktopLinkService } from '../src/device-link/desktop-link.service.js';
 import type { AuthenticatedPrincipal } from '../src/identity/authenticated-principal.js';
 import type { TrustedPrincipalResolver } from '../src/identity/trusted-principal-resolver.js';
 import type { OrganizationMembership } from '../src/organizations/organization-membership.js';
 import type { OrganizationMembershipResolver } from '../src/organizations/organization-membership-resolver.js';
+import { DesktopLinkPersistenceUnavailableError } from '../src/device-link/runtime-desktop-link-record-store.js';
 
 const principal: AuthenticatedPrincipal = {
   subjectId: 'user_123',
@@ -220,4 +227,302 @@ test('malformed consume secrets are rejected before resolver execution', async (
     BadRequestException,
   );
   assert.equal(principalResolver.lastRequest, null);
+});
+
+
+class UnavailableDesktopLinkRecordStore implements DesktopLinkRecordStore {
+  public async put(_record: DesktopLinkRecord): Promise<void> {
+    throw new DesktopLinkPersistenceUnavailableError();
+  }
+
+  public async get(_recordId: string): Promise<DesktopLinkRecord | undefined> {
+    throw new DesktopLinkPersistenceUnavailableError();
+  }
+
+  public async consumeIfIssued(
+    _recordId: string,
+    _expectedDigest: string,
+    _consumedAt: string,
+  ): Promise<DesktopLinkRecord | undefined> {
+    throw new DesktopLinkPersistenceUnavailableError();
+  }
+
+  public async revokeIfIssued(
+    _recordId: string,
+    _subjectId: string,
+    _organizationId: string,
+    _revokedAt: string,
+  ): Promise<DesktopLinkRecord | undefined> {
+    throw new DesktopLinkPersistenceUnavailableError();
+  }
+
+  public async listLatestConsumed(
+    _subjectId: string,
+    _organizationId: string,
+    _limit: number,
+  ): Promise<readonly DesktopLinkRecord[]> {
+    throw new DesktopLinkPersistenceUnavailableError();
+  }
+}
+
+test('persistence outage maps to generic service unavailable for issue, status, revoke and consume', async () => {
+  const controller = new DesktopLinkController(
+    new StaticPrincipalResolver(principal),
+    new StaticMembershipResolver(membership),
+    new DesktopLinkService(new UnavailableDesktopLinkRecordStore()),
+  );
+
+  await assert.rejects(
+    controller.issue('org_456', { device_id: 'desktop_001' }, opaqueRequest),
+    ServiceUnavailableException,
+  );
+
+  await assert.rejects(
+    controller.revoke(
+      'org_456',
+      '00000000-0000-4000-8000-000000000000',
+      opaqueRequest,
+    ),
+    ServiceUnavailableException,
+  );
+
+  await assert.rejects(
+    controller.consume(
+      'org_456',
+      '00000000-0000-4000-8000-000000000000',
+      { device_id: 'desktop_001', exchange_token: 'A'.repeat(43) },
+      opaqueRequest,
+    ),
+    ServiceUnavailableException,
+  );
+});
+
+test('authorized status reports issue then consumption without secret fields', async () => {
+  const { controller } = createController();
+  const issued = await controller.issue(
+    'org_456',
+    { device_id: 'desktop_001' },
+    opaqueRequest,
+  );
+
+  const before = await controller.status(
+    'org_456',
+    issued.record_id,
+    opaqueRequest,
+  );
+  assert.equal(before.status, 'issued');
+  assert.equal(before.organization_id, 'org_456');
+  assert.equal(before.device_id, 'desktop_001');
+  assert.equal(before.consumed_at, null);
+  assert.deepEqual(Object.keys(before).sort(), [
+    'consumed_at',
+    'device_id',
+    'expires_at',
+    'organization_id',
+    'record_id',
+    'schema_version',
+    'status',
+  ]);
+  assert.equal(JSON.stringify(before).includes(issued.exchange_token), false);
+  assert.equal(JSON.stringify(before).includes('session_abc'), false);
+  assert.equal(JSON.stringify(before).includes('user_123'), false);
+
+  await controller.consume(
+    'org_456',
+    issued.record_id,
+    {
+      device_id: 'desktop_001',
+      exchange_token: issued.exchange_token,
+    },
+    opaqueRequest,
+  );
+
+  const after = await controller.status(
+    'org_456',
+    issued.record_id,
+    opaqueRequest,
+  );
+  assert.equal(after.status, 'consumed');
+  assert.match(after.consumed_at ?? '', /^\d{4}-\d{2}-\d{2}T/);
+});
+
+test('status hides unknown or cross-subject desktop-link records', async () => {
+  const sharedStore = new InMemoryDesktopLinkRecordStore();
+  const issuer = new DesktopLinkController(
+    new StaticPrincipalResolver(principal),
+    new StaticMembershipResolver(membership),
+    new DesktopLinkService(sharedStore),
+  );
+  const issued = await issuer.issue(
+    'org_456',
+    { device_id: 'desktop_001' },
+    opaqueRequest,
+  );
+
+  const otherSubject = new DesktopLinkController(
+    new StaticPrincipalResolver({ subjectId: 'user_other' }),
+    new StaticMembershipResolver({
+      ...membership,
+      subjectId: 'user_other',
+      membershipId: 'membership_other',
+    }),
+    new DesktopLinkService(sharedStore),
+  );
+
+  await assert.rejects(
+    otherSubject.status('org_456', issued.record_id, opaqueRequest),
+    NotFoundException,
+  );
+  await assert.rejects(
+    issuer.status(
+      'org_456',
+      '00000000-0000-4000-8000-000000000000',
+      opaqueRequest,
+    ),
+    NotFoundException,
+  );
+});
+
+test('authorized revoke cancels a pending exchange without exposing secrets', async () => {
+  const { controller } = createController();
+  const issued = await controller.issue(
+    'org_456',
+    { device_id: 'desktop_001' },
+    opaqueRequest,
+  );
+
+  const revoked = await controller.revoke(
+    'org_456',
+    issued.record_id,
+    opaqueRequest,
+  );
+  assert.deepEqual(revoked, {
+    schema_version: 1,
+    record_id: issued.record_id,
+    organization_id: 'org_456',
+    device_id: 'desktop_001',
+    status: 'revoked',
+    expires_at: issued.expires_at,
+    consumed_at: null,
+  });
+  assert.equal(JSON.stringify(revoked).includes(issued.exchange_token), false);
+  assert.equal(JSON.stringify(revoked).includes('session_abc'), false);
+  assert.equal(JSON.stringify(revoked).includes('user_123'), false);
+
+  await assert.rejects(
+    controller.consume(
+      'org_456',
+      issued.record_id,
+      {
+        device_id: 'desktop_001',
+        exchange_token: issued.exchange_token,
+      },
+      opaqueRequest,
+    ),
+    ForbiddenException,
+  );
+});
+
+test('revoke hides cross-subject records and refuses consumed exchanges', async () => {
+  const sharedStore = new InMemoryDesktopLinkRecordStore();
+  const issuer = new DesktopLinkController(
+    new StaticPrincipalResolver(principal),
+    new StaticMembershipResolver(membership),
+    new DesktopLinkService(sharedStore),
+  );
+  const issued = await issuer.issue(
+    'org_456',
+    { device_id: 'desktop_001' },
+    opaqueRequest,
+  );
+
+  const otherSubject = new DesktopLinkController(
+    new StaticPrincipalResolver({ subjectId: 'user_other' }),
+    new StaticMembershipResolver({
+      ...membership,
+      subjectId: 'user_other',
+      membershipId: 'membership_other',
+    }),
+    new DesktopLinkService(sharedStore),
+  );
+  await assert.rejects(
+    otherSubject.revoke('org_456', issued.record_id, opaqueRequest),
+    NotFoundException,
+  );
+
+  await issuer.consume(
+    'org_456',
+    issued.record_id,
+    {
+      device_id: 'desktop_001',
+      exchange_token: issued.exchange_token,
+    },
+    opaqueRequest,
+  );
+  await assert.rejects(
+    issuer.revoke('org_456', issued.record_id, opaqueRequest),
+    NotFoundException,
+  );
+});
+
+test('linked desktop inventory returns only browser-safe device metadata', async () => {
+  const { controller } = createController();
+
+  const first = await controller.issue(
+    'org_456',
+    { device_id: 'desktop_001' },
+    opaqueRequest,
+  );
+  await controller.consume(
+    'org_456',
+    first.record_id,
+    { device_id: 'desktop_001', exchange_token: first.exchange_token },
+    opaqueRequest,
+  );
+
+  const second = await controller.issue(
+    'org_456',
+    { device_id: 'desktop_002' },
+    opaqueRequest,
+  );
+  await controller.consume(
+    'org_456',
+    second.record_id,
+    { device_id: 'desktop_002', exchange_token: second.exchange_token },
+    opaqueRequest,
+  );
+
+  const inventory = await controller.list('org_456', opaqueRequest);
+
+  assert.equal(inventory.schema_version, 1);
+  assert.equal(inventory.organization_id, 'org_456');
+  assert.equal(inventory.has_more, false);
+  assert.deepEqual(
+    inventory.devices.map((device) => device.device_id).sort(),
+    ['desktop_001', 'desktop_002'],
+  );
+  assert.deepEqual(Object.keys(inventory.devices[0] ?? {}).sort(), [
+    'device_id',
+    'linked_at',
+    'record_id',
+    'schema_version',
+  ]);
+  const serialized = JSON.stringify(inventory);
+  assert.equal(serialized.includes(first.exchange_token), false);
+  assert.equal(serialized.includes(second.exchange_token), false);
+  assert.equal(serialized.includes('user_123'), false);
+  assert.equal(serialized.includes('session_abc'), false);
+});
+
+test('linked desktop inventory maps persistence outage to generic service unavailable', async () => {
+  const controller = new DesktopLinkController(
+    new StaticPrincipalResolver(principal),
+    new StaticMembershipResolver(membership),
+    new DesktopLinkService(new UnavailableDesktopLinkRecordStore()),
+  );
+
+  await assert.rejects(
+    controller.list('org_456', opaqueRequest),
+    ServiceUnavailableException,
+  );
 });

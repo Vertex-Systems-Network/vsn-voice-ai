@@ -3,12 +3,15 @@ import {
   Body,
   Controller,
   ForbiddenException,
+  Get,
   Header,
   HttpCode,
   Inject,
+  NotFoundException,
   Param,
   Post,
   Req,
+  ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
@@ -29,6 +32,7 @@ import {
   DesktopLinkDeniedError,
   DesktopLinkService,
 } from './desktop-link.service.js';
+import { DesktopLinkPersistenceUnavailableError } from './runtime-desktop-link-record-store.js';
 
 const DEVICE_LINK_PERMISSION = 'device.link';
 const MAX_IDENTIFIER_LENGTH = 256;
@@ -50,6 +54,30 @@ export interface DesktopLinkConsumeResponse {
   readonly organization_id: string;
   readonly device_id: string;
   readonly consumed_at: string;
+}
+
+export interface DesktopLinkStatusResponse {
+  readonly schema_version: 1;
+  readonly record_id: string;
+  readonly organization_id: string;
+  readonly device_id: string;
+  readonly status: 'issued' | 'consumed' | 'revoked' | 'expired';
+  readonly expires_at: string;
+  readonly consumed_at: string | null;
+}
+
+export interface LinkedDesktopResponse {
+  readonly schema_version: 1;
+  readonly record_id: string;
+  readonly device_id: string;
+  readonly linked_at: string;
+}
+
+export interface LinkedDesktopInventoryResponse {
+  readonly schema_version: 1;
+  readonly organization_id: string;
+  readonly devices: readonly LinkedDesktopResponse[];
+  readonly has_more: boolean;
 }
 
 function requireClosedObject(
@@ -127,6 +155,47 @@ export class DesktopLinkController {
     private readonly desktopLinkService: DesktopLinkService,
   ) {}
 
+  @Get('linked')
+  @Header('Cache-Control', 'no-store')
+  @Header('Pragma', 'no-cache')
+  public async list(
+    @Param('organizationId') rawOrganizationId: string,
+    @Req() request: FastifyRequest,
+  ): Promise<LinkedDesktopInventoryResponse> {
+    const organizationId = requireOrganizationId(rawOrganizationId);
+    const { principal } = await this.resolveAuthorizedContext(
+      request,
+      organizationId,
+    );
+
+    try {
+      const inventory = await this.desktopLinkService.listLinked(
+        principal,
+        organizationId,
+      );
+      return Object.freeze({
+        schema_version: 1 as const,
+        organization_id: organizationId,
+        devices: Object.freeze(
+          inventory.devices.map((device) =>
+            Object.freeze({
+              schema_version: 1 as const,
+              record_id: device.recordId,
+              device_id: device.deviceId,
+              linked_at: device.linkedAt,
+            }),
+          ),
+        ),
+        has_more: inventory.hasMore,
+      });
+    } catch (error: unknown) {
+      if (error instanceof DesktopLinkPersistenceUnavailableError) {
+        throw new ServiceUnavailableException('desktop link persistence unavailable');
+      }
+      throw error;
+    }
+  }
+
   @Post()
   @HttpCode(201)
   @Header('Cache-Control', 'no-store')
@@ -157,8 +226,94 @@ export class DesktopLinkController {
         expires_at: issued.expiresAt,
       });
     } catch (error: unknown) {
+      if (error instanceof DesktopLinkPersistenceUnavailableError) {
+        throw new ServiceUnavailableException('desktop link persistence unavailable');
+      }
       if (error instanceof DesktopLinkDeniedError) {
         throw new BadRequestException('desktop link request is invalid');
+      }
+      throw error;
+    }
+  }
+
+  @Get(':recordId/status')
+  @Header('Cache-Control', 'no-store')
+  @Header('Pragma', 'no-cache')
+  public async status(
+    @Param('organizationId') rawOrganizationId: string,
+    @Param('recordId') rawRecordId: string,
+    @Req() request: FastifyRequest,
+  ): Promise<DesktopLinkStatusResponse> {
+    const organizationId = requireOrganizationId(rawOrganizationId);
+    const recordId = requireRecordId(rawRecordId);
+    const { principal } = await this.resolveAuthorizedContext(
+      request,
+      organizationId,
+    );
+
+    try {
+      const snapshot = await this.desktopLinkService.inspect(
+        principal,
+        organizationId,
+        recordId,
+      );
+      return Object.freeze({
+        schema_version: 1 as const,
+        record_id: snapshot.recordId,
+        organization_id: snapshot.organizationId,
+        device_id: snapshot.deviceId,
+        status: snapshot.status,
+        expires_at: snapshot.expiresAt,
+        consumed_at: snapshot.consumedAt,
+      });
+    } catch (error: unknown) {
+      if (error instanceof DesktopLinkPersistenceUnavailableError) {
+        throw new ServiceUnavailableException('desktop link persistence unavailable');
+      }
+      if (error instanceof DesktopLinkDeniedError) {
+        throw new NotFoundException('desktop link unavailable');
+      }
+      throw error;
+    }
+  }
+
+  @Post(':recordId/revoke')
+  @HttpCode(200)
+  @Header('Cache-Control', 'no-store')
+  @Header('Pragma', 'no-cache')
+  public async revoke(
+    @Param('organizationId') rawOrganizationId: string,
+    @Param('recordId') rawRecordId: string,
+    @Req() request: FastifyRequest,
+  ): Promise<DesktopLinkStatusResponse> {
+    const organizationId = requireOrganizationId(rawOrganizationId);
+    const recordId = requireRecordId(rawRecordId);
+    const { principal } = await this.resolveAuthorizedContext(
+      request,
+      organizationId,
+    );
+
+    try {
+      const snapshot = await this.desktopLinkService.revoke(
+        principal,
+        organizationId,
+        recordId,
+      );
+      return Object.freeze({
+        schema_version: 1 as const,
+        record_id: snapshot.recordId,
+        organization_id: snapshot.organizationId,
+        device_id: snapshot.deviceId,
+        status: snapshot.status,
+        expires_at: snapshot.expiresAt,
+        consumed_at: snapshot.consumedAt,
+      });
+    } catch (error: unknown) {
+      if (error instanceof DesktopLinkPersistenceUnavailableError) {
+        throw new ServiceUnavailableException('desktop link persistence unavailable');
+      }
+      if (error instanceof DesktopLinkDeniedError) {
+        throw new NotFoundException('desktop link unavailable');
       }
       throw error;
     }
@@ -199,6 +354,9 @@ export class DesktopLinkController {
         consumed_at: binding.consumedAt,
       });
     } catch (error: unknown) {
+      if (error instanceof DesktopLinkPersistenceUnavailableError) {
+        throw new ServiceUnavailableException('desktop link persistence unavailable');
+      }
       if (error instanceof DesktopLinkDeniedError) {
         throw new ForbiddenException('desktop link exchange denied');
       }
