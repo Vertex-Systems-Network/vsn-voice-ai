@@ -44,6 +44,34 @@
       "deterministic_dedup_key": "WU-002|windows-audio-controlled|physical-windows-x64|acceptance-evidence-v1",
       "status": "blocked_authorization_and_external_machine",
       "immutable_evidence": []
+    },
+    {
+      "task_id": "RUN-PR-131-EXACT-HEAD-CI",
+      "source": {
+        "pr": 131,
+        "work_package": "compact supervisor resume protocol protected-path verification"
+      },
+      "command_workflow": "GitHub Actions PR checks for repository-integrity and affected workflows",
+      "exact_source_identity": {
+        "repository": "Vertex-Systems-Network/vsn-voice-ai",
+        "pr": 131,
+        "branch": "ai/supervisor-resume-protocol",
+        "registered_head_sha": "f7dc88ed62d2179e194f9bead77d1c475c95ac0e",
+        "execution_rule": "resolve and use the immutable current PR head SHA immediately before the single consolidated status refresh; do not reuse if head changed"
+      },
+      "environment_matrix_input_fixture_identity": {
+        "provider": "GitHub Actions",
+        "trigger": "pull_request",
+        "base_branch": "main",
+        "affected_scope": "protected AI control-plane and repository validator"
+      },
+      "authorization_state": "repository_ci_only_no_deployment_or_production_authority",
+      "security_critical": true,
+      "merge_blocking": true,
+      "expected_runner_time": "provider_managed_duration_unknown_no_polling",
+      "deterministic_dedup_key": "PR-131|exact-head-ci|protected-ai-control-plane-v1",
+      "status": "registered_verify_exact_head",
+      "immutable_evidence": []
     }
   ]
 }
