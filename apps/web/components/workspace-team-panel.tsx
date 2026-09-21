@@ -65,10 +65,10 @@ export function WorkspaceTeamPanel({
 
       {view.members.length > 0 ? (
         <ul className="team-member-list" aria-label="Workspace team memberships">
-          {view.members.map((member) => (
-            <li className="team-member-row" key={member.membership_id}>
+          {view.members.map((member, index) => (
+            <li className="team-member-row" key={`${member.status}-${index}`}>
               <div>
-                <strong>{member.subject_id}</strong>
+                <strong>Team membership</strong>
                 <span>{member.status}</span>
               </div>
               <span>{member.roles.join(', ')}</span>

@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test": "tsc lib/workspace-bootstrap-client.ts lib/workspace-team-client.ts lib/workspace-team-panel-state.ts lib/workspace-directory-client.ts lib/workspace-directory-panel-state.ts --ignoreConfig --module commonjs --target es2022 --lib DOM,ES2022 --outDir .test-dist --skipLibCheck && node --test tests/*.test.mjs",
+    "test": "tsc lib/workspace-bootstrap-client.ts lib/workspace-team-client.ts lib/workspace-team-panel-state.ts lib/workspace-directory-client.ts lib/workspace-directory-panel-state.ts lib/workspace-directory-selection.ts lib/workspace-session-state.ts lib/workspace-overview-panel-state.ts lib/workspace-desktop-link-client.ts lib/workspace-desktop-link-panel-state.ts lib/workspace-desktop-link-status-client.ts lib/workspace-desktop-link-revoke-client.ts lib/workspace-linked-desktop-client.ts --ignoreConfig --module commonjs --target es2022 --lib DOM,ES2022 --outDir .test-dist --skipLibCheck && node --test tests/*.test.mjs",
     "e2e": "playwright test",
     "check": "npm run typecheck && npm test && npm run build"
   },
