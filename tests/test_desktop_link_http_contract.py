@@ -22,6 +22,7 @@ class DesktopLinkHttpContractTests(unittest.TestCase):
         cls.issue_response = load_validator("desktop-link-issue-response.schema.json")
         cls.consume_request = load_validator("desktop-link-consume-request.schema.json")
         cls.consume_response = load_validator("desktop-link-consume-response.schema.json")
+        cls.status_response = load_validator("desktop-link-status-response.schema.json")
         cls.record_id = "550e8400-e29b-41d4-a716-446655440000"
         cls.token = "A" * 43
 
@@ -76,6 +77,44 @@ class DesktopLinkHttpContractTests(unittest.TestCase):
             widened[forbidden_field] = "must-not-cross-boundary"
             with self.assertRaises(ValidationError):
                 self.consume_response.validate(widened)
+
+
+    def test_status_response_is_browser_safe_and_closed(self) -> None:
+        payload = {
+            "schema_version": 1,
+            "record_id": self.record_id,
+            "organization_id": "org_456",
+            "device_id": "desktop_001",
+            "status": "consumed",
+            "expires_at": "2026-09-15T00:05:00.000Z",
+            "consumed_at": "2026-09-15T00:01:00.000Z",
+        }
+        self.status_response.validate(payload)
+
+        for forbidden_field in (
+            "subject_id",
+            "session_id",
+            "exchange_token",
+            "token_digest",
+        ):
+            widened = dict(payload)
+            widened[forbidden_field] = "must-not-cross-boundary"
+            with self.assertRaises(ValidationError):
+                self.status_response.validate(widened)
+
+    def test_status_response_supports_issued_and_expired_without_consumed_time(self) -> None:
+        for status in ("issued", "expired", "revoked"):
+            self.status_response.validate(
+                {
+                    "schema_version": 1,
+                    "record_id": self.record_id,
+                    "organization_id": "org_456",
+                    "device_id": "desktop_001",
+                    "status": status,
+                    "expires_at": "2026-09-15T00:05:00.000Z",
+                    "consumed_at": None,
+                }
+            )
 
 
 if __name__ == "__main__":

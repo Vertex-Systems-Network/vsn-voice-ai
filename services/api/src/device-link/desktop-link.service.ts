@@ -33,6 +33,15 @@ export interface DesktopLinkBinding {
   readonly consumedAt: string;
 }
 
+export interface DesktopLinkStatusSnapshot {
+  readonly recordId: string;
+  readonly organizationId: string;
+  readonly deviceId: string;
+  readonly status: 'issued' | 'consumed' | 'revoked' | 'expired';
+  readonly expiresAt: string;
+  readonly consumedAt: string | null;
+}
+
 export interface DesktopLinkClock {
   now(): Date;
 }
@@ -112,6 +121,39 @@ export class DesktopLinkService {
       recordId,
       exchangeToken,
       expiresAt: expiresAt.toISOString(),
+    });
+  }
+
+  public async inspect(
+    principal: AuthenticatedPrincipal,
+    organizationId: string,
+    recordId: string,
+  ): Promise<DesktopLinkStatusSnapshot> {
+    requireNonEmpty(principal.subjectId, 'subject id');
+    requireNonEmpty(organizationId, 'organization id');
+    requireNonEmpty(recordId, 'record id');
+
+    const record = await this.store.get(recordId);
+    if (
+      record === undefined ||
+      record.subject_id !== principal.subjectId ||
+      record.organization_id !== organizationId
+    ) {
+      throw new DesktopLinkDeniedError('desktop link record is unavailable');
+    }
+
+    const expired =
+      record.status === 'issued' &&
+      this.clock.now().getTime() >= Date.parse(record.expires_at);
+    const status = expired ? 'expired' as const : record.status;
+
+    return Object.freeze({
+      recordId: record.record_id,
+      organizationId: record.organization_id,
+      deviceId: record.device_id,
+      status,
+      expiresAt: record.expires_at,
+      consumedAt: record.consumed_at ?? null,
     });
   }
 

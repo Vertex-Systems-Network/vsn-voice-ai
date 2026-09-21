@@ -167,3 +167,52 @@ test('issuing requires device.link permission and bounded ttl', async () => {
   await expectDenied(() => service.issue(authorization, 'device_abc', 29_999));
   await expectDenied(() => service.issue(authorization, 'device_abc', 600_001));
 });
+
+test('status inspection is tenant and subject bound and derives expiry safely', async () => {
+  const { clock, service } = setup();
+  const issued = await service.issue(authorization, 'device_abc', 30_000);
+
+  const active = await service.inspect(principal, 'org_456', issued.recordId);
+  assert.deepEqual(active, {
+    recordId: issued.recordId,
+    organizationId: 'org_456',
+    deviceId: 'device_abc',
+    status: 'issued',
+    expiresAt: issued.expiresAt,
+    consumedAt: null,
+  });
+
+  await expectDenied(() =>
+    service.inspect({ subjectId: 'user_other' }, 'org_456', issued.recordId),
+  );
+  await expectDenied(() =>
+    service.inspect(principal, 'org_other', issued.recordId),
+  );
+  await expectDenied(() =>
+    service.inspect(principal, 'org_456', 'missing-record'),
+  );
+
+  clock.advance(30_000);
+  const expired = await service.inspect(principal, 'org_456', issued.recordId);
+  assert.equal(expired.status, 'expired');
+  assert.equal(expired.consumedAt, null);
+});
+
+test('status inspection reports consumed exchange without exposing token or subject', async () => {
+  const { service } = setup();
+  const issued = await service.issue(authorization, 'device_abc');
+
+  const binding = await service.consume(
+    principal,
+    'org_456',
+    'device_abc',
+    issued.recordId,
+    issued.exchangeToken,
+  );
+  const status = await service.inspect(principal, 'org_456', issued.recordId);
+
+  assert.equal(status.status, 'consumed');
+  assert.equal(status.consumedAt, binding.consumedAt);
+  assert.equal(JSON.stringify(status).includes(issued.exchangeToken), false);
+  assert.equal(JSON.stringify(status).includes('user_123'), false);
+});
