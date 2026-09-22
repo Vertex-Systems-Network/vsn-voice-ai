@@ -60,7 +60,7 @@ test('authenticated directory requires explicit selection before team data loads
           {
             schema_version: 1,
             membership_id: 'membership_1',
-            subject_id: 'member_1',
+            display_name: 'Ada Lovelace',
             status: 'active',
             roles: ['member'],
           },
@@ -85,7 +85,7 @@ test('authenticated directory requires explicit selection before team data loads
   await expect(page.getByRole('heading', { name: '1 team member' })).toBeVisible();
   const teamRow = page.locator('.team-member-row');
   await expect(teamRow).toHaveCount(1);
-  await expect(teamRow.getByText('Team membership', { exact: true })).toBeVisible();
+  await expect(teamRow.getByText('Ada Lovelace', { exact: true })).toBeVisible();
   await expect(teamRow.getByText('member', { exact: true })).toBeVisible();
   await expect(page.getByText('member_1', { exact: true })).toHaveCount(0);
   await expect(page.getByText('membership_1', { exact: true })).toHaveCount(0);
