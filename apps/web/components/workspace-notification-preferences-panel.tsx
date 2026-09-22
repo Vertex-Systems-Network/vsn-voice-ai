@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 
 import {
   requestWorkspaceNotificationPreferences,
@@ -90,6 +90,8 @@ export function WorkspaceNotificationPreferencesPanel({
   const [saveState, setSaveState] = useState<
     'idle' | 'saving' | 'saved' | 'failed'
   >('idle');
+  const activeOrganizationId = useRef<string | null>(organizationId);
+  activeOrganizationId.current = organizationId;
 
   useEffect(() => {
     let cancelled = false;
@@ -148,11 +150,15 @@ export function WorkspaceNotificationPreferencesPanel({
     }
 
     setSaveState('saving');
+    const requestOrganizationId = organizationId;
     const result = await updateWorkspaceNotificationPreferences(
       globalThis.fetch.bind(globalThis),
-      organizationId,
+      requestOrganizationId,
       preferences,
     );
+    if (activeOrganizationId.current !== requestOrganizationId) {
+      return;
+    }
     if (result.status === 'ready') {
       setPreferences({
         meeting_reminders: result.data.meeting_reminders,

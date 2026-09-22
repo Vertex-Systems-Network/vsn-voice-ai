@@ -1039,3 +1039,125 @@ test('switching workspace reloads notification preferences without retaining pri
   await expect(page.getByLabel('Transcript ready')).not.toBeChecked();
   expect(preferenceRequests).toEqual(['org_1', 'org_2']);
 });
+
+
+test('late save response cannot overwrite notification settings after tenant switch', async ({ page }) => {
+  let releaseOrgOneSave: (() => void) | null = null;
+  const orgOneSaveStarted = new Promise<void>((resolve) => {
+    releaseOrgOneSave = resolve;
+  });
+  let finishOrgOneSave: (() => void) | null = null;
+  const orgOneSaveCanFinish = new Promise<void>((resolve) => {
+    finishOrgOneSave = resolve;
+  });
+
+  await page.route('**/v1/workspaces', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_version: 1,
+        workspaces: [
+          {
+            schema_version: 1,
+            membership_id: 'membership_1',
+            organization_id: 'org_1',
+            status: 'active',
+            roles: ['member'],
+          },
+          {
+            schema_version: 1,
+            membership_id: 'membership_2',
+            organization_id: 'org_2',
+            status: 'active',
+            roles: ['member'],
+          },
+        ],
+        has_more: false,
+      }),
+    });
+  });
+  await page.route('**/v1/workspaces/*/team', async (route) => {
+    const organizationId = route.request().url().includes('/org_2/')
+      ? 'org_2'
+      : 'org_1';
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_version: 1,
+        organization_id: organizationId,
+        members: [],
+        has_more: false,
+      }),
+    });
+  });
+  await page.route(
+    '**/v1/workspaces/org_1/notification-preferences',
+    async (route) => {
+      if (route.request().method() === 'PUT') {
+        releaseOrgOneSave?.();
+        await orgOneSaveCanFinish;
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            schema_version: 1,
+            organization_id: 'org_1',
+            meeting_reminders: false,
+            transcript_ready: false,
+            action_items: false,
+            desktop_link_events: false,
+          }),
+        });
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          schema_version: 1,
+          organization_id: 'org_1',
+          meeting_reminders: true,
+          transcript_ready: true,
+          action_items: true,
+          desktop_link_events: true,
+        }),
+      });
+    },
+  );
+  await page.route(
+    '**/v1/workspaces/org_2/notification-preferences',
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          schema_version: 1,
+          organization_id: 'org_2',
+          meeting_reminders: true,
+          transcript_ready: false,
+          action_items: true,
+          desktop_link_events: false,
+        }),
+      });
+    },
+  );
+
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Select workspace org_1' }).click();
+  await expect(page.getByRole('heading', { name: 'Notification settings' })).toBeVisible();
+
+  await page.getByLabel('Meeting reminders').uncheck();
+  await page.getByRole('button', { name: 'Save notification settings' }).click();
+  await orgOneSaveStarted;
+
+  await page.getByRole('button', { name: 'Select workspace org_2' }).click();
+  await expect(page.getByLabel('Meeting reminders')).toBeChecked();
+  await expect(page.getByLabel('Transcript ready')).not.toBeChecked();
+
+  finishOrgOneSave?.();
+  await page.waitForTimeout(100);
+  await expect(page.getByLabel('Meeting reminders')).toBeChecked();
+  await expect(page.getByLabel('Transcript ready')).not.toBeChecked();
+});
