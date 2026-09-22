@@ -29,13 +29,14 @@ test('authorized workspace bootstrap exposes only browser-safe tenant context', 
 
   assert.deepEqual(bootstrap.authorization, {
     schema_version: 1,
-    subject_id: 'user_123',
     organization_id: 'org_456',
     membership_id: 'membership_789',
     roles: ['member'],
     permissions: ['conversation.read', 'device.link'],
   });
+  assert.equal(Object.hasOwn(bootstrap.authorization, 'subject_id'), false);
   assert.equal(Object.hasOwn(bootstrap.authorization, 'session_id'), false);
+  assert.equal(JSON.stringify(bootstrap).includes('user_123'), false);
   assert.equal(JSON.stringify(bootstrap).includes('session_abc'), false);
   assert.deepEqual(bootstrap.meetings, { status: 'unloaded', items: [] });
   assert.deepEqual(bootstrap.devices, { status: 'unloaded', items: [] });
