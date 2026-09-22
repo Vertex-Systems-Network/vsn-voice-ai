@@ -20,7 +20,8 @@ test('workspace shell keeps unverified account and tenant state explicit', () =>
   assert.match(pageSource, /No meetings yet/);
   assert.match(workspaceFlowSource, /WorkspaceOverviewPanel/);
   assert.match(workspaceFlowSource, /WorkspaceDesktopLinkPanel/);
-  assert.match(pageSource, /Settings are not connected yet/);
+  assert.doesNotMatch(pageSource, /Settings are not connected yet/);
+  assert.match(workspaceFlowSource, /WorkspaceNotificationPreferencesPanel/);
   assert.match(pageSource, /WorkspaceTeamWorkspace/);
   assert.match(workspaceFlowSource, /Select a workspace first/);
   assert.match(workspaceFlowSource, /Team data stays unloaded until you explicitly choose/);
@@ -40,6 +41,10 @@ test('root team flow requires explicit authenticated organization selection', ()
   assert.match(workspaceFlowSource, /organizationId === null/);
   assert.match(workspaceFlowSource, /<WorkspaceDesktopLinkPanel organizationId=\{organizationId\}/);
   assert.match(workspaceFlowSource, /<WorkspaceTeamPanel organizationId=\{organizationId\}/);
+  assert.match(
+    workspaceFlowSource,
+    /<WorkspaceNotificationPreferencesPanel organizationId=\{organizationId\}/,
+  );
 });
 
 test('workspace shell exposes baseline keyboard and semantic accessibility affordances', () => {
