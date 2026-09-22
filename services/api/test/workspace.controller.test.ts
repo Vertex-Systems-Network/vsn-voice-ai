@@ -73,7 +73,8 @@ test('trusted resolvers produce tenant-authorized workspace bootstrap', async ()
   assert.equal(Object.isFrozen(membershipResolver.lastPrincipal), true);
   assert.equal(membershipResolver.lastOrganizationId, 'org_456');
   assert.equal(response.authorization.organization_id, 'org_456');
-  assert.equal(response.authorization.subject_id, 'user_123');
+  assert.equal(Object.hasOwn(response.authorization, 'subject_id'), false);
+  assert.equal(JSON.stringify(response).includes('user_123'), false);
   assert.deepEqual(response.meetings, { status: 'unloaded', items: [] });
   assert.deepEqual(response.devices, { status: 'unloaded', items: [] });
 });
