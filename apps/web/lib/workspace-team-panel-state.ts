@@ -6,6 +6,7 @@ import type {
 export type WorkspaceTeamPanelTone = 'neutral' | 'ready' | 'warning';
 
 export interface WorkspaceTeamMemberView {
+  readonly displayName: string | null;
   readonly status: WorkspaceMembershipStatus;
   readonly roles: readonly string[];
 }
@@ -49,6 +50,7 @@ export function workspaceTeamPanelView(
         members: Object.freeze(
           result.data.members.map((member) =>
             Object.freeze({
+              displayName: member.display_name,
               status: member.status,
               roles: Object.freeze([...member.roles]),
             }),
