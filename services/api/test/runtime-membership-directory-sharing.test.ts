@@ -50,6 +50,20 @@ class SharedFakePostgresClient implements ClosablePostgresQueryClient {
     values: readonly unknown[],
   ): Promise<PostgresQueryResult<Row>> {
     this.queries.push({ text, values: [...values] });
+    if (text.includes('LEFT JOIN workspace_profiles')) {
+      return {
+        rows: [
+          {
+            membership_id: 'membership_001',
+            subject_id: 'user_123',
+            organization_id: 'org_001',
+            status: 'active',
+            roles: ['member'],
+            display_name: 'Ada Lovelace',
+          } as unknown as Row,
+        ],
+      };
+    }
     if (text.includes('workspace_profiles')) {
       return {
         rows: [
@@ -118,7 +132,8 @@ test('configured runtime shares one PostgreSQL client across membership, directo
   assert.equal(directory.hasMore, false);
   assert.equal(team.organization_id, 'org_001');
   assert.equal(team.members.length, 1);
-  assert.equal(team.members[0]?.subject_id, 'user_123');
+  assert.equal(team.members[0]?.display_name, 'Ada Lovelace');
+  assert.equal(JSON.stringify(team).includes('user_123'), false);
   assert.equal(team.has_more, false);
   assert.deepEqual(preferences, {
     meeting_reminders: false,

@@ -41,7 +41,7 @@ const teamSnapshot: WorkspaceTeamSnapshot = {
     {
       schema_version: 1,
       membership_id: 'membership_123',
-      subject_id: 'user_123',
+      display_name: 'Ada Lovelace',
       status: 'active',
       roles: ['member'],
     },
@@ -115,6 +115,8 @@ test('trusted principal and membership can load the bounded team snapshot', asyn
   assert.equal(repository.lastOrganizationId, 'org_456');
   assert.deepEqual(result, teamSnapshot);
   assert.equal('session_id' in result, false);
+  assert.equal(JSON.stringify(result).includes('subject_id'), false);
+  assert.equal(JSON.stringify(result).includes('user_123'), false);
 });
 
 test('missing principal fails before membership and repository access', async () => {

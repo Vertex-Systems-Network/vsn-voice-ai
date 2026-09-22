@@ -12,7 +12,7 @@ export const MAX_WORKSPACE_TEAM_MEMBERS = 200;
 export interface WorkspaceTeamMember {
   readonly schema_version: 1;
   readonly membership_id: string;
-  readonly subject_id: string;
+  readonly display_name: string | null;
   readonly status: MembershipStatus;
   readonly roles: readonly string[];
 }
@@ -32,6 +32,19 @@ export interface WorkspaceTeamRequest {
   readonly principal: AuthenticatedPrincipal | null | undefined;
   readonly membership: OrganizationMembership | null | undefined;
   readonly organizationId: string;
+}
+
+function isDisplayName(value: unknown): value is string | null {
+  return (
+    value === null ||
+    (
+      typeof value === 'string' &&
+      value.length >= 1 &&
+      value.length <= 80 &&
+      value.trim() === value &&
+      !/[\u0000-\u001F\u007F]/u.test(value)
+    )
+  );
 }
 
 /**
@@ -71,15 +84,20 @@ export async function loadWorkspaceTeam(
     schema_version: 1 as const,
     organization_id: snapshot.organization_id,
     members: Object.freeze(
-      snapshot.members.map((member) =>
-        Object.freeze({
+      snapshot.members.map((member) => {
+        if (!isDisplayName(member.display_name)) {
+          throw new WorkspaceTeamDataIntegrityError(
+            'workspace team repository returned an invalid display name',
+          );
+        }
+        return Object.freeze({
           schema_version: 1 as const,
           membership_id: member.membership_id,
-          subject_id: member.subject_id,
+          display_name: member.display_name,
           status: member.status,
           roles: Object.freeze([...member.roles]),
-        }),
-      ),
+        });
+      }),
     ),
     has_more: snapshot.has_more,
   });

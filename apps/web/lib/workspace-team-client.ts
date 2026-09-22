@@ -3,7 +3,7 @@ export type WorkspaceMembershipStatus = 'active' | 'invited' | 'suspended';
 export interface WorkspaceTeamMember {
   readonly schema_version: 1;
   readonly membership_id: string;
-  readonly subject_id: string;
+  readonly display_name: string | null;
   readonly status: WorkspaceMembershipStatus;
   readonly roles: readonly string[];
 }
@@ -36,7 +36,7 @@ const responseKeys = [
 const memberKeys = [
   'schema_version',
   'membership_id',
-  'subject_id',
+  'display_name',
   'status',
   'roles',
 ] as const;
@@ -68,6 +68,19 @@ function isBoundedIdentifier(value: unknown): value is string {
     value.trim() === value;
 }
 
+function isDisplayName(value: unknown): value is string | null {
+  return (
+    value === null ||
+    (
+      typeof value === 'string' &&
+      value.length >= 1 &&
+      value.length <= 80 &&
+      value.trim() === value &&
+      !/[\u0000-\u001F\u007F]/u.test(value)
+    )
+  );
+}
+
 function isRoles(value: unknown): value is readonly string[] {
   if (!Array.isArray(value) || value.length < 1 || value.length > 32) {
     return false;
@@ -96,7 +109,7 @@ function isWorkspaceTeamMember(value: unknown): value is WorkspaceTeamMember {
 
   return value.schema_version === 1 &&
     isBoundedIdentifier(value.membership_id) &&
-    isBoundedIdentifier(value.subject_id) &&
+    isDisplayName(value.display_name) &&
     typeof value.status === 'string' &&
     membershipStatuses.has(value.status as WorkspaceMembershipStatus) &&
     isRoles(value.roles);

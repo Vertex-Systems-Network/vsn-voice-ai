@@ -41,6 +41,7 @@ function row(index = 1, overrides: Record<string, unknown> = {}): Record<string,
     organization_id: 'org_456',
     status: 'active',
     roles: ['member'],
+    display_name: `Member ${index}`,
     ...overrides,
   };
 }
@@ -60,8 +61,11 @@ test('team listing is parameterized, deterministic and content bounded', async (
     'org_456',
     MAX_WORKSPACE_TEAM_MEMBERS + 1,
   ]);
-  assert.match(client.calls[0]?.text ?? '', /WHERE organization_id = \$1/);
-  assert.match(client.calls[0]?.text ?? '', /ORDER BY membership_id ASC/);
+  assert.match(client.calls[0]?.text ?? '', /LEFT JOIN workspace_profiles AS p/);
+  assert.match(client.calls[0]?.text ?? '', /p\.organization_id = m\.organization_id/);
+  assert.match(client.calls[0]?.text ?? '', /p\.subject_id = m\.subject_id/);
+  assert.match(client.calls[0]?.text ?? '', /WHERE m\.organization_id = \$1/);
+  assert.match(client.calls[0]?.text ?? '', /ORDER BY m\.membership_id ASC/);
   assert.match(client.calls[0]?.text ?? '', /LIMIT \$2/);
   assert.deepEqual(result, {
     schema_version: 1,
@@ -70,14 +74,14 @@ test('team listing is parameterized, deterministic and content bounded', async (
       {
         schema_version: 1,
         membership_id: 'membership_001',
-        subject_id: 'user_001',
+        display_name: 'Member 1',
         status: 'active',
         roles: ['member'],
       },
       {
         schema_version: 1,
         membership_id: 'membership_002',
-        subject_id: 'user_002',
+        display_name: 'Member 2',
         status: 'invited',
         roles: ['admin', 'member'],
       },
@@ -87,6 +91,7 @@ test('team listing is parameterized, deterministic and content bounded', async (
   assert.equal(Object.isFrozen(result), true);
   assert.equal(Object.isFrozen(result.members), true);
   assert.equal(Object.isFrozen(result.members[0]?.roles), true);
+  assert.equal(JSON.stringify(result).includes('user_001'), false);
 });
 
 test('201st row only signals more data and never crosses the bounded surface', async () => {
@@ -108,6 +113,8 @@ test('cross-tenant, malformed and duplicate rows fail closed', async () => {
     [row(1, { status: 'deleted' })],
     [row(1, { roles: [] })],
     [row(1, { roles: ['Member'] })],
+    [row(1, { display_name: ' bad' })],
+    [row(1, { display_name: 'bad\nname' })],
     [row(1), row(2, { membership_id: 'membership_001' })],
     [row(1), row(2, { subject_id: 'user_001' })],
   ];

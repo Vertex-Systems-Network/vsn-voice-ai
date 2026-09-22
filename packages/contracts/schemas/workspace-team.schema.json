@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://schemas.vsn.local/workspace-team.schema.json",
   "title": "VSN Workspace Team Response",
-  "description": "Tenant-authorized, browser-safe workspace team read model. It contains no session identifier, credential, email address, permission list or free-form profile content.",
+  "description": "Tenant-authorized, browser-safe workspace team read model. Internal subject/session identifiers, credentials, email addresses, permission lists and free-form profile metadata are excluded.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -48,7 +48,7 @@
       "required": [
         "schema_version",
         "membership_id",
-        "subject_id",
+        "display_name",
         "status",
         "roles"
       ],
@@ -57,9 +57,6 @@
           "const": 1
         },
         "membership_id": {
-          "$ref": "#/$defs/identifier"
-        },
-        "subject_id": {
           "$ref": "#/$defs/identifier"
         },
         "status": {
@@ -77,6 +74,19 @@
           "items": {
             "$ref": "#/$defs/authorityToken"
           }
+        },
+        "display_name": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80,
+              "pattern": "^(?:[^\\u0000-\\u001F\\u007F])*$"
+            }
+          ]
         }
       }
     }
