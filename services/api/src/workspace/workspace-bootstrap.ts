@@ -13,7 +13,6 @@ export interface WorkspaceBootstrapRequest {
 
 export interface WorkspaceAuthorizationSummary {
   readonly schema_version: 1;
-  readonly subject_id: string;
   readonly organization_id: string;
   readonly membership_id: string;
   readonly roles: readonly string[];
@@ -46,7 +45,6 @@ function toWorkspaceAuthorizationSummary(
 ): WorkspaceAuthorizationSummary {
   return Object.freeze({
     schema_version: 1 as const,
-    subject_id: authorization.subject_id,
     organization_id: authorization.organization_id,
     membership_id: authorization.membership_id,
     roles: Object.freeze([...authorization.roles]),
@@ -56,8 +54,8 @@ function toWorkspaceAuthorizationSummary(
 
 /**
  * Produces the minimum tenant-bound bootstrap payload needed by the current web
- * workspace. Internal authentication/session identifiers deliberately do not
- * cross this browser-facing boundary. Downstream resource stores must replace
+ * workspace. Internal trusted-subject, authentication and session identifiers
+ * deliberately do not cross this browser-facing boundary. Downstream resource stores must replace
  * individual unloaded areas only after their own authorization and persistence
  * contracts exist.
  */

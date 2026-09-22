@@ -72,7 +72,7 @@ export function workspaceOverviewView(
     case 'ready':
       return view(
         'Workspace access verified',
-        'This summary comes from the tenant-authorized workspace bootstrap. Internal subject and membership identifiers are intentionally not displayed.',
+        'This summary comes from the tenant-authorized workspace bootstrap. Trusted subject identifiers never cross the browser boundary, and internal membership identifiers are intentionally not displayed.',
         'Authorized',
         'ready',
         result.data.authorization.organization_id,
