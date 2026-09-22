@@ -18,6 +18,9 @@ import {
   WorkspaceNotificationPreferencesPersistenceUnavailableError,
 } from '../src/workspace/workspace-notification-preferences-repository.js';
 import {
+  WorkspaceOrganizationProfilePersistenceUnavailableError,
+} from '../src/workspace/workspace-organization-profile-repository.js';
+import {
   WorkspaceProfilePersistenceUnavailableError,
 } from '../src/workspace/workspace-profile-repository.js';
 import {
@@ -74,6 +77,17 @@ class SharedFakePostgresClient implements ClosablePostgresQueryClient {
             status: 'active',
             roles: ['member'],
             display_name: 'Ada Lovelace',
+          } as unknown as Row,
+        ],
+      };
+    }
+    if (text.includes('workspace_organizations')) {
+      return {
+        rows: [
+          {
+            organization_id: 'org_001',
+            display_name:
+              values.length > 1 ? values[1] : 'Vertex Systems',
           } as unknown as Row,
         ],
       };
@@ -138,6 +152,11 @@ test('configured runtime shares one PostgreSQL client across membership, directo
     display_name: 'Ada Lovelace',
     job_title: 'Research Engineer',
   });
+  const organizationProfile = await runtime.getOrganizationProfile('org_001');
+  const savedOrganizationProfile = await runtime.putOrganizationProfile(
+    'org_001',
+    { display_name: 'Vertex Systems Network' },
+  );
   const memberStatus = await runtime.changeOrdinaryMemberStatus(
     'manager_123',
     'org_001',
@@ -167,13 +186,19 @@ test('configured runtime shares one PostgreSQL client across membership, directo
     job_title: 'Research Engineer',
   });
   assert.deepEqual(savedProfile, profile);
+  assert.deepEqual(organizationProfile, {
+    display_name: 'Vertex Systems',
+  });
+  assert.deepEqual(savedOrganizationProfile, {
+    display_name: 'Vertex Systems Network',
+  });
   assert.deepEqual(memberStatus, {
     schema_version: 1,
     organization_id: 'org_001',
     membership_id: 'membership_target',
     status: 'suspended',
   });
-  assert.equal(client.queries.length, 8);
+  assert.equal(client.queries.length, 10);
   assert.deepEqual(client.queries[0]?.values, ['user_123', 'org_001']);
   assert.deepEqual(client.queries[1]?.values, ['user_123', 101]);
   assert.deepEqual(client.queries[2]?.values, ['org_001', 201]);
@@ -193,7 +218,12 @@ test('configured runtime shares one PostgreSQL client across membership, directo
     'Ada Lovelace',
     'Research Engineer',
   ]);
-  assert.deepEqual(client.queries[7]?.values, [
+  assert.deepEqual(client.queries[7]?.values, ['org_001']);
+  assert.deepEqual(client.queries[8]?.values, [
+    'org_001',
+    'Vertex Systems Network',
+  ]);
+  assert.deepEqual(client.queries[9]?.values, [
     'org_001',
     'membership_target',
     'manager_123',
@@ -249,6 +279,17 @@ test('missing PostgreSQL configuration fails closed for all membership-backed ac
         job_title: '',
       }),
     WorkspaceProfilePersistenceUnavailableError,
+  );
+  await assert.rejects(
+    () => runtime.getOrganizationProfile('org_001'),
+    WorkspaceOrganizationProfilePersistenceUnavailableError,
+  );
+  await assert.rejects(
+    () =>
+      runtime.putOrganizationProfile('org_001', {
+        display_name: 'Vertex Systems',
+      }),
+    WorkspaceOrganizationProfilePersistenceUnavailableError,
   );
   await assert.rejects(
     () =>
