@@ -44,7 +44,7 @@ function snapshot(overrides: Partial<WorkspaceTeamSnapshot> = {}): WorkspaceTeam
       {
         schema_version: 1,
         membership_id: 'membership_123',
-        subject_id: 'user_123',
+        display_name: 'Ada Lovelace',
         status: 'active',
         roles: ['member'],
       },
@@ -122,7 +122,7 @@ test('repository tenant mismatch and oversized snapshots fail closed', async () 
   const oversizedMembers = Array.from({ length: MAX_WORKSPACE_TEAM_MEMBERS + 1 }, (_, index) => ({
     schema_version: 1 as const,
     membership_id: `membership_${index}`,
-    subject_id: `user_${index}`,
+    display_name: index % 2 === 0 ? null : `Member ${index}`,
     status: 'active' as const,
     roles: ['member'],
   }));
