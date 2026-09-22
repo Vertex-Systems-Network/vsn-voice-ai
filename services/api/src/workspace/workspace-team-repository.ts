@@ -34,6 +34,19 @@ export interface WorkspaceTeamRequest {
   readonly organizationId: string;
 }
 
+function isDisplayName(value: unknown): value is string | null {
+  return (
+    value === null ||
+    (
+      typeof value === 'string' &&
+      value.length >= 1 &&
+      value.length <= 80 &&
+      value.trim() === value &&
+      !/[\u0000-\u001F\u007F]/u.test(value)
+    )
+  );
+}
+
 /**
  * Tenant-authorized workspace team read boundary. The repository is invoked
  * only after an active membership carrying the explicit team.read permission
@@ -71,15 +84,20 @@ export async function loadWorkspaceTeam(
     schema_version: 1 as const,
     organization_id: snapshot.organization_id,
     members: Object.freeze(
-      snapshot.members.map((member) =>
-        Object.freeze({
+      snapshot.members.map((member) => {
+        if (!isDisplayName(member.display_name)) {
+          throw new WorkspaceTeamDataIntegrityError(
+            'workspace team repository returned an invalid display name',
+          );
+        }
+        return Object.freeze({
           schema_version: 1 as const,
           membership_id: member.membership_id,
           display_name: member.display_name,
           status: member.status,
           roles: Object.freeze([...member.roles]),
-        }),
-      ),
+        });
+      }),
     ),
     has_more: snapshot.has_more,
   });
