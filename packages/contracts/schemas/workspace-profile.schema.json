@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.vsn.local/workspace-profile.schema.json",
+  "title": "VSN Workspace Self Profile Response",
+  "description": "Browser-safe tenant-bound profile for the current authenticated subject. Subject/session identifiers and persistence metadata are deliberately excluded.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "organization_id", "display_name", "job_title"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "organization_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^\\S(?:.*\\S)?$"
+    },
+    "display_name": {
+      "type": "string",
+      "maxLength": 80,
+      "pattern": "^(?:[^\\u0000-\\u001F\\u007F])*$"
+    },
+    "job_title": {
+      "type": "string",
+      "maxLength": 120,
+      "pattern": "^(?:[^\\u0000-\\u001F\\u007F])*$"
+    }
+  }
+}
