@@ -22,6 +22,8 @@ import { WorkspaceNotificationPreferencesController } from './workspace/workspac
 import { WORKSPACE_PROFILE_REPOSITORY } from './workspace/workspace-profile-repository.js';
 import { WorkspaceProfileController } from './workspace/workspace-profile.controller.js';
 import { WORKSPACE_TEAM_REPOSITORY } from './workspace/workspace-team-repository.js';
+import { WORKSPACE_TEAM_MEMBER_STATUS_REPOSITORY } from './workspace/workspace-team-member-status-repository.js';
+import { WorkspaceTeamMemberStatusController } from './workspace/workspace-team-member-status.controller.js';
 import { WorkspaceTeamController } from './workspace/workspace-team.controller.js';
 import { WorkspaceController } from './workspace/workspace.controller.js';
 
@@ -31,6 +33,7 @@ import { WorkspaceController } from './workspace/workspace.controller.js';
     WorkspaceDirectoryController,
     WorkspaceController,
     WorkspaceTeamController,
+    WorkspaceTeamMemberStatusController,
     WorkspaceNotificationPreferencesController,
     WorkspaceProfileController,
     DesktopLinkController,
@@ -54,6 +57,10 @@ import { WorkspaceController } from './workspace/workspace.controller.js';
     },
     {
       provide: WORKSPACE_TEAM_REPOSITORY,
+      useExisting: ORGANIZATION_MEMBERSHIP_RESOLVER,
+    },
+    {
+      provide: WORKSPACE_TEAM_MEMBER_STATUS_REPOSITORY,
       useExisting: ORGANIZATION_MEMBERSHIP_RESOLVER,
     },
     {

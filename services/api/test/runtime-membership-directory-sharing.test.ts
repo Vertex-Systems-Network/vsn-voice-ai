@@ -21,6 +21,9 @@ import {
   WorkspaceProfilePersistenceUnavailableError,
 } from '../src/workspace/workspace-profile-repository.js';
 import {
+  WorkspaceTeamMemberStatusPersistenceUnavailableError,
+} from '../src/workspace/workspace-team-member-status-repository.js';
+import {
   WorkspaceTeamPersistenceUnavailableError,
 } from '../src/workspace/workspace-team-repository.js';
 
@@ -50,6 +53,17 @@ class SharedFakePostgresClient implements ClosablePostgresQueryClient {
     values: readonly unknown[],
   ): Promise<PostgresQueryResult<Row>> {
     this.queries.push({ text, values: [...values] });
+    if (text.startsWith('UPDATE organization_memberships')) {
+      return {
+        rows: [
+          {
+            organization_id: 'org_001',
+            membership_id: 'membership_target',
+            status: values[3],
+          } as unknown as Row,
+        ],
+      };
+    }
     if (text.includes('LEFT JOIN workspace_profiles')) {
       return {
         rows: [
@@ -124,6 +138,12 @@ test('configured runtime shares one PostgreSQL client across membership, directo
     display_name: 'Ada Lovelace',
     job_title: 'Research Engineer',
   });
+  const memberStatus = await runtime.changeOrdinaryMemberStatus(
+    'manager_123',
+    'org_001',
+    'membership_target',
+    'suspended',
+  );
 
   assert.equal(factoryCalls, 1);
   assert.equal(membership?.organizationId, 'org_001');
@@ -147,7 +167,13 @@ test('configured runtime shares one PostgreSQL client across membership, directo
     job_title: 'Research Engineer',
   });
   assert.deepEqual(savedProfile, profile);
-  assert.equal(client.queries.length, 7);
+  assert.deepEqual(memberStatus, {
+    schema_version: 1,
+    organization_id: 'org_001',
+    membership_id: 'membership_target',
+    status: 'suspended',
+  });
+  assert.equal(client.queries.length, 8);
   assert.deepEqual(client.queries[0]?.values, ['user_123', 'org_001']);
   assert.deepEqual(client.queries[1]?.values, ['user_123', 101]);
   assert.deepEqual(client.queries[2]?.values, ['org_001', 201]);
@@ -166,6 +192,13 @@ test('configured runtime shares one PostgreSQL client across membership, directo
     'user_123',
     'Ada Lovelace',
     'Research Engineer',
+  ]);
+  assert.deepEqual(client.queries[7]?.values, [
+    'org_001',
+    'membership_target',
+    'manager_123',
+    'suspended',
+    ['conversation.read', 'team.read', 'device.link'],
   ]);
 
   await Promise.all([
@@ -216,6 +249,16 @@ test('missing PostgreSQL configuration fails closed for all membership-backed ac
         job_title: '',
       }),
     WorkspaceProfilePersistenceUnavailableError,
+  );
+  await assert.rejects(
+    () =>
+      runtime.changeOrdinaryMemberStatus(
+        'manager_123',
+        'org_001',
+        'membership_target',
+        'suspended',
+      ),
+    WorkspaceTeamMemberStatusPersistenceUnavailableError,
   );
   assert.equal(factoryCalls, 0);
   await runtime.onApplicationShutdown();
