@@ -1331,3 +1331,308 @@ test('late workspace profile save cannot overwrite a newly selected tenant', asy
   await expect(page.getByLabel('Display name')).toHaveValue('Grace Hopper');
   await expect(page.getByLabel('Job title')).toHaveValue('Engineer');
 });
+
+
+test('team manager can suspend an ordinary member with a closed status payload', async ({ page }) => {
+  let mutationBody: unknown = null;
+
+  await page.route('**/v1/workspaces', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_version: 1,
+        workspaces: [
+          {
+            schema_version: 1,
+            membership_id: 'membership_manager',
+            organization_id: 'org_1',
+            status: 'active',
+            roles: ['manager'],
+          },
+        ],
+        has_more: false,
+      }),
+    });
+  });
+  await page.route('**/v1/workspaces/org_1/bootstrap', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_version: 1,
+        authorization: {
+          schema_version: 1,
+          subject_id: 'manager_internal',
+          organization_id: 'org_1',
+          membership_id: 'membership_manager',
+          roles: ['manager'],
+          permissions: ['conversation.read', 'team.read', 'team.manage'],
+        },
+        meetings: { status: 'unloaded', items: [] },
+        devices: { status: 'unloaded', items: [] },
+        team: { status: 'unloaded', items: [] },
+        settings: { status: 'unloaded', items: [] },
+      }),
+    });
+  });
+  await page.route('**/v1/workspaces/org_1/team', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_version: 1,
+        organization_id: 'org_1',
+        members: [
+          {
+            schema_version: 1,
+            membership_id: 'membership_target',
+            display_name: 'Ada Lovelace',
+            status: 'active',
+            roles: ['member'],
+          },
+        ],
+        has_more: false,
+      }),
+    });
+  });
+  await page.route(
+    '**/v1/workspaces/org_1/team/membership_target/status',
+    async (route) => {
+      mutationBody = route.request().postDataJSON();
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          schema_version: 1,
+          organization_id: 'org_1',
+          membership_id: 'membership_target',
+          status: 'suspended',
+        }),
+      });
+    },
+  );
+
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Select workspace org_1' }).click();
+  const suspend = page.getByRole('button', { name: 'Suspend Ada Lovelace' });
+  await expect(suspend).toBeVisible();
+  await suspend.click();
+
+  await expect(page.getByText('Team member suspended.')).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Reactivate Ada Lovelace' }),
+  ).toBeVisible();
+  expect(mutationBody).toEqual({ status: 'suspended' });
+  expect(JSON.stringify(mutationBody)).not.toContain('subject');
+  expect(JSON.stringify(mutationBody)).not.toContain('roles');
+  expect(JSON.stringify(mutationBody)).not.toContain('permissions');
+});
+
+test('team read remains available without team.manage and exposes no status controls', async ({ page }) => {
+  await page.route('**/v1/workspaces', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_version: 1,
+        workspaces: [
+          {
+            schema_version: 1,
+            membership_id: 'membership_reader',
+            organization_id: 'org_1',
+            status: 'active',
+            roles: ['member'],
+          },
+        ],
+        has_more: false,
+      }),
+    });
+  });
+  await page.route('**/v1/workspaces/org_1/bootstrap', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_version: 1,
+        authorization: {
+          schema_version: 1,
+          subject_id: 'reader_internal',
+          organization_id: 'org_1',
+          membership_id: 'membership_reader',
+          roles: ['member'],
+          permissions: ['conversation.read', 'team.read'],
+        },
+        meetings: { status: 'unloaded', items: [] },
+        devices: { status: 'unloaded', items: [] },
+        team: { status: 'unloaded', items: [] },
+        settings: { status: 'unloaded', items: [] },
+      }),
+    });
+  });
+  await page.route('**/v1/workspaces/org_1/team', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_version: 1,
+        organization_id: 'org_1',
+        members: [
+          {
+            schema_version: 1,
+            membership_id: 'membership_target',
+            display_name: 'Ada Lovelace',
+            status: 'active',
+            roles: ['member'],
+          },
+        ],
+        has_more: false,
+      }),
+    });
+  });
+
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Select workspace org_1' }).click();
+  await expect(page.getByText('Ada Lovelace', { exact: true })).toBeVisible();
+  await expect(page.locator('.team-member-status-action')).toHaveCount(0);
+});
+
+test('late team status response cannot mutate the newly selected tenant UI', async ({ page }) => {
+  let releaseOldMutation: () => void = () => undefined;
+  const oldMutationStarted = new Promise<void>((resolve) => {
+    releaseOldMutation = resolve;
+  });
+  let finishOldMutation: () => void = () => undefined;
+  const oldMutationCanFinish = new Promise<void>((resolve) => {
+    finishOldMutation = resolve;
+  });
+
+  await page.route('**/v1/workspaces', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_version: 1,
+        workspaces: [
+          {
+            schema_version: 1,
+            membership_id: 'membership_manager_1',
+            organization_id: 'org_1',
+            status: 'active',
+            roles: ['manager'],
+          },
+          {
+            schema_version: 1,
+            membership_id: 'membership_manager_2',
+            organization_id: 'org_2',
+            status: 'active',
+            roles: ['manager'],
+          },
+        ],
+        has_more: false,
+      }),
+    });
+  });
+  for (const organizationId of ['org_1', 'org_2']) {
+    await page.route(
+      `**/v1/workspaces/${organizationId}/bootstrap`,
+      async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            schema_version: 1,
+            authorization: {
+              schema_version: 1,
+              subject_id: 'manager_internal',
+              organization_id: organizationId,
+              membership_id: `membership_manager_${organizationId.at(-1)}`,
+              roles: ['manager'],
+              permissions: ['conversation.read', 'team.read', 'team.manage'],
+            },
+            meetings: { status: 'unloaded', items: [] },
+            devices: { status: 'unloaded', items: [] },
+            team: { status: 'unloaded', items: [] },
+            settings: { status: 'unloaded', items: [] },
+          }),
+        });
+      },
+    );
+  }
+  await page.route('**/v1/workspaces/org_1/team', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_version: 1,
+        organization_id: 'org_1',
+        members: [
+          {
+            schema_version: 1,
+            membership_id: 'membership_target_1',
+            display_name: 'Ada Lovelace',
+            status: 'active',
+            roles: ['member'],
+          },
+        ],
+        has_more: false,
+      }),
+    });
+  });
+  await page.route('**/v1/workspaces/org_2/team', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_version: 1,
+        organization_id: 'org_2',
+        members: [
+          {
+            schema_version: 1,
+            membership_id: 'membership_target_2',
+            display_name: 'Grace Hopper',
+            status: 'active',
+            roles: ['member'],
+          },
+        ],
+        has_more: false,
+      }),
+    });
+  });
+  await page.route(
+    '**/v1/workspaces/org_1/team/membership_target_1/status',
+    async (route) => {
+      releaseOldMutation();
+      await oldMutationCanFinish;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          schema_version: 1,
+          organization_id: 'org_1',
+          membership_id: 'membership_target_1',
+          status: 'suspended',
+        }),
+      });
+    },
+  );
+
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Select workspace org_1' }).click();
+  await page.getByRole('button', { name: 'Suspend Ada Lovelace' }).click();
+  await oldMutationStarted;
+
+  await page.getByRole('button', { name: 'Select workspace org_2' }).click();
+  await expect(page.getByText('Grace Hopper', { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Suspend Grace Hopper' }),
+  ).toBeVisible();
+
+  finishOldMutation();
+  await page.waitForTimeout(100);
+  await expect(page.getByText('Grace Hopper', { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Suspend Grace Hopper' }),
+  ).toBeVisible();
+  await expect(page.getByText('Team member suspended.')).toHaveCount(0);
+});
