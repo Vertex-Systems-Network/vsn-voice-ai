@@ -68,7 +68,7 @@ export function WorkspaceTeamPanel({
           {view.members.map((member, index) => (
             <li className="team-member-row" key={`${member.status}-${index}`}>
               <div>
-                <strong>Team membership</strong>
+                <strong>{member.displayName ?? 'Team member'}</strong>
                 <span>{member.status}</span>
               </div>
               <span>{member.roles.join(', ')}</span>
