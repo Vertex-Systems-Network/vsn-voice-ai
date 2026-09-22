@@ -1042,11 +1042,11 @@ test('switching workspace reloads notification preferences without retaining pri
 
 
 test('late save response cannot overwrite notification settings after tenant switch', async ({ page }) => {
-  let releaseOrgOneSave: (() => void) | null = null;
+  let releaseOrgOneSave: () => void = () => undefined;
   const orgOneSaveStarted = new Promise<void>((resolve) => {
     releaseOrgOneSave = resolve;
   });
-  let finishOrgOneSave: (() => void) | null = null;
+  let finishOrgOneSave: () => void = () => undefined;
   const orgOneSaveCanFinish = new Promise<void>((resolve) => {
     finishOrgOneSave = resolve;
   });
@@ -1096,7 +1096,7 @@ test('late save response cannot overwrite notification settings after tenant swi
     '**/v1/workspaces/org_1/notification-preferences',
     async (route) => {
       if (route.request().method() === 'PUT') {
-        releaseOrgOneSave?.();
+        releaseOrgOneSave();
         await orgOneSaveCanFinish;
         await route.fulfill({
           status: 200,
@@ -1156,7 +1156,7 @@ test('late save response cannot overwrite notification settings after tenant swi
   await expect(page.getByLabel('Meeting reminders')).toBeChecked();
   await expect(page.getByLabel('Transcript ready')).not.toBeChecked();
 
-  finishOrgOneSave?.();
+  finishOrgOneSave();
   await page.waitForTimeout(100);
   await expect(page.getByLabel('Meeting reminders')).toBeChecked();
   await expect(page.getByLabel('Transcript ready')).not.toBeChecked();
