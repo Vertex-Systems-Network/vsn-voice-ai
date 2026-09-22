@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://schemas.vsn.local/workspace-directory.schema.json",
   "title": "VSN Workspace Directory Response",
-  "description": "Authenticated subject-bound workspace membership summaries. Subject/session identifiers, permissions, credentials and profile data are intentionally excluded.",
+  "description": "Authenticated subject-bound workspace membership summaries with an optional tenant display name. Subject/session identifiers, permissions and credentials remain excluded.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -45,6 +45,7 @@
         "schema_version",
         "membership_id",
         "organization_id",
+        "display_name",
         "status",
         "roles"
       ],
@@ -73,6 +74,19 @@
           "items": {
             "$ref": "#/$defs/authorityToken"
           }
+        },
+        "display_name": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100,
+              "pattern": "^(?:[^\\u0000-\\u001F\\u007F])*$"
+            }
+          ]
         }
       }
     }
