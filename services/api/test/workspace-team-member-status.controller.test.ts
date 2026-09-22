@@ -251,11 +251,12 @@ test('membership and persistence failures map to generic service unavailable', a
 
 test('invalid route identifiers fail before trust resolution', async () => {
   const { controller, principalResolver } = setup();
-  for (const [organizationId, membershipId] of [
+  const invalidRoutes: readonly (readonly [string, string])[] = [
     [' org_456', 'membership_target'],
     ['org_456', ' membership_target'],
     ['x'.repeat(129), 'membership_target'],
-  ]) {
+  ];
+  for (const [organizationId, membershipId] of invalidRoutes) {
     await assert.rejects(
       controller.putStatus(
         organizationId,
