@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.vsn.local/workspace-team-member-status.schema.json",
+  "title": "VSN Workspace Team Member Status Response",
+  "description": "Browser-safe result of an ordinary team member status mutation. Subject identifiers, roles, permissions and persistence metadata are excluded.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "organization_id", "membership_id", "status"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "organization_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^\\S(?:.*\\S)?$"
+    },
+    "membership_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^\\S(?:.*\\S)?$"
+    },
+    "status": {
+      "enum": ["active", "suspended"]
+    }
+  }
+}
