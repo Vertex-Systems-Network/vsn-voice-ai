@@ -13,7 +13,6 @@ function readyResult() {
       schema_version: 1,
       authorization: {
         schema_version: 1,
-        subject_id: 'subject_internal',
         organization_id: 'org_456',
         membership_id: 'membership_internal',
         roles: ['member', 'operator'],
@@ -50,7 +49,7 @@ test('ready overview exposes safe tenant authorization summary only', () => {
   ]);
 
   const serialized = JSON.stringify(view);
-  assert.equal(serialized.includes('subject_internal'), false);
+  assert.equal(serialized.includes('subject_id'), false);
   assert.equal(serialized.includes('membership_internal'), false);
 });
 
