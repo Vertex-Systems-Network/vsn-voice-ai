@@ -135,6 +135,30 @@ test('repository tenant mismatch and oversized snapshots fail closed', async () 
   );
 });
 
+test('malformed projected display name fails closed at the domain boundary', async () => {
+  const malformed = snapshot({
+    members: [
+      {
+        schema_version: 1,
+        membership_id: 'membership_123',
+        display_name: ' bad',
+        status: 'active',
+        roles: ['member'],
+      },
+    ],
+  });
+  const repository = new FakeWorkspaceTeamRepository(malformed);
+
+  await assert.rejects(
+    () =>
+      loadWorkspaceTeam(
+        { principal, membership, organizationId: 'org_456' },
+        repository,
+      ),
+    WorkspaceTeamDataIntegrityError,
+  );
+});
+
 test('blank organization id is rejected before repository access', async () => {
   const repository = new FakeWorkspaceTeamRepository(snapshot());
   await assert.rejects(
