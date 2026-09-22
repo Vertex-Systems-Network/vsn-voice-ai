@@ -181,7 +181,7 @@ export function WorkspaceTeamPanel({
           {view.members.map((member, index) => {
             const target = actionTargets[index];
             const showControl =
-              canManage && target?.manageable === true;
+              canManage && target !== undefined && target.manageable;
             const label = member.displayName ?? 'team member';
             const nextStatus: WorkspaceTeamManagedStatus =
               member.status === 'active' ? 'suspended' : 'active';
@@ -195,7 +195,7 @@ export function WorkspaceTeamPanel({
                   <span>{member.status}</span>
                 </div>
                 <span>{member.roles.join(', ')}</span>
-                {showControl ? (
+                {showControl && target !== undefined ? (
                   <button
                     type="button"
                     className="team-member-status-action"
