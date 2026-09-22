@@ -9,7 +9,7 @@ test('workspace renders explicit tenant-safe signed-out states', async ({ page }
   await expect(page.getByRole('heading', { level: 1 })).toContainText('without invented account state');
   await expect(page.locator('.session-state')).toHaveText('Signed out');
   await expect(page.getByRole('navigation', { name: 'Workspace navigation' })).toBeVisible();
-  await expect(page.locator('.area-card')).toHaveCount(6);
+  await expect(page.locator('.area-card')).toHaveCount(7);
   await expect(page.getByText('No meetings yet')).toBeVisible();
   await expect(
     page.getByRole('heading', { name: 'Select a workspace for access details' }),
@@ -17,6 +17,9 @@ test('workspace renders explicit tenant-safe signed-out states', async ({ page }
   await expect(page.getByRole('heading', { name: 'Select a workspace to link a desktop' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Authentication required' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Select a workspace first' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Select a workspace for your profile' }),
+  ).toBeVisible();
   await expect(
     page.getByRole('heading', {
       name: 'Select a workspace for notification settings',
