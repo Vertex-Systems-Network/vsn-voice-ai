@@ -745,3 +745,33 @@ button:focus-visible,
   color: var(--muted);
   font-size: 0.82rem;
 }
+
+
+.team-member-status-action {
+  min-height: 44px;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 0.7rem;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.team-member-status-action:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.team-member-status-action:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.team-member-action-status {
+  display: block;
+  min-height: 1.25rem;
+  margin-top: 0.75rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
