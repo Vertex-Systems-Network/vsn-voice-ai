@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.vsn.local/workspace-profile-update.schema.json",
+  "title": "VSN Workspace Self Profile Update",
+  "description": "Closed full-replacement request for the current authenticated subject's tenant-bound workspace profile.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["display_name", "job_title"],
+  "properties": {
+    "display_name": {
+      "type": "string",
+      "maxLength": 80,
+      "pattern": "^(?:[^\\u0000-\\u001F\\u007F])*$"
+    },
+    "job_title": {
+      "type": "string",
+      "maxLength": 120,
+      "pattern": "^(?:[^\\u0000-\\u001F\\u007F])*$"
+    }
+  }
+}
