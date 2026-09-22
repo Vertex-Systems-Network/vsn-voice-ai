@@ -136,17 +136,23 @@ export class PostgresWorkspaceTeamRepository implements WorkspaceTeamRepository 
     const seenMembershipIds = new Set<string>();
     const seenSubjectIds = new Set<string>();
     const members = boundedRows.map((row) => {
+      if (!isBoundedIdentifier(row.subject_id)) {
+        throw new WorkspaceTeamDataIntegrityError(
+          'workspace team persistence returned an invalid subject identifier',
+        );
+      }
+      const subjectId = row.subject_id;
       const member = toTeamMember(row, normalizedOrganizationId);
       if (
         seenMembershipIds.has(member.membership_id) ||
-        seenSubjectIds.has(member.subject_id)
+        seenSubjectIds.has(subjectId)
       ) {
         throw new WorkspaceTeamDataIntegrityError(
           'workspace team persistence returned duplicate membership data',
         );
       }
       seenMembershipIds.add(member.membership_id);
-      seenSubjectIds.add(member.subject_id);
+      seenSubjectIds.add(subjectId);
       return member;
     });
 
