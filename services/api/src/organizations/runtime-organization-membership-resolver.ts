@@ -4,6 +4,14 @@ import type { PostgresRuntimeConfig } from '../config/postgres-runtime-config.js
 import { loadOptionalPostgresRuntimeConfig } from '../config/postgres-runtime-config.js';
 import type { AuthenticatedPrincipal } from '../identity/authenticated-principal.js';
 import { PostgresWorkspaceTeamRepository } from '../workspace/postgres-workspace-team-repository.js';
+import { PostgresWorkspaceNotificationPreferencesRepository } from '../workspace/postgres-workspace-notification-preferences-repository.js';
+import {
+  RejectingWorkspaceNotificationPreferencesRepository,
+  type WorkspaceNotificationPreferenceValues,
+  WorkspaceNotificationPreferencesDataIntegrityError,
+  WorkspaceNotificationPreferencesPersistenceUnavailableError,
+  type WorkspaceNotificationPreferencesRepository,
+} from '../workspace/workspace-notification-preferences-repository.js';
 import {
   RejectingWorkspaceTeamRepository,
   type WorkspaceTeamRepository,
@@ -42,6 +50,7 @@ export class RuntimeOrganizationMembershipResolver
     OrganizationMembershipResolver,
     OrganizationMembershipDirectory,
     WorkspaceTeamRepository,
+    WorkspaceNotificationPreferencesRepository,
     OnApplicationShutdown
 {
   private closePromise: Promise<void> | null = null;
@@ -50,6 +59,7 @@ export class RuntimeOrganizationMembershipResolver
     private readonly resolverDelegate: OrganizationMembershipResolver,
     private readonly directoryDelegate: OrganizationMembershipDirectory,
     private readonly teamDelegate: WorkspaceTeamRepository,
+    private readonly notificationPreferencesDelegate: WorkspaceNotificationPreferencesRepository,
     private readonly closeClient: (() => Promise<void>) | null,
   ) {}
 
@@ -70,6 +80,52 @@ export class RuntimeOrganizationMembershipResolver
     organizationId: string,
   ): Promise<WorkspaceTeamSnapshot> {
     return this.teamDelegate.listByOrganization(organizationId);
+  }
+
+  public async get(
+    subjectId: string,
+    organizationId: string,
+  ): Promise<WorkspaceNotificationPreferenceValues | null> {
+    try {
+      return await this.notificationPreferencesDelegate.get(
+        subjectId,
+        organizationId,
+      );
+    } catch (error: unknown) {
+      if (error instanceof WorkspaceNotificationPreferencesDataIntegrityError) {
+        throw error;
+      }
+      if (
+        error instanceof WorkspaceNotificationPreferencesPersistenceUnavailableError
+      ) {
+        throw error;
+      }
+      throw new WorkspaceNotificationPreferencesPersistenceUnavailableError();
+    }
+  }
+
+  public async put(
+    subjectId: string,
+    organizationId: string,
+    preferences: WorkspaceNotificationPreferenceValues,
+  ): Promise<WorkspaceNotificationPreferenceValues> {
+    try {
+      return await this.notificationPreferencesDelegate.put(
+        subjectId,
+        organizationId,
+        preferences,
+      );
+    } catch (error: unknown) {
+      if (error instanceof WorkspaceNotificationPreferencesDataIntegrityError) {
+        throw error;
+      }
+      if (
+        error instanceof WorkspaceNotificationPreferencesPersistenceUnavailableError
+      ) {
+        throw error;
+      }
+      throw new WorkspaceNotificationPreferencesPersistenceUnavailableError();
+    }
   }
 
   public onApplicationShutdown(): Promise<void> {
@@ -93,6 +149,7 @@ export function createRuntimeOrganizationMembershipResolver(
       new RejectingOrganizationMembershipResolver(),
       new RejectingOrganizationMembershipDirectory(),
       new RejectingWorkspaceTeamRepository(),
+      new RejectingWorkspaceNotificationPreferencesRepository(),
       null,
     );
   }
@@ -103,6 +160,7 @@ export function createRuntimeOrganizationMembershipResolver(
     postgresMemberships,
     postgresMemberships,
     new PostgresWorkspaceTeamRepository(client),
+    new PostgresWorkspaceNotificationPreferencesRepository(client),
     () => client.close(),
   );
 }

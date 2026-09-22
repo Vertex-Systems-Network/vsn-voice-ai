@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.vsn.local/workspace-notification-preferences.schema.json",
+  "title": "VSN Workspace Notification Preferences Response",
+  "description": "Tenant-authorized browser-safe notification preferences for the current authenticated subject. Subject/session identifiers and persistence metadata are deliberately excluded.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "organization_id",
+    "meeting_reminders",
+    "transcript_ready",
+    "action_items",
+    "desktop_link_events"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "organization_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^\\S(?:.*\\S)?$"
+    },
+    "meeting_reminders": {
+      "type": "boolean"
+    },
+    "transcript_ready": {
+      "type": "boolean"
+    },
+    "action_items": {
+      "type": "boolean"
+    },
+    "desktop_link_events": {
+      "type": "boolean"
+    }
+  }
+}
