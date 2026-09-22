@@ -2,12 +2,11 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://schemas.vsn.local/workspace-authorization-summary.schema.json",
   "title": "VSN Workspace Authorization Summary",
-  "description": "Browser-safe tenant authorization summary. Internal session identifiers and authentication credentials are intentionally excluded from this boundary.",
+  "description": "Browser-safe tenant authorization summary. Trusted subject/session identifiers and authentication credentials are intentionally excluded from this boundary.",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "schema_version",
-    "subject_id",
     "organization_id",
     "membership_id",
     "roles",
@@ -16,11 +15,6 @@
   "properties": {
     "schema_version": {
       "const": 1
-    },
-    "subject_id": {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 128
     },
     "organization_id": {
       "type": "string",
