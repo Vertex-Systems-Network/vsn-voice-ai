@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.vsn.local/workspace-organization-profile.schema.json",
+  "title": "VSN Workspace Organization Profile",
+  "description": "Browser-safe tenant organization display profile. Subject/session identifiers, roles, permissions and persistence metadata are excluded.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "organization_id", "display_name"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "organization_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^\\S(?:.*\\S)?$"
+    },
+    "display_name": {
+      "type": "string",
+      "maxLength": 100,
+      "pattern": "^(?:[^\\u0000-\\u001F\\u007F])*$"
+    }
+  }
+}
