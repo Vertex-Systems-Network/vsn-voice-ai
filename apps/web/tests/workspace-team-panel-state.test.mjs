@@ -14,7 +14,7 @@ function readyResult(memberCount = 1, hasMore = false) {
       members: Array.from({ length: memberCount }, (_, index) => ({
         schema_version: 1,
         membership_id: `membership_${index}`,
-        subject_id: `user_${index}`,
+        display_name: index === 0 ? 'Ada Lovelace' : null,
         status: 'active',
         roles: ['member'],
       })),
@@ -44,6 +44,7 @@ test('ready view projects only display-safe status and roles', () => {
   assert.equal(view.hasMore, true);
   assert.notEqual(view.members, result.data.members);
   assert.deepEqual(view.members[0], {
+    displayName: 'Ada Lovelace',
     status: 'active',
     roles: ['member'],
   });
@@ -53,7 +54,8 @@ test('ready view projects only display-safe status and roles', () => {
 
   const serialized = JSON.stringify(view);
   assert.equal(serialized.includes('membership_0'), false);
-  assert.equal(serialized.includes('user_0'), false);
+  assert.equal(serialized.includes('subject_id'), false);
+  assert.equal(serialized.includes('Ada Lovelace'), true);
 });
 
 test('empty ready result remains explicit instead of inventing users', () => {
