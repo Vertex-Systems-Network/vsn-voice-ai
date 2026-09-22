@@ -609,7 +609,6 @@ test('selected workspace renders tenant-authorized access overview', async ({ pa
         schema_version: 1,
         authorization: {
           schema_version: 1,
-          subject_id: 'subject_must_not_render',
           organization_id: 'org_1',
           membership_id: 'membership_must_not_render',
           roles: ['member', 'operator'],
@@ -698,7 +697,6 @@ test('workspace refresh clears selected tenant after session expires', async ({ 
         schema_version: 1,
         authorization: {
           schema_version: 1,
-          subject_id: 'subject_internal',
           organization_id: 'org_1',
           membership_id: 'membership_internal',
           roles: ['member'],
@@ -794,7 +792,6 @@ test('workspace refresh clears selected tenant after membership is suspended', a
         schema_version: 1,
         authorization: {
           schema_version: 1,
-          subject_id: 'subject_internal',
           organization_id: 'org_1',
           membership_id: 'membership_internal',
           roles: ['member'],
@@ -1363,7 +1360,6 @@ test('team manager can suspend an ordinary member with a closed status payload',
         schema_version: 1,
         authorization: {
           schema_version: 1,
-          subject_id: 'manager_internal',
           organization_id: 'org_1',
           membership_id: 'membership_manager',
           roles: ['manager'],
@@ -1457,7 +1453,6 @@ test('team read remains available without team.manage and exposes no status cont
         schema_version: 1,
         authorization: {
           schema_version: 1,
-          subject_id: 'reader_internal',
           organization_id: 'org_1',
           membership_id: 'membership_reader',
           roles: ['member'],
@@ -1544,7 +1539,6 @@ test('late team status response cannot mutate the newly selected tenant UI', asy
             schema_version: 1,
             authorization: {
               schema_version: 1,
-              subject_id: 'manager_internal',
               organization_id: organizationId,
               membership_id: `membership_manager_${organizationId.at(-1)}`,
               roles: ['manager'],
