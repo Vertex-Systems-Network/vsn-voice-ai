@@ -117,7 +117,12 @@ export function WorkspaceDirectoryPanel({
                 key={workspace.membership_id}
               >
                 <div>
-                  <strong>{workspace.organization_id}</strong>
+                  <strong>
+                    {workspace.display_name ?? workspace.organization_id}
+                  </strong>
+                  {workspace.display_name !== null ? (
+                    <span>{workspace.organization_id}</span>
+                  ) : null}
                   <span>{selection.statusLabel}</span>
                   <span>{workspace.roles.join(', ')}</span>
                 </div>
