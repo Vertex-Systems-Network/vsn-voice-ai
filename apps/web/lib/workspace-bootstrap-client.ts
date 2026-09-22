@@ -1,6 +1,5 @@
 export interface WorkspaceAuthorizationSummary {
   readonly schema_version: 1;
-  readonly subject_id: string;
   readonly organization_id: string;
   readonly membership_id: string;
   readonly roles: readonly string[];
@@ -35,7 +34,6 @@ export type WorkspaceFetch = (
 
 const authorizationRequiredKeys = [
   'schema_version',
-  'subject_id',
   'organization_id',
   'membership_id',
   'roles',
@@ -82,7 +80,6 @@ function isWorkspaceAuthorizationSummary(
   }
 
   return value.schema_version === 1 &&
-    isNonEmptyString(value.subject_id) &&
     isNonEmptyString(value.organization_id) &&
     isNonEmptyString(value.membership_id) &&
     isStringArray(value.roles) &&
