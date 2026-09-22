@@ -24,13 +24,6 @@ const workspaceAreas = [
     description:
       'Authorized meeting records and artifacts will appear here after capture and consent-enabled workflows are connected.',
   },
-  {
-    id: 'settings',
-    eyebrow: 'Preferences',
-    title: 'Settings are not connected yet',
-    description:
-      'Notification and workspace preferences stay unset until the control API exposes their persisted contracts.',
-  },
 ] as const;
 
 export default function WorkspacePage() {
@@ -96,7 +89,7 @@ export default function WorkspacePage() {
           </section>
 
           <div className="area-grid">
-            {workspaceAreas.slice(0, 1).map((area) => (
+            {workspaceAreas.map((area) => (
               <section className="area-card" id={area.id} key={area.id} aria-labelledby={`${area.id}-title`}>
                 <p className="eyebrow">{area.eyebrow}</p>
                 <h3 id={`${area.id}-title`}>{area.title}</h3>
@@ -107,14 +100,6 @@ export default function WorkspacePage() {
 
             <WorkspaceTeamWorkspace onSessionStateChange={setSessionState} />
 
-            {workspaceAreas.slice(1).map((area) => (
-              <section className="area-card" id={area.id} key={area.id} aria-labelledby={`${area.id}-title`}>
-                <p className="eyebrow">{area.eyebrow}</p>
-                <h3 id={`${area.id}-title`}>{area.title}</h3>
-                <p>{area.description}</p>
-                <span className="empty-state-badge">Empty state</span>
-              </section>
-            ))}
           </div>
         </main>
       </div>

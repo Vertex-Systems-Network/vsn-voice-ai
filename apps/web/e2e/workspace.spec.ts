@@ -17,7 +17,11 @@ test('workspace renders explicit tenant-safe signed-out states', async ({ page }
   await expect(page.getByRole('heading', { name: 'Select a workspace to link a desktop' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Authentication required' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Select a workspace first' })).toBeVisible();
-  await expect(page.getByText('Settings are not connected yet')).toBeVisible();
+  await expect(
+    page.getByRole('heading', {
+      name: 'Select a workspace for notification settings',
+    }),
+  ).toBeVisible();
 });
 
 test('authenticated directory requires explicit selection before team data loads', async ({ page }) => {
@@ -856,4 +860,182 @@ test('workspace refresh clears selected tenant after membership is suspended', a
   await expect(
     page.getByRole('heading', { name: 'Select a workspace first' }),
   ).toBeVisible();
+});
+
+
+test('notification settings stay unloaded until selection then save exact tenant-bound preferences', async ({ page }) => {
+  let preferenceRequestCount = 0;
+  let savedBody: unknown = null;
+
+  await page.route('**/v1/workspaces', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_version: 1,
+        workspaces: [
+          {
+            schema_version: 1,
+            membership_id: 'membership_1',
+            organization_id: 'org_1',
+            status: 'active',
+            roles: ['member'],
+          },
+        ],
+        has_more: false,
+      }),
+    });
+  });
+  await page.route('**/v1/workspaces/org_1/team', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_version: 1,
+        organization_id: 'org_1',
+        members: [],
+        has_more: false,
+      }),
+    });
+  });
+  await page.route(
+    '**/v1/workspaces/org_1/notification-preferences',
+    async (route) => {
+      preferenceRequestCount += 1;
+      if (route.request().method() === 'PUT') {
+        savedBody = route.request().postDataJSON();
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            schema_version: 1,
+            organization_id: 'org_1',
+            ...(savedBody as Record<string, boolean>),
+          }),
+        });
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          schema_version: 1,
+          organization_id: 'org_1',
+          meeting_reminders: true,
+          transcript_ready: false,
+          action_items: true,
+          desktop_link_events: false,
+        }),
+      });
+    },
+  );
+
+  await page.goto('/');
+  await expect(
+    page.getByRole('heading', {
+      name: 'Select a workspace for notification settings',
+    }),
+  ).toBeVisible();
+  expect(preferenceRequestCount).toBe(0);
+
+  await page.getByRole('button', { name: 'Select workspace org_1' }).click();
+  await expect(
+    page.getByRole('heading', { name: 'Notification settings' }),
+  ).toBeVisible();
+  expect(preferenceRequestCount).toBe(1);
+
+  const reminders = page.getByLabel('Meeting reminders');
+  const transcript = page.getByLabel('Transcript ready');
+  await expect(reminders).toBeChecked();
+  await expect(transcript).not.toBeChecked();
+
+  await reminders.uncheck();
+  await transcript.check();
+  await page.getByRole('button', { name: 'Save notification settings' }).click();
+
+  await expect(page.getByText('Notification settings saved')).toBeVisible();
+  expect(savedBody).toEqual({
+    meeting_reminders: false,
+    transcript_ready: true,
+    action_items: true,
+    desktop_link_events: false,
+  });
+  expect(preferenceRequestCount).toBe(2);
+});
+
+test('switching workspace reloads notification preferences without retaining prior tenant values', async ({ page }) => {
+  const preferenceRequests: string[] = [];
+
+  await page.route('**/v1/workspaces', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_version: 1,
+        workspaces: [
+          {
+            schema_version: 1,
+            membership_id: 'membership_1',
+            organization_id: 'org_1',
+            status: 'active',
+            roles: ['member'],
+          },
+          {
+            schema_version: 1,
+            membership_id: 'membership_2',
+            organization_id: 'org_2',
+            status: 'active',
+            roles: ['member'],
+          },
+        ],
+        has_more: false,
+      }),
+    });
+  });
+  await page.route('**/v1/workspaces/*/team', async (route) => {
+    const organizationId = route.request().url().includes('/org_2/')
+      ? 'org_2'
+      : 'org_1';
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_version: 1,
+        organization_id: organizationId,
+        members: [],
+        has_more: false,
+      }),
+    });
+  });
+  await page.route(
+    '**/v1/workspaces/*/notification-preferences',
+    async (route) => {
+      const organizationId = route.request().url().includes('/org_2/')
+        ? 'org_2'
+        : 'org_1';
+      preferenceRequests.push(organizationId);
+      const enabled = organizationId === 'org_1';
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          schema_version: 1,
+          organization_id: organizationId,
+          meeting_reminders: enabled,
+          transcript_ready: enabled,
+          action_items: enabled,
+          desktop_link_events: enabled,
+        }),
+      });
+    },
+  );
+
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Select workspace org_1' }).click();
+  await expect(page.getByLabel('Meeting reminders')).toBeChecked();
+
+  await page.getByRole('button', { name: 'Select workspace org_2' }).click();
+  await expect(page.getByLabel('Meeting reminders')).not.toBeChecked();
+  await expect(page.getByLabel('Transcript ready')).not.toBeChecked();
+  expect(preferenceRequests).toEqual(['org_1', 'org_2']);
 });
