@@ -17,6 +17,8 @@ import { ORGANIZATION_MEMBERSHIP_DIRECTORY } from './organizations/organization-
 import { ORGANIZATION_MEMBERSHIP_RESOLVER } from './organizations/organization-membership-resolver.js';
 import { createRuntimeOrganizationMembershipResolver } from './organizations/runtime-organization-membership-resolver.js';
 import { WorkspaceDirectoryController } from './workspace/workspace-directory.controller.js';
+import { WORKSPACE_NOTIFICATION_PREFERENCES_REPOSITORY } from './workspace/workspace-notification-preferences-repository.js';
+import { WorkspaceNotificationPreferencesController } from './workspace/workspace-notification-preferences.controller.js';
 import { WORKSPACE_TEAM_REPOSITORY } from './workspace/workspace-team-repository.js';
 import { WorkspaceTeamController } from './workspace/workspace-team.controller.js';
 import { WorkspaceController } from './workspace/workspace.controller.js';
@@ -27,6 +29,7 @@ import { WorkspaceController } from './workspace/workspace.controller.js';
     WorkspaceDirectoryController,
     WorkspaceController,
     WorkspaceTeamController,
+    WorkspaceNotificationPreferencesController,
     DesktopLinkController,
   ],
   providers: [
@@ -48,6 +51,10 @@ import { WorkspaceController } from './workspace/workspace.controller.js';
     },
     {
       provide: WORKSPACE_TEAM_REPOSITORY,
+      useExisting: ORGANIZATION_MEMBERSHIP_RESOLVER,
+    },
+    {
+      provide: WORKSPACE_NOTIFICATION_PREFERENCES_REPOSITORY,
       useExisting: ORGANIZATION_MEMBERSHIP_RESOLVER,
     },
     {

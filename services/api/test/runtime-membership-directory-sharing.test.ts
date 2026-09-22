@@ -15,6 +15,9 @@ import {
   createRuntimeOrganizationMembershipResolver,
 } from '../src/organizations/runtime-organization-membership-resolver.js';
 import {
+  WorkspaceNotificationPreferencesPersistenceUnavailableError,
+} from '../src/workspace/workspace-notification-preferences-repository.js';
+import {
   WorkspaceTeamPersistenceUnavailableError,
 } from '../src/workspace/workspace-team-repository.js';
 
@@ -44,6 +47,20 @@ class SharedFakePostgresClient implements ClosablePostgresQueryClient {
     values: readonly unknown[],
   ): Promise<PostgresQueryResult<Row>> {
     this.queries.push({ text, values: [...values] });
+    if (text.includes('workspace_notification_preferences')) {
+      return {
+        rows: [
+          {
+            subject_id: 'user_123',
+            organization_id: 'org_001',
+            meeting_reminders: false,
+            transcript_ready: true,
+            action_items: false,
+            desktop_link_events: true,
+          } as unknown as Row,
+        ],
+      };
+    }
     return { rows: [persistedMembership as unknown as Row] };
   }
 
@@ -66,6 +83,13 @@ test('configured runtime shares one PostgreSQL client across membership, directo
   const membership = await runtime.resolve(principal, 'org_001');
   const directory = await runtime.listForPrincipal(principal);
   const team = await runtime.listByOrganization('org_001');
+  const preferences = await runtime.get('user_123', 'org_001');
+  const savedPreferences = await runtime.put('user_123', 'org_001', {
+    meeting_reminders: false,
+    transcript_ready: true,
+    action_items: false,
+    desktop_link_events: true,
+  });
 
   assert.equal(factoryCalls, 1);
   assert.equal(membership?.organizationId, 'org_001');
@@ -76,10 +100,26 @@ test('configured runtime shares one PostgreSQL client across membership, directo
   assert.equal(team.members.length, 1);
   assert.equal(team.members[0]?.subject_id, 'user_123');
   assert.equal(team.has_more, false);
-  assert.equal(client.queries.length, 3);
+  assert.deepEqual(preferences, {
+    meeting_reminders: false,
+    transcript_ready: true,
+    action_items: false,
+    desktop_link_events: true,
+  });
+  assert.deepEqual(savedPreferences, preferences);
+  assert.equal(client.queries.length, 5);
   assert.deepEqual(client.queries[0]?.values, ['user_123', 'org_001']);
   assert.deepEqual(client.queries[1]?.values, ['user_123', 101]);
   assert.deepEqual(client.queries[2]?.values, ['org_001', 201]);
+  assert.deepEqual(client.queries[3]?.values, ['org_001', 'user_123']);
+  assert.deepEqual(client.queries[4]?.values, [
+    'org_001',
+    'user_123',
+    false,
+    true,
+    false,
+    true,
+  ]);
 
   await Promise.all([
     runtime.onApplicationShutdown(),
@@ -103,6 +143,20 @@ test('missing PostgreSQL configuration fails closed for all membership-backed ac
   await assert.rejects(
     () => runtime.listByOrganization('org_001'),
     WorkspaceTeamPersistenceUnavailableError,
+  );
+  await assert.rejects(
+    () => runtime.get('user_123', 'org_001'),
+    WorkspaceNotificationPreferencesPersistenceUnavailableError,
+  );
+  await assert.rejects(
+    () =>
+      runtime.put('user_123', 'org_001', {
+        meeting_reminders: true,
+        transcript_ready: true,
+        action_items: true,
+        desktop_link_events: true,
+      }),
+    WorkspaceNotificationPreferencesPersistenceUnavailableError,
   );
   assert.equal(factoryCalls, 0);
   await runtime.onApplicationShutdown();

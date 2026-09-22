@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.vsn.local/workspace-notification-preferences-update.schema.json",
+  "title": "VSN Workspace Notification Preferences Update",
+  "description": "Closed full-replacement browser request for the current authenticated subject's workspace notification preferences.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "meeting_reminders",
+    "transcript_ready",
+    "action_items",
+    "desktop_link_events"
+  ],
+  "properties": {
+    "meeting_reminders": {
+      "type": "boolean"
+    },
+    "transcript_ready": {
+      "type": "boolean"
+    },
+    "action_items": {
+      "type": "boolean"
+    },
+    "desktop_link_events": {
+      "type": "boolean"
+    }
+  }
+}
