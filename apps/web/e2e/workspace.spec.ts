@@ -9,7 +9,7 @@ test('workspace renders explicit tenant-safe signed-out states', async ({ page }
   await expect(page.getByRole('heading', { level: 1 })).toContainText('without invented account state');
   await expect(page.locator('.session-state')).toHaveText('Signed out');
   await expect(page.getByRole('navigation', { name: 'Workspace navigation' })).toBeVisible();
-  await expect(page.locator('.area-card')).toHaveCount(7);
+  await expect(page.locator('.area-card')).toHaveCount(8);
   await expect(page.getByText('No meetings yet')).toBeVisible();
   await expect(
     page.getByRole('heading', { name: 'Select a workspace for access details' }),
@@ -17,6 +17,11 @@ test('workspace renders explicit tenant-safe signed-out states', async ({ page }
   await expect(page.getByRole('heading', { name: 'Select a workspace to link a desktop' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Authentication required' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Select a workspace first' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', {
+      name: 'Select a workspace for organization settings',
+    }),
+  ).toBeVisible();
   await expect(
     page.getByRole('heading', { name: 'Select a workspace for your profile' }),
   ).toBeVisible();
@@ -1629,4 +1634,299 @@ test('late team status response cannot mutate the newly selected tenant UI', asy
     page.getByRole('button', { name: 'Suspend Grace Hopper' }),
   ).toBeVisible();
   await expect(page.getByText('Team member suspended.')).toHaveCount(0);
+});
+
+
+test('organization profile stays unloaded until selection and manager saves only display name', async ({ page }) => {
+  let profileRequestCount = 0;
+  let savedBody: unknown = null;
+
+  await page.route('**/v1/workspaces', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_version: 1,
+        workspaces: [
+          {
+            schema_version: 1,
+            membership_id: 'membership_manager',
+            organization_id: 'org_1',
+            status: 'active',
+            roles: ['manager'],
+          },
+        ],
+        has_more: false,
+      }),
+    });
+  });
+  await page.route('**/v1/workspaces/org_1/bootstrap', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_version: 1,
+        authorization: {
+          schema_version: 1,
+          organization_id: 'org_1',
+          membership_id: 'membership_manager',
+          roles: ['manager'],
+          permissions: ['conversation.read', 'team.read', 'team.manage'],
+        },
+        meetings: { status: 'unloaded', items: [] },
+        devices: { status: 'unloaded', items: [] },
+        team: { status: 'unloaded', items: [] },
+        settings: { status: 'unloaded', items: [] },
+      }),
+    });
+  });
+  await page.route(
+    '**/v1/workspaces/org_1/organization-profile',
+    async (route) => {
+      profileRequestCount += 1;
+      if (route.request().method() === 'PUT') {
+        savedBody = route.request().postDataJSON();
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            schema_version: 1,
+            organization_id: 'org_1',
+            ...(savedBody as Record<string, unknown>),
+          }),
+        });
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          schema_version: 1,
+          organization_id: 'org_1',
+          display_name: 'Vertex Systems',
+        }),
+      });
+    },
+  );
+
+  await page.goto('/');
+  await expect(
+    page.getByRole('heading', {
+      name: 'Select a workspace for organization settings',
+    }),
+  ).toBeVisible();
+  expect(profileRequestCount).toBe(0);
+
+  await page.getByRole('button', { name: 'Select workspace org_1' }).click();
+  await expect(page.getByLabel('Organization display name')).toHaveValue(
+    'Vertex Systems',
+  );
+
+  await page
+    .getByLabel('Organization display name')
+    .fill('Vertex Systems Network');
+  await page.getByRole('button', { name: 'Save organization name' }).click();
+
+  await expect(page.getByText('Organization name saved')).toBeVisible();
+  expect(savedBody).toEqual({ display_name: 'Vertex Systems Network' });
+  expect(JSON.stringify(savedBody)).not.toContain('subject');
+  expect(JSON.stringify(savedBody)).not.toContain('permissions');
+  expect(JSON.stringify(savedBody)).not.toContain('roles');
+  expect(profileRequestCount).toBe(2);
+});
+
+test('organization profile remains readable without team.manage and hides edit controls', async ({ page }) => {
+  await page.route('**/v1/workspaces', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_version: 1,
+        workspaces: [
+          {
+            schema_version: 1,
+            membership_id: 'membership_reader',
+            organization_id: 'org_1',
+            status: 'active',
+            roles: ['member'],
+          },
+        ],
+        has_more: false,
+      }),
+    });
+  });
+  await page.route('**/v1/workspaces/org_1/bootstrap', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_version: 1,
+        authorization: {
+          schema_version: 1,
+          organization_id: 'org_1',
+          membership_id: 'membership_reader',
+          roles: ['member'],
+          permissions: ['conversation.read', 'team.read'],
+        },
+        meetings: { status: 'unloaded', items: [] },
+        devices: { status: 'unloaded', items: [] },
+        team: { status: 'unloaded', items: [] },
+        settings: { status: 'unloaded', items: [] },
+      }),
+    });
+  });
+  await page.route(
+    '**/v1/workspaces/org_1/organization-profile',
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          schema_version: 1,
+          organization_id: 'org_1',
+          display_name: 'Vertex Systems',
+        }),
+      });
+    },
+  );
+
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Select workspace org_1' }).click();
+
+  const panel = page.locator('.workspace-organization-profile-panel');
+  await expect(
+    panel.getByRole('heading', { name: 'Vertex Systems' }),
+  ).toBeVisible();
+  await expect(panel.getByLabel('Organization display name')).toHaveCount(0);
+  await expect(
+    panel.getByRole('button', { name: 'Save organization name' }),
+  ).toHaveCount(0);
+});
+
+test('late organization profile save cannot overwrite a newly selected tenant', async ({ page }) => {
+  let releaseOldSave: () => void = () => undefined;
+  const oldSaveStarted = new Promise<void>((resolve) => {
+    releaseOldSave = resolve;
+  });
+  let finishOldSave: () => void = () => undefined;
+  const oldSaveCanFinish = new Promise<void>((resolve) => {
+    finishOldSave = resolve;
+  });
+
+  await page.route('**/v1/workspaces', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_version: 1,
+        workspaces: [
+          {
+            schema_version: 1,
+            membership_id: 'membership_manager_1',
+            organization_id: 'org_1',
+            status: 'active',
+            roles: ['manager'],
+          },
+          {
+            schema_version: 1,
+            membership_id: 'membership_manager_2',
+            organization_id: 'org_2',
+            status: 'active',
+            roles: ['manager'],
+          },
+        ],
+        has_more: false,
+      }),
+    });
+  });
+  for (const organizationId of ['org_1', 'org_2']) {
+    await page.route(
+      `**/v1/workspaces/${organizationId}/bootstrap`,
+      async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            schema_version: 1,
+            authorization: {
+              schema_version: 1,
+              organization_id: organizationId,
+              membership_id: `membership_manager_${organizationId.at(-1)}`,
+              roles: ['manager'],
+              permissions: ['conversation.read', 'team.read', 'team.manage'],
+            },
+            meetings: { status: 'unloaded', items: [] },
+            devices: { status: 'unloaded', items: [] },
+            team: { status: 'unloaded', items: [] },
+            settings: { status: 'unloaded', items: [] },
+          }),
+        });
+      },
+    );
+  }
+  await page.route(
+    '**/v1/workspaces/org_1/organization-profile',
+    async (route) => {
+      if (route.request().method() === 'PUT') {
+        releaseOldSave();
+        await oldSaveCanFinish;
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            schema_version: 1,
+            organization_id: 'org_1',
+            display_name: 'Old tenant response',
+          }),
+        });
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          schema_version: 1,
+          organization_id: 'org_1',
+          display_name: 'Organization One',
+        }),
+      });
+    },
+  );
+  await page.route(
+    '**/v1/workspaces/org_2/organization-profile',
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          schema_version: 1,
+          organization_id: 'org_2',
+          display_name: 'Organization Two',
+        }),
+      });
+    },
+  );
+
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Select workspace org_1' }).click();
+  await expect(page.getByLabel('Organization display name')).toHaveValue(
+    'Organization One',
+  );
+  await page
+    .getByLabel('Organization display name')
+    .fill('Pending organization one');
+  await page.getByRole('button', { name: 'Save organization name' }).click();
+  await oldSaveStarted;
+
+  await page.getByRole('button', { name: 'Select workspace org_2' }).click();
+  await expect(page.getByLabel('Organization display name')).toHaveValue(
+    'Organization Two',
+  );
+
+  finishOldSave();
+  await page.waitForTimeout(100);
+  await expect(page.getByLabel('Organization display name')).toHaveValue(
+    'Organization Two',
+  );
+  await expect(page.getByText('Organization name saved')).toHaveCount(0);
 });

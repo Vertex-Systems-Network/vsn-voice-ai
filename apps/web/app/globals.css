@@ -775,3 +775,84 @@ button:focus-visible,
   color: var(--muted);
   font-size: 0.82rem;
 }
+
+
+.workspace-organization-profile-form {
+  width: 100%;
+  display: grid;
+  gap: 0.9rem;
+  margin-top: 1rem;
+}
+
+.workspace-organization-profile-form label {
+  display: grid;
+  gap: 0.4rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.workspace-organization-profile-form input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.7rem;
+  background: var(--surface-raised);
+  color: inherit;
+  font: inherit;
+}
+
+.workspace-organization-profile-form input:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.workspace-organization-profile-form button {
+  min-height: 44px;
+  justify-self: start;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 0.7rem;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.workspace-organization-profile-form button:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.workspace-organization-profile-form button:disabled,
+.workspace-organization-profile-form input:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.workspace-organization-profile-save-state {
+  min-height: 1.25rem;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.workspace-organization-profile-readonly {
+  margin: 1rem 0 0;
+}
+
+.workspace-organization-profile-readonly div {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.workspace-organization-profile-readonly dt {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.workspace-organization-profile-readonly dd {
+  margin: 0;
+  font-weight: 700;
+}

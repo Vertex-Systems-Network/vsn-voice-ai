@@ -7,6 +7,7 @@ import type { WorkspaceSessionState } from '../lib/workspace-session-state';
 import { WorkspaceDesktopLinkPanel } from './workspace-desktop-link-panel';
 import { WorkspaceDirectoryPanel } from './workspace-directory-panel';
 import { WorkspaceNotificationPreferencesPanel } from './workspace-notification-preferences-panel';
+import { WorkspaceOrganizationProfilePanel } from './workspace-organization-profile-panel';
 import { WorkspaceOverviewPanel } from './workspace-overview-panel';
 import { WorkspaceProfilePanel } from './workspace-profile-panel';
 import { WorkspaceTeamPanel } from './workspace-team-panel';
@@ -63,6 +64,7 @@ export function WorkspaceTeamWorkspace({
       ) : (
         <WorkspaceTeamPanel organizationId={organizationId} />
       )}
+      <WorkspaceOrganizationProfilePanel organizationId={organizationId} />
       <WorkspaceProfilePanel organizationId={organizationId} />
       <WorkspaceNotificationPreferencesPanel organizationId={organizationId} />
     </>
