@@ -9,7 +9,7 @@ test('workspace renders explicit tenant-safe signed-out states', async ({ page }
   await expect(page.getByRole('heading', { level: 1 })).toContainText('without invented account state');
   await expect(page.locator('.session-state')).toHaveText('Signed out');
   await expect(page.getByRole('navigation', { name: 'Workspace navigation' })).toBeVisible();
-  await expect(page.locator('.area-card')).toHaveCount(6);
+  await expect(page.locator('.area-card')).toHaveCount(7);
   await expect(page.getByText('No meetings yet')).toBeVisible();
   await expect(
     page.getByRole('heading', { name: 'Select a workspace for access details' }),
@@ -17,6 +17,9 @@ test('workspace renders explicit tenant-safe signed-out states', async ({ page }
   await expect(page.getByRole('heading', { name: 'Select a workspace to link a desktop' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Authentication required' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Select a workspace first' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Select a workspace for your profile' }),
+  ).toBeVisible();
   await expect(
     page.getByRole('heading', {
       name: 'Select a workspace for notification settings',
@@ -1160,4 +1163,171 @@ test('late save response cannot overwrite notification settings after tenant swi
   await page.waitForTimeout(100);
   await expect(page.getByLabel('Meeting reminders')).toBeChecked();
   await expect(page.getByLabel('Transcript ready')).not.toBeChecked();
+});
+
+
+test('workspace profile stays unloaded until selection then saves exact tenant-bound fields', async ({ page }) => {
+  let profileRequestCount = 0;
+  let savedBody: unknown = null;
+
+  await page.route('**/v1/workspaces', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_version: 1,
+        workspaces: [
+          {
+            schema_version: 1,
+            membership_id: 'membership_1',
+            organization_id: 'org_1',
+            status: 'active',
+            roles: ['member'],
+          },
+        ],
+        has_more: false,
+      }),
+    });
+  });
+  await page.route('**/v1/workspaces/org_1/profile', async (route) => {
+    profileRequestCount += 1;
+    if (route.request().method() === 'PUT') {
+      savedBody = route.request().postDataJSON();
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          schema_version: 1,
+          organization_id: 'org_1',
+          ...(savedBody as Record<string, unknown>),
+        }),
+      });
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_version: 1,
+        organization_id: 'org_1',
+        display_name: 'Ada Lovelace',
+        job_title: 'Research Engineer',
+      }),
+    });
+  });
+
+  await page.goto('/');
+  await expect(
+    page.getByRole('heading', { name: 'Select a workspace for your profile' }),
+  ).toBeVisible();
+  expect(profileRequestCount).toBe(0);
+
+  await page.getByRole('button', { name: 'Select workspace org_1' }).click();
+  await expect(page.getByLabel('Display name')).toHaveValue('Ada Lovelace');
+  await expect(page.getByLabel('Job title')).toHaveValue('Research Engineer');
+
+  await page.getByLabel('Display name').fill('Grace Hopper');
+  await page.getByLabel('Job title').fill('Engineer');
+  await page.getByRole('button', { name: 'Save profile' }).click();
+
+  await expect(page.getByText('Workspace profile saved')).toBeVisible();
+  expect(savedBody).toEqual({
+    display_name: 'Grace Hopper',
+    job_title: 'Engineer',
+  });
+  expect(profileRequestCount).toBe(2);
+});
+
+test('late workspace profile save cannot overwrite a newly selected tenant', async ({ page }) => {
+  let releaseOrgOneSave: () => void = () => undefined;
+  const orgOneSaveStarted = new Promise<void>((resolve) => {
+    releaseOrgOneSave = resolve;
+  });
+  let finishOrgOneSave: () => void = () => undefined;
+  const orgOneSaveCanFinish = new Promise<void>((resolve) => {
+    finishOrgOneSave = resolve;
+  });
+
+  await page.route('**/v1/workspaces', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_version: 1,
+        workspaces: [
+          {
+            schema_version: 1,
+            membership_id: 'membership_1',
+            organization_id: 'org_1',
+            status: 'active',
+            roles: ['member'],
+          },
+          {
+            schema_version: 1,
+            membership_id: 'membership_2',
+            organization_id: 'org_2',
+            status: 'active',
+            roles: ['member'],
+          },
+        ],
+        has_more: false,
+      }),
+    });
+  });
+  await page.route('**/v1/workspaces/org_1/profile', async (route) => {
+    if (route.request().method() === 'PUT') {
+      releaseOrgOneSave();
+      await orgOneSaveCanFinish;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          schema_version: 1,
+          organization_id: 'org_1',
+          display_name: 'Old tenant response',
+          job_title: 'Old tenant title',
+        }),
+      });
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_version: 1,
+        organization_id: 'org_1',
+        display_name: 'Ada Lovelace',
+        job_title: 'Research Engineer',
+      }),
+    });
+  });
+  await page.route('**/v1/workspaces/org_2/profile', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_version: 1,
+        organization_id: 'org_2',
+        display_name: 'Grace Hopper',
+        job_title: 'Engineer',
+      }),
+    });
+  });
+
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Select workspace org_1' }).click();
+  await expect(page.getByLabel('Display name')).toHaveValue('Ada Lovelace');
+
+  await page.getByLabel('Display name').fill('Pending org one');
+  await page.getByRole('button', { name: 'Save profile' }).click();
+  await orgOneSaveStarted;
+
+  await page.getByRole('button', { name: 'Select workspace org_2' }).click();
+  await expect(page.getByLabel('Display name')).toHaveValue('Grace Hopper');
+  await expect(page.getByLabel('Job title')).toHaveValue('Engineer');
+
+  finishOrgOneSave();
+  await page.waitForTimeout(100);
+  await expect(page.getByLabel('Display name')).toHaveValue('Grace Hopper');
+  await expect(page.getByLabel('Job title')).toHaveValue('Engineer');
 });

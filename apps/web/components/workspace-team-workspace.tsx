@@ -8,6 +8,7 @@ import { WorkspaceDesktopLinkPanel } from './workspace-desktop-link-panel';
 import { WorkspaceDirectoryPanel } from './workspace-directory-panel';
 import { WorkspaceNotificationPreferencesPanel } from './workspace-notification-preferences-panel';
 import { WorkspaceOverviewPanel } from './workspace-overview-panel';
+import { WorkspaceProfilePanel } from './workspace-profile-panel';
 import { WorkspaceTeamPanel } from './workspace-team-panel';
 
 export interface WorkspaceTeamWorkspaceProps {
@@ -62,6 +63,7 @@ export function WorkspaceTeamWorkspace({
       ) : (
         <WorkspaceTeamPanel organizationId={organizationId} />
       )}
+      <WorkspaceProfilePanel organizationId={organizationId} />
       <WorkspaceNotificationPreferencesPanel organizationId={organizationId} />
     </>
   );
