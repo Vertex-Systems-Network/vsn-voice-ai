@@ -7,6 +7,7 @@ export interface WorkspaceDirectoryEntry {
   readonly schema_version: 1;
   readonly membership_id: string;
   readonly organization_id: string;
+  readonly display_name: string | null;
   readonly status: WorkspaceDirectoryMembershipStatus;
   readonly roles: readonly string[];
 }
@@ -33,6 +34,7 @@ const workspaceKeys = [
   'schema_version',
   'membership_id',
   'organization_id',
+  'display_name',
   'status',
   'roles',
 ] as const;
@@ -62,6 +64,19 @@ function isBoundedIdentifier(value: unknown): value is string {
     value.length >= 1 &&
     value.length <= 128 &&
     value.trim() === value;
+}
+
+function isDisplayName(value: unknown): value is string | null {
+  return (
+    value === null ||
+    (
+      typeof value === 'string' &&
+      value.length >= 1 &&
+      value.length <= 100 &&
+      value.trim() === value &&
+      !/[\u0000-\u001F\u007F]/u.test(value)
+    )
+  );
 }
 
 function isRoles(value: unknown): value is readonly string[] {
@@ -95,6 +110,7 @@ function isWorkspaceDirectoryEntry(
   return value.schema_version === 1 &&
     isBoundedIdentifier(value.membership_id) &&
     isBoundedIdentifier(value.organization_id) &&
+    isDisplayName(value.display_name) &&
     typeof value.status === 'string' &&
     membershipStatuses.has(value.status as WorkspaceDirectoryMembershipStatus) &&
     isRoles(value.roles);
