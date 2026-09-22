@@ -14,6 +14,7 @@ interface WorkspaceTeamRow {
   readonly organization_id: unknown;
   readonly status: unknown;
   readonly roles: unknown;
+  readonly display_name: unknown;
 }
 
 const authorityTokenPattern = /^[a-z][a-z0-9._:-]*$/;
@@ -25,14 +26,18 @@ const membershipStatuses = new Set<MembershipStatus>([
 
 const workspaceTeamLookupSql = `
 SELECT
-  membership_id,
-  subject_id,
-  organization_id,
-  status,
-  roles
-FROM organization_memberships
-WHERE organization_id = $1
-ORDER BY membership_id ASC
+  m.membership_id,
+  m.subject_id,
+  m.organization_id,
+  m.status,
+  m.roles,
+  p.display_name
+FROM organization_memberships AS m
+LEFT JOIN workspace_profiles AS p
+  ON p.organization_id = m.organization_id
+  AND p.subject_id = m.subject_id
+WHERE m.organization_id = $1
+ORDER BY m.membership_id ASC
 LIMIT $2
 `.trim();
 
@@ -45,6 +50,18 @@ function isBoundedIdentifier(value: unknown): value is string {
 
 function isMembershipStatus(value: unknown): value is MembershipStatus {
   return typeof value === 'string' && membershipStatuses.has(value as MembershipStatus);
+}
+
+function isDisplayName(value: unknown): value is string | null {
+  return (
+    value === null ||
+    (
+      typeof value === 'string' &&
+      value.length <= 80 &&
+      value.trim() === value &&
+      !/[\u0000-\u001F\u007F]/u.test(value)
+    )
+  );
 }
 
 function isRoles(value: unknown): value is string[] {
@@ -78,7 +95,8 @@ function toTeamMember(
     !isBoundedIdentifier(row.organization_id) ||
     row.organization_id !== expectedOrganizationId ||
     !isMembershipStatus(row.status) ||
-    !isRoles(row.roles)
+    !isRoles(row.roles) ||
+    !isDisplayName(row.display_name)
   ) {
     throw new WorkspaceTeamDataIntegrityError(
       'workspace team persistence returned an invalid row',
@@ -88,7 +106,10 @@ function toTeamMember(
   return Object.freeze({
     schema_version: 1 as const,
     membership_id: row.membership_id,
-    subject_id: row.subject_id,
+    display_name:
+      row.display_name === null || row.display_name === ''
+        ? null
+        : row.display_name,
     status: row.status,
     roles: Object.freeze([...row.roles]),
   });
