@@ -22,6 +22,7 @@ test('workspace shell keeps unverified account and tenant state explicit', () =>
   assert.match(workspaceFlowSource, /WorkspaceDesktopLinkPanel/);
   assert.doesNotMatch(pageSource, /Settings are not connected yet/);
   assert.match(workspaceFlowSource, /WorkspaceNotificationPreferencesPanel/);
+  assert.match(workspaceFlowSource, /WorkspaceProfilePanel/);
   assert.match(pageSource, /WorkspaceTeamWorkspace/);
   assert.match(workspaceFlowSource, /Select a workspace first/);
   assert.match(workspaceFlowSource, /Team data stays unloaded until you explicitly choose/);
