@@ -6,6 +6,7 @@ import type { AuthenticatedPrincipal } from '../identity/authenticated-principal
 import { PostgresWorkspaceTeamRepository } from '../workspace/postgres-workspace-team-repository.js';
 import { PostgresWorkspaceTeamMemberStatusRepository } from '../workspace/postgres-workspace-team-member-status-repository.js';
 import { PostgresWorkspaceProfileRepository } from '../workspace/postgres-workspace-profile-repository.js';
+import { PostgresWorkspaceOrganizationProfileRepository } from '../workspace/postgres-workspace-organization-profile-repository.js';
 import { PostgresWorkspaceNotificationPreferencesRepository } from '../workspace/postgres-workspace-notification-preferences-repository.js';
 import {
   RejectingWorkspaceNotificationPreferencesRepository,
@@ -14,6 +15,13 @@ import {
   WorkspaceNotificationPreferencesPersistenceUnavailableError,
   type WorkspaceNotificationPreferencesRepository,
 } from '../workspace/workspace-notification-preferences-repository.js';
+import {
+  RejectingWorkspaceOrganizationProfileRepository,
+  type WorkspaceOrganizationProfileRepository,
+  type WorkspaceOrganizationProfileValues,
+  WorkspaceOrganizationProfileDataIntegrityError,
+  WorkspaceOrganizationProfilePersistenceUnavailableError,
+} from '../workspace/workspace-organization-profile-repository.js';
 import {
   RejectingWorkspaceProfileRepository,
   type WorkspaceProfileRepository,
@@ -69,6 +77,7 @@ export class RuntimeOrganizationMembershipResolver
     WorkspaceTeamRepository,
     WorkspaceNotificationPreferencesRepository,
     WorkspaceProfileRepository,
+    WorkspaceOrganizationProfileRepository,
     WorkspaceTeamMemberStatusRepository,
     OnApplicationShutdown
 {
@@ -80,6 +89,7 @@ export class RuntimeOrganizationMembershipResolver
     private readonly teamDelegate: WorkspaceTeamRepository,
     private readonly notificationPreferencesDelegate: WorkspaceNotificationPreferencesRepository,
     private readonly profileDelegate: WorkspaceProfileRepository,
+    private readonly organizationProfileDelegate: WorkspaceOrganizationProfileRepository,
     private readonly teamMemberStatusDelegate: WorkspaceTeamMemberStatusRepository,
     private readonly closeClient: (() => Promise<void>) | null,
   ) {}
@@ -188,6 +198,48 @@ export class RuntimeOrganizationMembershipResolver
     }
   }
 
+  public async getOrganizationProfile(
+    organizationId: string,
+  ): Promise<WorkspaceOrganizationProfileValues | null> {
+    try {
+      return await this.organizationProfileDelegate.getOrganizationProfile(
+        organizationId,
+      );
+    } catch (error: unknown) {
+      if (error instanceof WorkspaceOrganizationProfileDataIntegrityError) {
+        throw error;
+      }
+      if (
+        error instanceof WorkspaceOrganizationProfilePersistenceUnavailableError
+      ) {
+        throw error;
+      }
+      throw new WorkspaceOrganizationProfilePersistenceUnavailableError();
+    }
+  }
+
+  public async putOrganizationProfile(
+    organizationId: string,
+    profile: WorkspaceOrganizationProfileValues,
+  ): Promise<WorkspaceOrganizationProfileValues> {
+    try {
+      return await this.organizationProfileDelegate.putOrganizationProfile(
+        organizationId,
+        profile,
+      );
+    } catch (error: unknown) {
+      if (error instanceof WorkspaceOrganizationProfileDataIntegrityError) {
+        throw error;
+      }
+      if (
+        error instanceof WorkspaceOrganizationProfilePersistenceUnavailableError
+      ) {
+        throw error;
+      }
+      throw new WorkspaceOrganizationProfilePersistenceUnavailableError();
+    }
+  }
+
   public async changeOrdinaryMemberStatus(
     actorSubjectId: string,
     organizationId: string,
@@ -237,6 +289,7 @@ export function createRuntimeOrganizationMembershipResolver(
       new RejectingWorkspaceTeamRepository(),
       new RejectingWorkspaceNotificationPreferencesRepository(),
       new RejectingWorkspaceProfileRepository(),
+      new RejectingWorkspaceOrganizationProfileRepository(),
       new RejectingWorkspaceTeamMemberStatusRepository(),
       null,
     );
@@ -250,6 +303,7 @@ export function createRuntimeOrganizationMembershipResolver(
     new PostgresWorkspaceTeamRepository(client),
     new PostgresWorkspaceNotificationPreferencesRepository(client),
     new PostgresWorkspaceProfileRepository(client),
+    new PostgresWorkspaceOrganizationProfileRepository(client),
     new PostgresWorkspaceTeamMemberStatusRepository(client),
     () => client.close(),
   );
