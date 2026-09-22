@@ -12,7 +12,7 @@ export const MAX_WORKSPACE_TEAM_MEMBERS = 200;
 export interface WorkspaceTeamMember {
   readonly schema_version: 1;
   readonly membership_id: string;
-  readonly subject_id: string;
+  readonly display_name: string | null;
   readonly status: MembershipStatus;
   readonly roles: readonly string[];
 }
@@ -75,7 +75,7 @@ export async function loadWorkspaceTeam(
         Object.freeze({
           schema_version: 1 as const,
           membership_id: member.membership_id,
-          subject_id: member.subject_id,
+          display_name: member.display_name,
           status: member.status,
           roles: Object.freeze([...member.roles]),
         }),
