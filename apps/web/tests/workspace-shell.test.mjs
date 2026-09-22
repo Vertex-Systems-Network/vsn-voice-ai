@@ -46,6 +46,10 @@ test('root team flow requires explicit authenticated organization selection', ()
     workspaceFlowSource,
     /<WorkspaceNotificationPreferencesPanel organizationId=\{organizationId\}/,
   );
+  assert.match(
+    workspaceFlowSource,
+    /<WorkspaceProfilePanel organizationId=\{organizationId\}/,
+  );
 });
 
 test('workspace shell exposes baseline keyboard and semantic accessibility affordances', () => {
