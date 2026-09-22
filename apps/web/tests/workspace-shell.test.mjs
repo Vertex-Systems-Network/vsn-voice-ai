@@ -13,6 +13,10 @@ const teamPanelSource = await readFile(
   new URL('../components/workspace-team-panel.tsx', import.meta.url),
   'utf8',
 );
+const organizationProfilePanelSource = await readFile(
+  new URL('../components/workspace-organization-profile-panel.tsx', import.meta.url),
+  'utf8',
+);
 const packageJson = JSON.parse(
   await readFile(new URL('../package.json', import.meta.url), 'utf8'),
 );
@@ -26,6 +30,7 @@ test('workspace shell keeps unverified account and tenant state explicit', () =>
   assert.match(workspaceFlowSource, /WorkspaceDesktopLinkPanel/);
   assert.doesNotMatch(pageSource, /Settings are not connected yet/);
   assert.match(workspaceFlowSource, /WorkspaceNotificationPreferencesPanel/);
+  assert.match(workspaceFlowSource, /WorkspaceOrganizationProfilePanel/);
   assert.match(workspaceFlowSource, /WorkspaceProfilePanel/);
   assert.match(pageSource, /WorkspaceTeamWorkspace/);
   assert.match(workspaceFlowSource, /Select a workspace first/);
@@ -52,6 +57,10 @@ test('root team flow requires explicit authenticated organization selection', ()
   );
   assert.match(
     workspaceFlowSource,
+    /<WorkspaceOrganizationProfilePanel organizationId=\{organizationId\}/,
+  );
+  assert.match(
+    workspaceFlowSource,
     /<WorkspaceProfilePanel organizationId=\{organizationId\}/,
   );
 });
@@ -63,6 +72,25 @@ test('team status controls stay bootstrap-gated and server-authorized', () => {
   assert.match(teamPanelSource, /target !== undefined && target\.manageable/);
   assert.match(teamPanelSource, /activeOrganizationId\.current !== requestOrganizationId/);
   assert.doesNotMatch(teamPanelSource, /localStorage|sessionStorage/);
+});
+
+test('organization settings stay selection-bound and team.manage-gated', () => {
+  assert.match(organizationProfilePanelSource, /organizationId === null/);
+  assert.match(organizationProfilePanelSource, /requestWorkspaceOrganizationProfile/);
+  assert.match(organizationProfilePanelSource, /requestWorkspaceBootstrap/);
+  assert.match(
+    organizationProfilePanelSource,
+    /permissions\.includes\('team\.manage'\)/,
+  );
+  assert.match(organizationProfilePanelSource, /updateWorkspaceOrganizationProfile/);
+  assert.match(
+    organizationProfilePanelSource,
+    /activeOrganizationId\.current !== requestOrganizationId/,
+  );
+  assert.doesNotMatch(
+    organizationProfilePanelSource,
+    /localStorage|sessionStorage/,
+  );
 });
 
 test('workspace shell exposes baseline keyboard and semantic accessibility affordances', () => {
