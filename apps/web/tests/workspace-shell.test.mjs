@@ -9,6 +9,10 @@ const workspaceFlowSource = await readFile(
   new URL('../components/workspace-team-workspace.tsx', import.meta.url),
   'utf8',
 );
+const teamPanelSource = await readFile(
+  new URL('../components/workspace-team-panel.tsx', import.meta.url),
+  'utf8',
+);
 const packageJson = JSON.parse(
   await readFile(new URL('../package.json', import.meta.url), 'utf8'),
 );
@@ -50,6 +54,15 @@ test('root team flow requires explicit authenticated organization selection', ()
     workspaceFlowSource,
     /<WorkspaceProfilePanel organizationId=\{organizationId\}/,
   );
+});
+
+test('team status controls stay bootstrap-gated and server-authorized', () => {
+  assert.match(teamPanelSource, /requestWorkspaceBootstrap/);
+  assert.match(teamPanelSource, /permissions\.includes\('team\.manage'\)/);
+  assert.match(teamPanelSource, /updateWorkspaceTeamMemberStatus/);
+  assert.match(teamPanelSource, /target !== undefined && target\.manageable/);
+  assert.match(teamPanelSource, /activeOrganizationId\.current !== requestOrganizationId/);
+  assert.doesNotMatch(teamPanelSource, /localStorage|sessionStorage/);
 });
 
 test('workspace shell exposes baseline keyboard and semantic accessibility affordances', () => {
