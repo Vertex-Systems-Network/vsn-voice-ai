@@ -4,6 +4,7 @@ import type { PostgresRuntimeConfig } from '../config/postgres-runtime-config.js
 import { loadOptionalPostgresRuntimeConfig } from '../config/postgres-runtime-config.js';
 import type { AuthenticatedPrincipal } from '../identity/authenticated-principal.js';
 import { PostgresWorkspaceTeamRepository } from '../workspace/postgres-workspace-team-repository.js';
+import { PostgresWorkspaceTeamMemberStatusRepository } from '../workspace/postgres-workspace-team-member-status-repository.js';
 import { PostgresWorkspaceProfileRepository } from '../workspace/postgres-workspace-profile-repository.js';
 import { PostgresWorkspaceNotificationPreferencesRepository } from '../workspace/postgres-workspace-notification-preferences-repository.js';
 import {
@@ -20,6 +21,14 @@ import {
   WorkspaceProfileDataIntegrityError,
   WorkspaceProfilePersistenceUnavailableError,
 } from '../workspace/workspace-profile-repository.js';
+import {
+  type ManagedWorkspaceTeamMemberStatus,
+  RejectingWorkspaceTeamMemberStatusRepository,
+  type WorkspaceTeamMemberStatusRepository,
+  type WorkspaceTeamMemberStatusResponse,
+  WorkspaceTeamMemberStatusDataIntegrityError,
+  WorkspaceTeamMemberStatusPersistenceUnavailableError,
+} from '../workspace/workspace-team-member-status-repository.js';
 import {
   RejectingWorkspaceTeamRepository,
   type WorkspaceTeamRepository,
@@ -60,6 +69,7 @@ export class RuntimeOrganizationMembershipResolver
     WorkspaceTeamRepository,
     WorkspaceNotificationPreferencesRepository,
     WorkspaceProfileRepository,
+    WorkspaceTeamMemberStatusRepository,
     OnApplicationShutdown
 {
   private closePromise: Promise<void> | null = null;
@@ -70,6 +80,7 @@ export class RuntimeOrganizationMembershipResolver
     private readonly teamDelegate: WorkspaceTeamRepository,
     private readonly notificationPreferencesDelegate: WorkspaceNotificationPreferencesRepository,
     private readonly profileDelegate: WorkspaceProfileRepository,
+    private readonly teamMemberStatusDelegate: WorkspaceTeamMemberStatusRepository,
     private readonly closeClient: (() => Promise<void>) | null,
   ) {}
 
@@ -177,6 +188,32 @@ export class RuntimeOrganizationMembershipResolver
     }
   }
 
+  public async changeOrdinaryMemberStatus(
+    actorSubjectId: string,
+    organizationId: string,
+    membershipId: string,
+    status: ManagedWorkspaceTeamMemberStatus,
+  ): Promise<WorkspaceTeamMemberStatusResponse | null> {
+    try {
+      return await this.teamMemberStatusDelegate.changeOrdinaryMemberStatus(
+        actorSubjectId,
+        organizationId,
+        membershipId,
+        status,
+      );
+    } catch (error: unknown) {
+      if (error instanceof WorkspaceTeamMemberStatusDataIntegrityError) {
+        throw error;
+      }
+      if (
+        error instanceof WorkspaceTeamMemberStatusPersistenceUnavailableError
+      ) {
+        throw error;
+      }
+      throw new WorkspaceTeamMemberStatusPersistenceUnavailableError();
+    }
+  }
+
   public onApplicationShutdown(): Promise<void> {
     if (this.closeClient === null) {
       return Promise.resolve();
@@ -200,6 +237,7 @@ export function createRuntimeOrganizationMembershipResolver(
       new RejectingWorkspaceTeamRepository(),
       new RejectingWorkspaceNotificationPreferencesRepository(),
       new RejectingWorkspaceProfileRepository(),
+      new RejectingWorkspaceTeamMemberStatusRepository(),
       null,
     );
   }
@@ -212,6 +250,7 @@ export function createRuntimeOrganizationMembershipResolver(
     new PostgresWorkspaceTeamRepository(client),
     new PostgresWorkspaceNotificationPreferencesRepository(client),
     new PostgresWorkspaceProfileRepository(client),
+    new PostgresWorkspaceTeamMemberStatusRepository(client),
     () => client.close(),
   );
 }
