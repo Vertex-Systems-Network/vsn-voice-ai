@@ -67,6 +67,16 @@ class SharedFakePostgresClient implements ClosablePostgresQueryClient {
         ],
       };
     }
+    if (text.includes('LEFT JOIN workspace_organizations AS o')) {
+      return {
+        rows: [
+          {
+            ...persistedMembership,
+            display_name: 'Vertex Systems',
+          } as unknown as Row,
+        ],
+      };
+    }
     if (text.includes('LEFT JOIN workspace_profiles')) {
       return {
         rows: [
@@ -168,6 +178,10 @@ test('configured runtime shares one PostgreSQL client across membership, directo
   assert.equal(membership?.organizationId, 'org_001');
   assert.equal(directory.memberships.length, 1);
   assert.equal(directory.memberships[0]?.organizationId, 'org_001');
+  assert.equal(
+    directory.memberships[0]?.organizationDisplayName,
+    'Vertex Systems',
+  );
   assert.equal(directory.hasMore, false);
   assert.equal(team.organization_id, 'org_001');
   assert.equal(team.members.length, 1);

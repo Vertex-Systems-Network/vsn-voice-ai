@@ -10,6 +10,7 @@ function entry(index = 1) {
     schema_version: 1,
     membership_id: `membership_${index}`,
     organization_id: `org_${index}`,
+    display_name: index === 1 ? 'Vertex Systems' : null,
     status: 'active',
     roles: ['member'],
   };
@@ -38,6 +39,8 @@ test('ready state exposes only validated workspace entries and bound signal', ()
   assert.equal(view.badge, 'Authenticated directory');
   assert.equal(view.workspaces.length, 2);
   assert.equal(view.workspaces[0].organization_id, 'org_1');
+  assert.equal(view.workspaces[0].display_name, 'Vertex Systems');
+  assert.equal(view.workspaces[1].display_name, null);
   assert.equal(view.hasMore, true);
 });
 

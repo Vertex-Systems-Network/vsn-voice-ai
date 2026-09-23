@@ -10,6 +10,7 @@ function workspace(status = 'active', organizationId = 'org_1') {
     schema_version: 1,
     membership_id: `membership_${organizationId}`,
     organization_id: organizationId,
+    display_name: organizationId === 'org_1' ? 'Vertex Systems' : null,
     status,
     roles: ['member'],
   };
