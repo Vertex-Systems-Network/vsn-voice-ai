@@ -109,7 +109,7 @@ test('workspace shell has explicit responsive breakpoints', () => {
 });
 
 test('web framework dependencies are exact pinned versions', () => {
-  assert.equal(packageJson.dependencies.next, '16.3.4');
+  assert.equal(packageJson.dependencies.next, '16.3.5');
   assert.equal(packageJson.dependencies.react, '19.3.0');
   assert.equal(packageJson.dependencies['react-dom'], '19.3.0');
   for (const version of Object.values(packageJson.dependencies)) {
