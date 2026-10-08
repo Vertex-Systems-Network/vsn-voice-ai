@@ -117,6 +117,22 @@ class ContinuityTests(unittest.TestCase):
         self.assertEqual(host.repairs, ["WU-014"])
         self.assertEqual(host.calls.count("WU-014"), 2)
 
+    def test_repair_rejects_revoked_epoch_before_mutating(self):
+        host = FakeHost()
+        host.transient["WU-014"] = 1
+        host.mutate_lease_during_execute = True
+        with self.assertRaises(continuity.ContinuationSafetyError):
+            continuity.run_continuation(host)
+        self.assertEqual(host.repairs, [])
+
+    def test_repair_rejects_source_drift_before_mutating(self):
+        host = FakeHost()
+        host.transient["WU-014"] = 1
+        host.mutate_source_during_execute = True
+        with self.assertRaises(continuity.ContinuationSafetyError):
+            continuity.run_continuation(host)
+        self.assertEqual(host.repairs, [])
+
     def test_exhausted_retry_budget_isolated_from_other_work(self):
         host = FakeHost()
         host.transient["WU-014"] = 5

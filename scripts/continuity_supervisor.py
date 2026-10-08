@@ -175,8 +175,15 @@ def run_continuation(host, max_milestones=8, max_retries_per_item=2):
                 repair = getattr(host, "repair", None)
                 if attempt >= max_retries_per_item or not callable(repair):
                     break
+                # Repair is a separate mutation: recheck authenticated authority
+                # and canonical source BEFORE running it, not only afterward.
+                still_authorized = _authority(host, item["scope"])
+                _same_authority(authority, still_authorized)
+                repair_base = _snapshot(host)
+                if repair_base["revision"] != revision or repair_base["main_sha"] != main_sha:
+                    raise ContinuationSafetyError("Canonical source drift before authorized repair")
                 repair(item, revision, fence)
-                # Fresh lease and revision checked at the beginning of retry.
+                # Fresh lease and revision are checked again at the retry.
         if receipt is None:
             # Scope only this ordinary/external blocker to the attempted lane.
             continue

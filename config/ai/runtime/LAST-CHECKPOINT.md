@@ -20,3 +20,7 @@
 - Regression tests now include retries, retry exhaustion, external block isolation, stale epoch, expired identity, concurrent source drift, invalid snapshot, fake receipt and checkpoint failure.
 - New exact-head CI is required, existing green CI on `e951a06e` does not certify the hardened head.
 - No persistent host or independent protected-path reviewer is claimed; Issue #179 remains open; work-unit completion stays 3/25.
+
+## Repair mutation preflight
+
+Before even invoking a retryable error repair adapter, the continuation loop revalidates current authenticated identity, lease expiry, fencing epoch, approved work scope and exact canonical source revision. Two additional tests prove a revoked epoch or changed source forbids the repair operation. This is still not live host certification or authority to merge protected paths.
