@@ -24,6 +24,17 @@ class BlockedWorkError(RuntimeError):
 
 KIND_ORDER = {"accepted_pr": 0, "actionable_issue": 1, "work_unit": 2}
 
+# These external/privileged gates are not routine developer decisions. An
+# authenticated host must verify each evidence reference against the real
+# consent/acceptance/release/budget authority before constructing candidates.
+# The core also rejects a mere truthy approval label or an absent reference.
+EVIDENCE_GATES = (
+    ("human_consent_required", "human_consent_verified", "human_consent_evidence_ref"),
+    ("external_acceptance_required", "external_acceptance_verified", "external_acceptance_evidence_ref"),
+    ("paid_resource_required", "budget_authorized", "budget_authorization_evidence_ref"),
+    ("production_release_required", "release_authorized", "release_authorization_evidence_ref"),
+)
+
 
 def _valid_sha(value):
     return isinstance(value, str) and len(value) == 40 and all(
@@ -117,6 +128,16 @@ def choose(candidates, completed, scopes, visited=frozenset()):
         if item.get("external_blocker"):
             continue
         if item.get("independent_review_required") and not item.get("independent_review_approved"):
+            continue
+        if any(
+            item.get(required)
+            and not (
+                item.get(verified) is True
+                and isinstance(item.get(evidence), str)
+                and item[evidence].strip()
+            )
+            for required, verified, evidence in EVIDENCE_GATES
+        ):
             continue
         if item.get("scope") not in scopes:
             continue

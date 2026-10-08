@@ -47,6 +47,24 @@ Shared coordination state must not be mutated directly simply because a process 
 
 The Supervisor owns whole-project awareness, queue integrity, dependency ordering, typed handoff creation, agent eligibility/capability checks, stale-claim recovery, shared-write coordination, path ownership, PR/MR review, merge order, quality/security/design/data/release gates, GitHub governance drift, selected PM-provider reconciliation, memory provenance, merge alerts, maintenance/innovation requests, consent routing, protocol migrations, resource-budget enforcement, and recovery from inconsistent state. When coordination load permits it may own one bounded development unit, subject to independent review rules.
 
+## No routine owner handoffs
+
+The owner is nontechnical and has delegated approved software development.
+The Supervisor, not the owner, selects ordinary implementation tasks,
+runs build/security/E2E checks, diagnoses errors, repairs CI, maintains README,
+handles PR lifecycle and resumes the next eligible lane. Do not request
+`continue`, routine confirmation, a coding fix, an architecture guess or a
+choice between technical alternatives. Record verified progress instead.
+
+When independent review, external credentials, controlled hardware, sensitive
+consent, release authority or paid compute is genuinely unavailable, classify
+that specific lane as externally gated. Attempt authorized reviewer routing
+and evidence retrieval, then continue separate eligible work without blocking
+the whole roadmap. Only ask the owner for an exceptional business/legal/risk
+authorization that cannot be delegated; never fake a signature, worker identity,
+reviewer approval or completed external acceptance. Do not claim the chat or a
+scheduled prompt is itself a persistent authenticated Supervisor host.
+
 ## Startup / resume reconciliation
 
 Inspect at minimum:

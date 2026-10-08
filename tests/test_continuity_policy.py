@@ -19,6 +19,14 @@ class ContinuationPolicyTests(unittest.TestCase):
         self.assertTrue(milestones['continue_eligible_milestones_in_same_invocation'])
         self.assertTrue(milestones['stop_only_at_real_authority_or_runtime_boundary'])
 
+    def test_non_developer_owner_never_selects_routine_tasks(self):
+        execution = (ROOT / 'AI-NATIVE-EXECUTION.md').read_text(encoding='utf-8')
+        supervisor = (ROOT / 'SUPERVISOR.md').read_text(encoding='utf-8')
+        self.assertIn('## Non-developer owner: default autonomous engineering mode', execution)
+        self.assertIn('No routine owner handoffs', supervisor)
+        self.assertIn('independent review', execution)
+        self.assertIn('alternative eligible lane', execution)
+
     def test_progress_is_evidence_based(self):
         state = json.loads((ROOT / 'config/ai/project-state.json').read_text(encoding='utf-8'))
         self.assertEqual(state['next_valid_work_unit'], 'WU-014')

@@ -122,6 +122,54 @@ class ContinuityTests(unittest.TestCase):
         self.assertEqual(continuity.choose(host.items, set(), {"ordinary_development"})["id"], "WU-014")
         self.assertEqual(continuity.choose(host.items, {"WU-014"}, {"ordinary_development"})["id"], "WU-020")
 
+    def test_external_authorization_gates_never_become_routine_owner_prompts(self):
+        gate_fields = [
+            ("human_consent_required", "human_consent_verified", "human_consent_evidence_ref"),
+            ("external_acceptance_required", "external_acceptance_verified", "external_acceptance_evidence_ref"),
+            ("paid_resource_required", "budget_authorized", "budget_authorization_evidence_ref"),
+            ("production_release_required", "release_authorized", "release_authorization_evidence_ref"),
+        ]
+        for required, verified, evidence in gate_fields:
+            with self.subTest(gate=required):
+                host = FakeHost()
+                host.items.append(work("WU-EXTERNAL", phase=0, priority=0, **{required: True}))
+                self.assertEqual(continuity.run_continuation(host), ["WU-014", "WU-016"])
+                self.assertNotIn("WU-EXTERNAL", host.calls)
+
+                # A boolean alone or a blank evidence marker cannot grant a
+                # new privileged action. Real hosts verify references.
+                host.items[-1][verified] = True
+                self.assertEqual(
+                    continuity.choose(host.items, set(), set(host.scopes))["id"], "WU-014"
+                )
+                host.items[-1][evidence] = " "
+                self.assertEqual(
+                    continuity.choose(host.items, set(), set(host.scopes))["id"], "WU-014"
+                )
+                host.items[-1][evidence] = "verified-host:authorization/123"
+                self.assertEqual(
+                    continuity.choose(host.items, set(), set(host.scopes))["id"], "WU-EXTERNAL"
+                )
+
+    def test_multiple_external_gates_require_independent_evidence(self):
+        host = FakeHost()
+        external = work(
+            "WU-EXTERNAL", phase=0, priority=0,
+            human_consent_required=True,
+            human_consent_verified=True,
+            human_consent_evidence_ref="consent:approved/123",
+            production_release_required=True,
+        )
+        host.items.append(external)
+        self.assertEqual(
+            continuity.choose(host.items, set(), set(host.scopes))["id"], "WU-014"
+        )
+        external["release_authorized"] = True
+        external["release_authorization_evidence_ref"] = "release:verified/123"
+        self.assertEqual(
+            continuity.choose(host.items, set(), set(host.scopes))["id"], "WU-EXTERNAL"
+        )
+
     def test_retryable_failure_repairs_without_owner_input(self):
         host = FakeHost()
         host.transient["WU-014"] = 1

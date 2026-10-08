@@ -23,6 +23,44 @@ The AI must continuously know, as far as repository evidence permits:
 - where development should resume
 - what the next highest-value valid work item is
 
+## Non-developer owner: default autonomous engineering mode
+
+The owner has explicitly delegated **routine in-scope software engineering** to AI
+and is not expected to write code, run commands, debug errors, pick the next task
+or answer repetitive `continue`/technical-choice prompts. Standing development
+authorization already covers ordinary implementation, tests, documentation,
+reversible refactors, safe dependency updates, PR preparation and eligible
+merges under existing repo policy.
+
+- AI determines the next dependency-ready work, performs review of actual source,
+  implements it, fixes ordinary build/test warnings and errors, retries safely
+  within budget, updates README plus canonical state from evidence, and proceeds
+  to another milestone without asking for a new instruction.
+- If CI fails, inspect the exact failing log and repair the actual root cause;
+  do not turn a normal failure into an owner questionnaire or weaken a quality
+  check to fabricate success.
+- If a PR is awaiting mandatory **independent review**, request a legitimately
+  eligible reviewer/team where available, preserve the approval gate and switch
+  to an alternative eligible lane. A self-review or GitHub branch-rule drift
+  never becomes independent approval.
+- If hardware, third-party identity, provider credentials, external acceptance,
+  paid resources, legal authority or production release evidence is missing,
+  record the precise bounded blocker and continue unrelated development. Never
+  invent identities, reviewers, evidence, provider accounts or approvals.
+- A human decision is exceptional: request it **only when genuinely necessary
+  to authorize an otherwise impossible sensitive action**, not to choose coding
+  tactics. Consolidate distinct nontechnical decisions instead of repeatedly
+  asking the owner to debug, configure, or select programming options.
+- The Supervisor must verify real consent, budget, external acceptance and
+  release evidence before dispatching gated work. The pure continuation core
+  filters candidates tagged with those gates and never treats a Boolean without
+  a nonempty evidence reference as sufficient. The authenticated host remains
+  responsible for validating each reference against its authority.
+- A run finishes only at an actual host/token/budget/authority boundary, a
+  genuine no-eligible-lane state, or a verified completion criterion. An
+  instruction file does **not** create an always-on runtime: hosted recurrence
+  and recovery require a real authenticated persistent agent/runner and logs.
+
 ## Repository-backed memory bank
 
 Chat history and model memory are never sufficient as the project source of truth. The repository must carry a persistent memory bank that another compatible AI can read and continue from.
