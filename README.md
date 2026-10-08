@@ -63,7 +63,8 @@ The owner-approved product direction is:
 - Current module completion: `0 / 1 complete (0%)`
 - Next valid product work: `MOD-014 / WU-014` — `in_progress`
 - Current WU-002 blocker: Issue #110 controlled Windows runner/acceptance evidence.
-- Active WU-014 delivery: PRs #134/#135/#136/#138/#140/#142/#144/#146/#148/#150/#152/#154/#156/#158/#160 are merged on `main`; browser organization-settings PR #160 exact head `1952d9770a1385d9023733d3a20fefbee187dae9` passed Web Validation run `35785225244` and AI Native Quality Gates run `35785225211` before squash merge `db9c13ee7d56055663daa8f55b2048bbdba75161`. Issue #161 is the active workspace-directory display-name projection slice.
+- Active WU-014 delivery: PRs #134/#135/#136/#138/#140/#142/#144/#146/#148/#150/#152/#154/#156/#158/#160 and **#162** are merged on `main`. Issue #161 (workspace-directory display-name projection) is **closed** after PR #162 merged as `87b0ea6ee4f0ff637adea529459fa4e9a770df5b`; WU-014 remains in progress, not completed.
+- Continuity/governance audit (2026-10-08): PR #131 is **open and merge-conflicted**, with no submitted independent review. Issues #132 (reviewer), #133 (ruleset policy drift), #110 (physical Windows acceptance) and #171 (optional upstream ANPOS update) remain open. Active `main` ruleset #23374505 requires **0** approvals and does **not** require CODEOWNER review despite stricter desired policy; applying admin policy still requires an authorized administrative surface. AI catalog has no verified attachable agents and Supervisor state is unassigned: do not claim a persistent autonomous runtime. Continue eligible WU-014/WU-016 work without waiting for the blocked WU-002 completion or the protected PR, subject to their own gates.
 <!-- AI-NATIVE-PROGRESS:END -->
 
 ## README Reconciliation Rule — Mandatory

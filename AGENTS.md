@@ -143,8 +143,14 @@ Use `CONTINUOUS-IMPROVEMENT.md`. Child scheduled blueprints activate only after 
 Do not ask the user to choose work repository evidence can determine. Ask only genuine unresolved product/business/legal/ethical/consent/risk/provider/privacy/cost decisions that materially block correct progress.
 
 
+## AI-native continuity without routine user prompts
+
+For explicit authorized audit/repair/continue/develop requests, act directly; do not require the owner to choose the next module, approve ordinary technical fixes or select a numbered option. Read `.ai/NEXT-ACTION-OPTIONS.md`: its interactive handoff applies to a URL-only entry or an explicit request for choices, **not** to already-authorized execution.
+
+Reconcile Issues -> PRs and exact-head CI -> coordination/claims/runner reality before picking work. Fix ordinary implementation/test/CI failures within bounded budgets. A waiting approval, physical Windows acceptance, optional upstream migration or unavailable integration blocks only its dependent lane; continue another independently eligible approved slice (for this project, WU-014/WU-016 are candidates when their specific dependencies are met). Do not bypass the real independent-review requirement on protected control-plane work or fabricate credentials, identities, leases, external evidence or a persistent background agent.
+
+Persist an accurate checkpoint when the invocation/runtime ends. Reconcile `README.md` with verified state on material source changes, without false progress or status-only commits. Ask a human only for genuinely missing human authority or material product/business/legal/privacy/cost decisions after safe alternatives have been exhausted.
+
 ## VSN organization next-action handoff
 
-Before every user-facing development handoff, read and follow `.ai/NEXT-ACTION-OPTIONS.md`.
-
-If the user sends only this repository's GitHub URL, perform the policy's read-only bootstrap and return shuffled numbered next-action options. A URL-only message never authorizes a repository mutation. A later numeric selection must revalidate live repository state before acting.
+Follow `.ai/NEXT-ACTION-OPTIONS.md` according to the request mode. A URL-only message is read-only and requires a choice before mutation; explicit develop/continue requests do not.
