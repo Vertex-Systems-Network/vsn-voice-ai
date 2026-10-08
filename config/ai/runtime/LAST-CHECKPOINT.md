@@ -11,3 +11,12 @@
 - Work unit progress remains **3/25 (12%) complete** and **4 in progress**; no falsely completed hardware or production milestone.
 - Issue #161/PR #162 are merged, not open.
 - Exact next action: confirm new PR #131 exact-head CI, obtain independent protected review before eligible merge, and continue WU-014 independently where feasible.
+
+## Continuity hardening — 2026-10-08
+
+- Updated `scripts/continuity_supervisor.py` to re-authenticate/verify scope, expiry and epoch before each execution attempt **and** immediately before CAS checkpoint.
+- Classified ordinary retryable errors separately from safety faults, with at most three repair retries. Exhausted retryable failures or lane-specific blockers allow another independent item; unknown or authority/evidence/CAS faults fail closed.
+- Validated canonical Git source revision and SHA plus duplicate work identity, and rechecked source before checkpointing.
+- Regression tests now include retries, retry exhaustion, external block isolation, stale epoch, expired identity, concurrent source drift, invalid snapshot, fake receipt and checkpoint failure.
+- New exact-head CI is required, existing green CI on `e951a06e` does not certify the hardened head.
+- No persistent host or independent protected-path reviewer is claimed; Issue #179 remains open; work-unit completion stays 3/25.
