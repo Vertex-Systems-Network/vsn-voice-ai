@@ -53,6 +53,10 @@ The owner-approved product direction is:
 
 **Latest verified green implementation CI:** AI Native Quality Gates run `34713869004` and Windows Audio Validation run `34713869035` both passed on implementation head `228a3edef05ef1598dec8f13af282950d2479764`. The Windows run passed Rust compile/Clippy/tests, restored the pinned WDK packages, built and WDK-validated `vsn_virtual_mic_control.sys` with the PortCls-primary live entry and secure raw WDM runtime linked in, and passed the native C++ virtual-mic contract suite. PR #25 merged this implementation to `main` as `14fd4c55ae6ad44d1e43af3ea574e66427f7551e`. The first Windows run for this slice (`34713657493`) correctly failed because `WdfDriverMiniportUnload` was undeclared; adding `<wdfminiport.h>` fixed the build before merge. The preceding secure raw WDM runtime merged as `6c395ef7cbd7afc5caa3daac506dee16073335fe`; raw WDM scaffold as `e31e40c0a78dcdf99396ea8a0bf3648691416b35`; architecture correction as `2665954315b52d01b3e59b6fb283f0da2a053eed`; PortCls lifecycle/WaveRT stream contracts as `78ef04bf86bf02b25b9da25ef401dc84f73f0f2b`; descriptor scaffold as `da1b0543bcbfe63ff6a342690cab3b250057bbe2`; guarded ring consumer as `9c57207482bdc20ca5dc70a06cbb43c0cfa86741`.
 
+## Safe AI-Native Continuation Engine
+
+The code candidate on PR #131 adds a host-neutral, bounded continuation loop in `scripts/continuity_supervisor.py`, with tests in `tests/test_continuity_supervisor.py` and `tests/test_continuity_policy.py`. These tests exercise multi-milestone continuation, blocked-lane isolation, checkpoint resume, and failure-closed handling for identity, evidence and CAS checkpoint errors. This is **not a deployed persistent AI host**, cannot self-approve protected changes, and does not count as a completed product work unit. Real worker identity, lease, host execution, independent review and hosted acceptance remain outstanding in Issues #179/#132/#133.
+
 ## AI-Native Progress Snapshot
 
 <!-- AI-NATIVE-PROGRESS:START -->
