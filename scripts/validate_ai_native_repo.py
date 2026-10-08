@@ -272,8 +272,12 @@ def validate_compact_runtime_state() -> None:
 
     if policy.get("remote_call_budget", {}).get("consolidated_ci_status_refreshes_per_milestone_default") != 1:
         fail("runtime-policy: default consolidated CI/status refresh budget must be exactly one")
-    if policy.get("milestone_policy", {}).get("one_user_continue_or_resume_turn_one_logical_milestone") is not True:
-        fail("runtime-policy: one continue/resume turn must default to one logical milestone")
+    milestone_policy = policy.get("milestone_policy", {})
+    if milestone_policy.get("one_user_continue_or_resume_turn_one_logical_milestone") is not False:
+        fail("runtime-policy: continue/resume must not impose a one-milestone interaction stop")
+    for key in ("atomic_milestone_transactions", "continue_eligible_milestones_in_same_invocation", "stop_only_at_real_authority_or_runtime_boundary"):
+        if milestone_policy.get(key) is not True:
+            fail(f"runtime-policy: expected bounded continuation setting {key}")
     if policy.get("issues_prs_gate", {}).get("required_before_new_development") is not True:
         fail("runtime-policy: Issues/PRs-first gate must be required")
 

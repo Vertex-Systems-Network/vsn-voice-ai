@@ -1,14 +1,14 @@
 schema_version: 1
 repository: Vertex-Systems-Network/vsn-voice-ai
 observed_main_branch: main
-observed_main_sha: c7ed9caf06bd44460a7717e4f419b51cf49792d4
+observed_main_sha: 621244eaffc745629a7acf5cbd902c7b64f86df4
 active_issue: 133
 active_pr: 131
 active_branch: ai/supervisor-resume-protocol
-current_milestone: enforce-readme-progress-synchronization
+current_milestone: continuity-and-compact-supervisor-reconciliation
 milestone_status: VERIFYING
 last_completed_milestone: "AI-Native next-valid work reconciliation passed exact-head AI Native Quality Gates run 35641796156 on c250180b8c37b586faabf93b0b002a1796113489. WU-014 product PRs #134, #135 and #136 have current exact-head technical gates green and remain unmerged/review-pending."
-exact_next_safe_action: "Resolve PR #131 exact current head after the README progress synchronization commit and perform one consolidated CI/status refresh. README progress is now a mandatory machine-validated surface. If CI is terminal, persist through the remote terminal-evidence overlay without a source-only restatement commit. Continue WU-014 safe product work independently while review/merge authority remains pending."
+exact_next_safe_action: "Verify exact-head CI on the reconciled PR #131 and request genuinely independent protected-path review before merge. Continue independent WU-014/WU-016 eligible implementation while reviewer/physical Windows/provider gates remain pending."
 next_product_work_unit: WU-014
 pending_runner_ids:
   - RUN-PR-131-README-PROGRESS-SYNC-CI
@@ -60,13 +60,10 @@ active_product_delivery:
   pr_135: technical_gate_pass_review_merge_pending
   pr_136: technical_gate_pass_review_merge_pending
 open_reconciliation:
-  open_issue_count: 3
-  open_pr_count: 13
+  open_issue_count: 4
+  open_pr_count: 11
   issue_110: completion_blocked_external_authority_and_physical_runner
   issue_132: blocked_external_independent_reviewer_identity
   issue_133: owner_approved_blocked_admin_capable_application
   active_governance_pr: 131
-  product_prs:
-    - 134
-    - 135
-    - 136
+  product_prs: []

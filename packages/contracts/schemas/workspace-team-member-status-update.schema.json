@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.vsn.local/workspace-team-member-status-update.schema.json",
+  "title": "VSN Workspace Team Member Status Update",
+  "description": "Closed request for an authorized team manager to change an ordinary member between active and suspended.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["status"],
+  "properties": {
+    "status": {
+      "enum": ["active", "suspended"]
+    }
+  }
+}

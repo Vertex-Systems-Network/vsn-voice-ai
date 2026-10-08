@@ -6,8 +6,13 @@ export const ORGANIZATION_MEMBERSHIP_DIRECTORY = Symbol(
 );
 export const MAX_ORGANIZATION_MEMBERSHIPS_PER_DIRECTORY = 100;
 
+export interface OrganizationMembershipDirectoryEntry
+  extends OrganizationMembership {
+  readonly organizationDisplayName: string | null;
+}
+
 export interface OrganizationMembershipDirectorySnapshot {
-  readonly memberships: readonly OrganizationMembership[];
+  readonly memberships: readonly OrganizationMembershipDirectoryEntry[];
   readonly hasMore: boolean;
 }
 

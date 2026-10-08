@@ -39,6 +39,7 @@ function row(index = 1, overrides: Record<string, unknown> = {}): Record<string,
     membership_id: `membership_${index.toString().padStart(3, '0')}`,
     subject_id: 'user_123',
     organization_id: `org_${index.toString().padStart(3, '0')}`,
+    display_name: index % 2 === 0 ? null : `Organization ${index}`,
     status: 'active',
     roles: ['member'],
     permissions: ['conversation.read'],
@@ -61,10 +62,23 @@ test('directory query is subject-bound, deterministic and bounded', async () => 
     'user_123',
     MAX_ORGANIZATION_MEMBERSHIPS_PER_DIRECTORY + 1,
   ]);
-  assert.match(client.calls[0]?.text ?? '', /WHERE subject_id = \$1/);
-  assert.match(client.calls[0]?.text ?? '', /ORDER BY organization_id ASC/);
+  assert.match(
+    client.calls[0]?.text ?? '',
+    /LEFT JOIN workspace_organizations AS o/,
+  );
+  assert.match(
+    client.calls[0]?.text ?? '',
+    /o\.organization_id = m\.organization_id/,
+  );
+  assert.match(client.calls[0]?.text ?? '', /WHERE m\.subject_id = \$1/);
+  assert.match(client.calls[0]?.text ?? '', /ORDER BY m\.organization_id ASC/);
   assert.equal(result.memberships.length, 2);
   assert.equal(result.memberships[0]?.organizationId, 'org_001');
+  assert.equal(
+    result.memberships[0]?.organizationDisplayName,
+    'Organization 1',
+  );
+  assert.equal(result.memberships[1]?.organizationDisplayName, null);
   assert.equal(result.memberships[1]?.status, 'invited');
   assert.equal(result.hasMore, false);
 });
@@ -93,6 +107,9 @@ test('cross-subject, malformed and duplicate directory rows fail closed', async 
     [row(1, { subject_id: 'user_other' })],
     [row(1, { status: 'deleted' })],
     [row(1, { roles: [] })],
+    [row(1, { display_name: ' bad' })],
+    [row(1, { display_name: 'bad\nname' })],
+    [row(1, { display_name: 'x'.repeat(101) })],
     [row(1), row(2, { membership_id: 'membership_001' })],
     [row(1), row(2, { organization_id: 'org_001' })],
   ];

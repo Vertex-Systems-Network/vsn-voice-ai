@@ -24,6 +24,7 @@ class WorkspaceDirectoryContractTests(unittest.TestCase):
                     "schema_version": 1,
                     "membership_id": "membership_001",
                     "organization_id": "org_001",
+                    "display_name": "Vertex Systems",
                     "status": "active",
                     "roles": ["member"],
                 }
@@ -43,6 +44,17 @@ class WorkspaceDirectoryContractTests(unittest.TestCase):
         ]:
             payload = self.valid_payload()
             payload["workspaces"][0][forbidden_field] = value
+            with self.assertRaises(ValidationError):
+                self.validator.validate(payload)
+
+    def test_display_name_is_nullable_bounded_and_control_safe(self) -> None:
+        payload = self.valid_payload()
+        payload["workspaces"][0]["display_name"] = None
+        self.validator.validate(payload)
+
+        for value in ["", " bad", "bad\nname", "x" * 101]:
+            payload = self.valid_payload()
+            payload["workspaces"][0]["display_name"] = value
             with self.assertRaises(ValidationError):
                 self.validator.validate(payload)
 

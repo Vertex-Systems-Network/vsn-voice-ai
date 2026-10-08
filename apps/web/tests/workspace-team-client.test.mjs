@@ -13,7 +13,7 @@ function validPayload(organizationId = 'org_456') {
       {
         schema_version: 1,
         membership_id: 'membership_123',
-        subject_id: 'user_123',
+        display_name: 'Ada Lovelace',
         status: 'active',
         roles: ['member'],
       },
@@ -50,6 +50,7 @@ test('valid team request is same-origin, credentialed and no-store', async () =>
 
 test('team response rejects unreviewed member fields', async () => {
   for (const [field, value] of [
+    ['subject_id', 'user_internal'],
     ['session_id', 'internal-only-value'],
     ['permissions', ['team.read']],
     ['email', 'person@example.com'],
@@ -86,7 +87,7 @@ test('member count, status and roles remain contract bounded', async () => {
   oversized.members = Array.from({ length: 201 }, (_, index) => ({
     schema_version: 1,
     membership_id: `membership_${index}`,
-    subject_id: `user_${index}`,
+    display_name: index % 2 === 0 ? null : `Member ${index}`,
     status: 'active',
     roles: ['member'],
   }));
@@ -95,8 +96,15 @@ test('member count, status and roles remain contract bounded', async () => {
   invalidStatus.members[0].status = 'deleted';
   const invalidRoles = validPayload();
   invalidRoles.members[0].roles = ['member', 'member'];
+  const invalidDisplayName = validPayload();
+  invalidDisplayName.members[0].display_name = ' bad';
 
-  for (const payload of [oversized, invalidStatus, invalidRoles]) {
+  for (const payload of [
+    oversized,
+    invalidStatus,
+    invalidRoles,
+    invalidDisplayName,
+  ]) {
     const result = await client.requestWorkspaceTeam(
       async () => jsonResponse(payload),
       'org_456',

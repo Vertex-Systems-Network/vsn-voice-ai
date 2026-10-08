@@ -290,7 +290,15 @@ Choose work using evidence such as:
 
 Never choose a task solely because it is easy.
 
-If the current work unit is waiting only on an external authority/runtime/acceptance dependency and no safe remaining slice can execute locally, keep that unit represented as current/in-progress or verification-pending as appropriate, record the blocker explicitly, and set `next_valid_work_unit` to the highest-priority dependency-satisfied unblocked work unit in the active phase. Do not hide the blocked unit by falsely marking it complete, and do not let a blocked current unit prevent unrelated safe work when the Supervisor Issues/PR gate explicitly permits externally blocked items to coexist with unrelated safe work.
+### Scoped blockers and zero-routine-confirmation execution
+
+- Treat a user instruction to audit/fix/continue/develop as permission to perform **ordinary in-scope, reversible repository development** without asking the owner which task to choose. Use the current approved plan and live evidence, not a shuffled interaction menu, to decide.
+- On a waiting review or blocked PR, check mergeability, CI, exact head and available authorized reviewers. Never self-approve protected/security-critical work or circumvent GitHub rules. Continue independent product work while recording the protected PR's blocker and recovery trigger.
+- On a failed test, type/build error, dependency issue or stale planning artifact, inspect evidence, repair the narrow fault and retest. Bound retries and do not confuse a green optional watch with product CI.
+- On physical hardware, restricted runner, provider credential, legally significant, paid compute, production release or external-identity requirements, preserve the real gate, record the missing evidence and move to another independently eligible work unit.
+- If a work unit remains `in_progress` but its acceptance evidence is externally blocked, its **completion** is blocked; its status and prioritization should not hide usable sibling lanes. Do not mark it complete or silently demote it.
+- Select the next lane deterministically using live Issues, open PRs, exact-head checks, work-unit dependency graph and permissions. If multiple lanes remain, prioritize repairing actionable existing work over opening duplicated PRs. An old unresolved decision list does not itself mandate asking the user again.
+- Advance as much as is safely possible in the **current invocation**, subject to host/tool limits and the project's one-logical-milestone controls. At a host/time budget boundary, save a precise repo-backed handoff and report the boundary; no repository document can keep a chat agent running after its host stops.
 
 ## Update and delete discipline
 

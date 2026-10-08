@@ -17,6 +17,7 @@ const MIN_TTL_MS = 30 * 1_000;
 const MAX_TTL_MS = 10 * 60 * 1_000;
 const TOKEN_BYTES = 32;
 const REQUIRED_PERMISSION = 'device.link';
+const LINKED_DEVICE_PAGE_SIZE = 50;
 
 export interface DesktopLinkIssue {
   readonly recordId: string;
@@ -31,6 +32,26 @@ export interface DesktopLinkBinding {
   readonly organizationId: string;
   readonly deviceId: string;
   readonly consumedAt: string;
+}
+
+export interface DesktopLinkStatusSnapshot {
+  readonly recordId: string;
+  readonly organizationId: string;
+  readonly deviceId: string;
+  readonly status: 'issued' | 'consumed' | 'revoked' | 'expired';
+  readonly expiresAt: string;
+  readonly consumedAt: string | null;
+}
+
+export interface LinkedDesktopSnapshot {
+  readonly recordId: string;
+  readonly deviceId: string;
+  readonly linkedAt: string;
+}
+
+export interface LinkedDesktopInventory {
+  readonly devices: readonly LinkedDesktopSnapshot[];
+  readonly hasMore: boolean;
 }
 
 export interface DesktopLinkClock {
@@ -112,6 +133,124 @@ export class DesktopLinkService {
       recordId,
       exchangeToken,
       expiresAt: expiresAt.toISOString(),
+    });
+  }
+
+  public async listLinked(
+    principal: AuthenticatedPrincipal,
+    organizationId: string,
+  ): Promise<LinkedDesktopInventory> {
+    requireNonEmpty(principal.subjectId, 'subject id');
+    requireNonEmpty(organizationId, 'organization id');
+
+    const records = await this.store.listLatestConsumed(
+      principal.subjectId,
+      organizationId,
+      LINKED_DEVICE_PAGE_SIZE + 1,
+    );
+    const devices = records.slice(0, LINKED_DEVICE_PAGE_SIZE).map((record) => {
+      if (record.status !== 'consumed' || typeof record.consumed_at !== 'string') {
+        throw new DesktopLinkDeniedError('linked desktop inventory contains invalid state');
+      }
+      return Object.freeze({
+        recordId: record.record_id,
+        deviceId: record.device_id,
+        linkedAt: record.consumed_at,
+      });
+    });
+    return Object.freeze({
+      devices: Object.freeze(devices),
+      hasMore: records.length > LINKED_DEVICE_PAGE_SIZE,
+    });
+  }
+
+  public async inspect(
+    principal: AuthenticatedPrincipal,
+    organizationId: string,
+    recordId: string,
+  ): Promise<DesktopLinkStatusSnapshot> {
+    requireNonEmpty(principal.subjectId, 'subject id');
+    requireNonEmpty(organizationId, 'organization id');
+    requireNonEmpty(recordId, 'record id');
+
+    const record = await this.store.get(recordId);
+    if (
+      record === undefined ||
+      record.subject_id !== principal.subjectId ||
+      record.organization_id !== organizationId
+    ) {
+      throw new DesktopLinkDeniedError('desktop link record is unavailable');
+    }
+
+    const expired =
+      record.status === 'issued' &&
+      this.clock.now().getTime() >= Date.parse(record.expires_at);
+    const status = expired ? 'expired' as const : record.status;
+
+    return Object.freeze({
+      recordId: record.record_id,
+      organizationId: record.organization_id,
+      deviceId: record.device_id,
+      status,
+      expiresAt: record.expires_at,
+      consumedAt: record.consumed_at ?? null,
+    });
+  }
+
+  public async revoke(
+    principal: AuthenticatedPrincipal,
+    organizationId: string,
+    recordId: string,
+  ): Promise<DesktopLinkStatusSnapshot> {
+    requireNonEmpty(principal.subjectId, 'subject id');
+    requireNonEmpty(organizationId, 'organization id');
+    requireNonEmpty(recordId, 'record id');
+
+    const record = await this.store.get(recordId);
+    if (
+      record === undefined ||
+      record.subject_id !== principal.subjectId ||
+      record.organization_id !== organizationId
+    ) {
+      throw new DesktopLinkDeniedError('desktop link record is unavailable');
+    }
+
+    if (record.status === 'revoked') {
+      return Object.freeze({
+        recordId: record.record_id,
+        organizationId: record.organization_id,
+        deviceId: record.device_id,
+        status: 'revoked' as const,
+        expiresAt: record.expires_at,
+        consumedAt: null,
+      });
+    }
+
+    const now = this.clock.now();
+    if (
+      record.status !== 'issued' ||
+      now.getTime() >= Date.parse(record.expires_at)
+    ) {
+      throw new DesktopLinkDeniedError('desktop link exchange cannot be revoked');
+    }
+
+    const revoked = await this.store.revokeIfIssued(
+      recordId,
+      principal.subjectId,
+      organizationId,
+      now.toISOString(),
+    );
+    if (revoked === undefined) {
+      throw new DesktopLinkDeniedError('desktop link revoke lost state race');
+    }
+
+    return Object.freeze({
+      recordId: revoked.record_id,
+      organizationId: revoked.organization_id,
+      deviceId: revoked.device_id,
+      status: 'revoked' as const,
+      expiresAt: revoked.expires_at,
+      consumedAt: null,
     });
   }
 

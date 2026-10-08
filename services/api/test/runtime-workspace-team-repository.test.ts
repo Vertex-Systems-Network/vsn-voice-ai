@@ -43,6 +43,7 @@ function teamRow(): Record<string, unknown> {
     organization_id: 'org_456',
     status: 'active',
     roles: ['member'],
+    display_name: 'Ada Lovelace',
   };
 }
 
@@ -79,6 +80,8 @@ test('configured runtime repository delegates to PostgreSQL and owns client life
   assert.equal(capturedConfig.sslMode, 'require');
   assert.equal(result.organization_id, 'org_456');
   assert.equal(result.members.length, 1);
+  assert.equal(result.members[0]?.display_name, 'Ada Lovelace');
+  assert.equal(JSON.stringify(result).includes('user_123'), false);
   assert.equal(client.calls.length, 1);
 
   await Promise.all([

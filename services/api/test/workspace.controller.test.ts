@@ -1,9 +1,12 @@
+import 'reflect-metadata';
+
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
   BadRequestException,
   ForbiddenException,
+  ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
@@ -65,10 +68,13 @@ test('trusted resolvers produce tenant-authorized workspace bootstrap', async ()
   const response = await controller.getBootstrap('org_456', opaqueRequest);
 
   assert.equal(principalResolver.lastRequest, opaqueRequest);
-  assert.equal(membershipResolver.lastPrincipal, principal);
+  assert.deepEqual(membershipResolver.lastPrincipal, principal);
+  assert.notEqual(membershipResolver.lastPrincipal, principal);
+  assert.equal(Object.isFrozen(membershipResolver.lastPrincipal), true);
   assert.equal(membershipResolver.lastOrganizationId, 'org_456');
   assert.equal(response.authorization.organization_id, 'org_456');
-  assert.equal(response.authorization.subject_id, 'user_123');
+  assert.equal(Object.hasOwn(response.authorization, 'subject_id'), false);
+  assert.equal(JSON.stringify(response).includes('user_123'), false);
   assert.deepEqual(response.meetings, { status: 'unloaded', items: [] });
   assert.deepEqual(response.devices, { status: 'unloaded', items: [] });
 });
@@ -121,4 +127,38 @@ test('blank organization id fails before either trust resolver executes', async 
   );
   assert.equal(principalResolver.lastRequest, null);
   assert.equal(membershipResolver.lastPrincipal, null);
+});
+
+
+test('workspace bootstrap route forbids intermediary/browser caching', () => {
+  const headers = Reflect.getMetadata(
+    '__headers__',
+    WorkspaceController.prototype.getBootstrap,
+  ) as readonly { readonly name: string; readonly value: string }[] | undefined;
+
+  assert.ok(headers);
+  assert.equal(
+    headers.find((header) => header.name.toLowerCase() === 'cache-control')?.value,
+    'no-store',
+  );
+  assert.equal(
+    headers.find((header) => header.name.toLowerCase() === 'pragma')?.value,
+    'no-cache',
+  );
+});
+
+test('malformed trusted principal fails closed before membership lookup', async () => {
+  const membershipResolver = new StaticMembershipResolver(membership);
+  const malformed = { subjectId: 'x'.repeat(129) } as AuthenticatedPrincipal;
+  const controller = new WorkspaceController(
+    new StaticPrincipalResolver(malformed),
+    membershipResolver,
+  );
+
+  await assert.rejects(
+    controller.getBootstrap('org_456', opaqueRequest),
+    ServiceUnavailableException,
+  );
+  assert.equal(membershipResolver.lastPrincipal, null);
+  assert.equal(membershipResolver.lastOrganizationId, null);
 });

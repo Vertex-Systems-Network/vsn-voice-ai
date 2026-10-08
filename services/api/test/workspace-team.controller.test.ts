@@ -41,7 +41,7 @@ const teamSnapshot: WorkspaceTeamSnapshot = {
     {
       schema_version: 1,
       membership_id: 'membership_123',
-      subject_id: 'user_123',
+      display_name: 'Ada Lovelace',
       status: 'active',
       roles: ['member'],
     },
@@ -108,11 +108,15 @@ test('trusted principal and membership can load the bounded team snapshot', asyn
   const result = await controller.getTeam(' org_456 ', opaqueRequest);
 
   assert.equal(principalResolver.lastRequest, opaqueRequest);
-  assert.equal(membershipResolver.lastPrincipal, principal);
+  assert.deepEqual(membershipResolver.lastPrincipal, principal);
+  assert.notEqual(membershipResolver.lastPrincipal, principal);
+  assert.equal(Object.isFrozen(membershipResolver.lastPrincipal), true);
   assert.equal(membershipResolver.lastOrganizationId, 'org_456');
   assert.equal(repository.lastOrganizationId, 'org_456');
   assert.deepEqual(result, teamSnapshot);
   assert.equal('session_id' in result, false);
+  assert.equal(JSON.stringify(result).includes('subject_id'), false);
+  assert.equal(JSON.stringify(result).includes('user_123'), false);
 });
 
 test('missing principal fails before membership and repository access', async () => {
@@ -188,4 +192,25 @@ test('persistence unavailability maps to a generic service-unavailable response'
     controller.getTeam('org_456', opaqueRequest),
     ServiceUnavailableException,
   );
+});
+
+test('malformed trusted principal fails closed before team membership access', async () => {
+  const membershipResolver = new StaticMembershipResolver(membership);
+  const repository = new StaticTeamRepository(teamSnapshot);
+  const malformed = {
+    subjectId: 'user_123',
+    sessionId: ' session_internal ',
+  } as AuthenticatedPrincipal;
+  const controller = new WorkspaceTeamController(
+    new StaticPrincipalResolver(malformed),
+    membershipResolver,
+    repository,
+  );
+
+  await assert.rejects(
+    controller.getTeam('org_456', opaqueRequest),
+    ServiceUnavailableException,
+  );
+  assert.equal(membershipResolver.lastPrincipal, null);
+  assert.equal(repository.lastOrganizationId, null);
 });

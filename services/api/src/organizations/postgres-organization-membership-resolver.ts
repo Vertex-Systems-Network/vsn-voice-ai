@@ -31,6 +31,10 @@ interface PostgresMembershipRow {
   readonly permissions: unknown;
 }
 
+interface PostgresDirectoryMembershipRow extends PostgresMembershipRow {
+  readonly display_name: unknown;
+}
+
 const membershipLookupSql = `
 SELECT
   membership_id,
@@ -47,15 +51,18 @@ LIMIT 2
 
 const membershipDirectorySql = `
 SELECT
-  membership_id,
-  subject_id,
-  organization_id,
-  status,
-  roles,
-  permissions
-FROM organization_memberships
-WHERE subject_id = $1
-ORDER BY organization_id ASC
+  m.membership_id,
+  m.subject_id,
+  m.organization_id,
+  m.status,
+  m.roles,
+  m.permissions,
+  o.display_name
+FROM organization_memberships AS m
+LEFT JOIN workspace_organizations AS o
+  ON o.organization_id = m.organization_id
+WHERE m.subject_id = $1
+ORDER BY m.organization_id ASC
 LIMIT $2
 `.trim();
 
@@ -71,6 +78,20 @@ function isBoundedIdentifier(value: unknown): value is string {
     value.length >= 1 &&
     value.length <= 128 &&
     value.trim() === value;
+}
+
+function isOrganizationDisplayName(
+  value: unknown,
+): value is string | null {
+  return (
+    value === null ||
+    (
+      typeof value === 'string' &&
+      value.length <= 100 &&
+      value.trim() === value &&
+      !/[\u0000-\u001F\u007F]/u.test(value)
+    )
+  );
 }
 
 function isMembershipStatus(value: unknown): value is MembershipStatus {
@@ -182,7 +203,7 @@ export class PostgresOrganizationMembershipResolver
       );
     }
 
-    const result = await this.client.query<PostgresMembershipRow>(
+    const result = await this.client.query<PostgresDirectoryMembershipRow>(
       membershipDirectorySql,
       [subjectId, MAX_ORGANIZATION_MEMBERSHIPS_PER_DIRECTORY + 1],
     );
@@ -196,11 +217,18 @@ export class PostgresOrganizationMembershipResolver
     const seenOrganizationIds = new Set<string>();
     const memberships = boundedRows.map((row) => {
       const membership = toMembership(row, subjectId);
-      if (membership === null) {
+      if (
+        membership === null ||
+        !isOrganizationDisplayName(row.display_name)
+      ) {
         throw new OrganizationMembershipDirectoryDataIntegrityError(
           'membership directory persistence returned an invalid row',
         );
       }
+      const organizationDisplayName =
+        row.display_name === null || row.display_name === ''
+          ? null
+          : row.display_name;
       if (
         seenMembershipIds.has(membership.membershipId) ||
         seenOrganizationIds.has(membership.organizationId)
@@ -211,7 +239,10 @@ export class PostgresOrganizationMembershipResolver
       }
       seenMembershipIds.add(membership.membershipId);
       seenOrganizationIds.add(membership.organizationId);
-      return membership;
+      return Object.freeze({
+        ...membership,
+        organizationDisplayName,
+      });
     });
 
     return Object.freeze({

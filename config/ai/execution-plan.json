@@ -216,7 +216,7 @@
       "priority": 98,
       "status": "in_progress",
       "blockers": [
-        "Issue #110: controlled physical Windows runner/machine authorization and acceptance evidence are required for installed endpoint, approved calling-app routing, lifecycle recovery matrix, and controlled latency/jitter verification before WU-002 can complete."
+        "Issue #110: WU-002 completion evidence requires restricted controlled physical Windows runner, installed virtual microphone and observed calling-app/performance acceptance. This blocks WU-002 completion only; WU-014/WU-016 and safe code-only WU-002 sub-slices may proceed independently."
       ],
       "acceptance_criteria": [
         "Approved desktop calling apps consume processed audio with safe bypass"

@@ -24,7 +24,7 @@ class WorkspaceTeamContractTests(unittest.TestCase):
                 {
                     "schema_version": 1,
                     "membership_id": "membership_123",
-                    "subject_id": "user_123",
+                    "display_name": "Ada Lovelace",
                     "status": "active",
                     "roles": ["member"],
                 }
@@ -37,6 +37,7 @@ class WorkspaceTeamContractTests(unittest.TestCase):
 
     def test_session_permissions_and_secret_fields_are_rejected(self) -> None:
         for forbidden_field, value in [
+            ("subject_id", "user_internal"),
             ("session_id", "session_internal"),
             ("permissions", ["team.read"]),
             ("email", "person@example.com"),
@@ -54,7 +55,7 @@ class WorkspaceTeamContractTests(unittest.TestCase):
             {
                 **member,
                 "membership_id": f"membership_{index}",
-                "subject_id": f"user_{index}",
+                "display_name": None if index % 2 == 0 else f"Member {index}",
             }
             for index in range(201)
         ]

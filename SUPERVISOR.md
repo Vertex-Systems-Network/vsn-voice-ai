@@ -177,17 +177,19 @@ On every start, continue, resume, interrupted session, connector/tool failure, o
 
 After every merge or material state transition, re-read claim/queue state and the Runner Benchmark before choosing new work. A merged/closed item must not remain represented as pending.
 
-### One user turn = one logical milestone
+### Bounded atomic milestones and continuous execution
 
-By default, one user `continue`/`resume` turn executes one bounded logical engineering milestone: one coherent implementation slice, one exact-head verification/merge decision, one accepted PR reconciliation, or one durable-state reconciliation. Do not chain unrelated audit, implementation, CI polling, merge, post-merge audit, and another feature into one turn.
+Each engineering milestone remains a bounded, independently reviewable and testable transaction, but an explicit `continue`, `audit and fix`, or `develop` instruction authorizes **multiple successive independently eligible milestones in the same active invocation**. The user does not need to choose the next code task, confirm routine fixes, or type a new `continue` after each verified unit.
 
-Security or incident recovery may include tightly coupled actions only when splitting them would reduce safety.
+After each transaction, reconcile live Issues, PRs, exact-head CI, dependencies, claims, resource budgets and README progress; commit verified implementation/evidence together, then select the next authorized dependency-ready unit. Repair ordinary test/build/CI failures with bounded retries. If a genuine independent-review, hardware, provider, consent or worker-identity gate blocks one lane, mark only its dependent work waiting and move to another independent safe lane. Do not duplicate an actionable open PR.
+
+Continue until no independently authorized safe work remains, the approved scope is finished, or the current host/tool/token budget ends. If the host stops, preserve a truthful exact-next-action checkpoint; repository instructions do not create a persistent runtime or permission to bypass human review. No bypass of security checks, real Windows hardware acceptance, authenticated consent, provider costs, production approval, secrets, identity/lease/fencing or branch governance is authorized.
 
 ### Remote-call and timeout budget
 
 Batch related read-only calls where supported and read only state required for the active milestone. Perform at most one consolidated CI/status refresh per milestone by default. Never tight-poll workflows, deployments, providers, runners, or status endpoints, and never rerun work merely because a ChatGPT/UI/message response timed out.
 
-Before final exact-head CI observation, persist the milestone as `VERIFYING` or `WAITING_EXTERNAL` when remote checks are expected. If required CI is still running after the consolidated refresh, do not create another source commit only to record pending CI. Persist run IDs on a PR/Issue status surface where possible, report the pending state, and end the milestone. The next `continue` performs one fresh consolidated refresh against the current exact head.
+Before final exact-head CI observation, persist the milestone as `VERIFYING` or `WAITING_EXTERNAL` when remote checks are expected. If required CI is still running after the consolidated refresh, do not create another source commit only to record pending CI. Persist run IDs on a PR/Issue surface, leave the affected lane waiting, and continue a different independently safe milestone when eligible. Do not tight-poll running checks. Re-evaluate this lane at its next material transition or subsequent invocation before merge.
 
 When exact-head CI reaches a terminal success or failure, do not create a source-only state commit merely to restate that terminal result: doing so changes the exact head and self-invalidates the evidence. Persist the terminal result on an immutable GitHub PR/Issue comment, workflow run, or commit-status surface and treat that evidence as a **remote terminal-evidence overlay** during resume. Compact source files may therefore remain a pre-terminal-check snapshot until the next material source mutation. Every resume must reconcile that overlay before choosing work, and the next material source change must fold the overlay into compact state and the Runner Benchmark before requesting new exact-head verification. Failed or negative terminal evidence remains fail-closed and blocks merge.
 

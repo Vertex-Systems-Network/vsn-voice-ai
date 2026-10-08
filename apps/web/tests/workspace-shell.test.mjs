@@ -9,15 +9,29 @@ const workspaceFlowSource = await readFile(
   new URL('../components/workspace-team-workspace.tsx', import.meta.url),
   'utf8',
 );
+const teamPanelSource = await readFile(
+  new URL('../components/workspace-team-panel.tsx', import.meta.url),
+  'utf8',
+);
+const organizationProfilePanelSource = await readFile(
+  new URL('../components/workspace-organization-profile-panel.tsx', import.meta.url),
+  'utf8',
+);
 const packageJson = JSON.parse(
   await readFile(new URL('../package.json', import.meta.url), 'utf8'),
 );
 
 test('workspace shell keeps unverified account and tenant state explicit', () => {
-  assert.match(pageSource, /Authentication not connected/);
+  assert.match(pageSource, /workspaceSessionView/);
+  assert.match(pageSource, /onSessionStateChange=\{setSessionState\}/);
+  assert.doesNotMatch(pageSource, /Authentication not connected/);
   assert.match(pageSource, /No meetings yet/);
-  assert.match(pageSource, /No linked desktop shown/);
-  assert.match(pageSource, /Settings are not connected yet/);
+  assert.match(workspaceFlowSource, /WorkspaceOverviewPanel/);
+  assert.match(workspaceFlowSource, /WorkspaceDesktopLinkPanel/);
+  assert.doesNotMatch(pageSource, /Settings are not connected yet/);
+  assert.match(workspaceFlowSource, /WorkspaceNotificationPreferencesPanel/);
+  assert.match(workspaceFlowSource, /WorkspaceOrganizationProfilePanel/);
+  assert.match(workspaceFlowSource, /WorkspaceProfilePanel/);
   assert.match(pageSource, /WorkspaceTeamWorkspace/);
   assert.match(workspaceFlowSource, /Select a workspace first/);
   assert.match(workspaceFlowSource, /Team data stays unloaded until you explicitly choose/);
@@ -27,8 +41,56 @@ test('workspace shell keeps unverified account and tenant state explicit', () =>
 test('root team flow requires explicit authenticated organization selection', () => {
   assert.match(workspaceFlowSource, /useState<string \| null>\(null\)/);
   assert.match(workspaceFlowSource, /onSelectWorkspace=\{setOrganizationId\}/);
+  assert.match(workspaceFlowSource, /onInvalidateWorkspaceSelection=\{handleWorkspaceSelectionInvalidated\}/);
+  assert.match(workspaceFlowSource, /handleSessionStateChange/);
+  assert.match(
+    workspaceFlowSource,
+    /state === 'signed_out' \|\| state === 'unavailable'/,
+  );
+  assert.doesNotMatch(workspaceFlowSource, /state !== 'authenticated'/);
   assert.match(workspaceFlowSource, /organizationId === null/);
+  assert.match(workspaceFlowSource, /<WorkspaceDesktopLinkPanel organizationId=\{organizationId\}/);
   assert.match(workspaceFlowSource, /<WorkspaceTeamPanel organizationId=\{organizationId\}/);
+  assert.match(
+    workspaceFlowSource,
+    /<WorkspaceNotificationPreferencesPanel organizationId=\{organizationId\}/,
+  );
+  assert.match(
+    workspaceFlowSource,
+    /<WorkspaceOrganizationProfilePanel organizationId=\{organizationId\}/,
+  );
+  assert.match(
+    workspaceFlowSource,
+    /<WorkspaceProfilePanel organizationId=\{organizationId\}/,
+  );
+});
+
+test('team status controls stay bootstrap-gated and server-authorized', () => {
+  assert.match(teamPanelSource, /requestWorkspaceBootstrap/);
+  assert.match(teamPanelSource, /permissions\.includes\('team\.manage'\)/);
+  assert.match(teamPanelSource, /updateWorkspaceTeamMemberStatus/);
+  assert.match(teamPanelSource, /target !== undefined && target\.manageable/);
+  assert.match(teamPanelSource, /activeOrganizationId\.current !== requestOrganizationId/);
+  assert.doesNotMatch(teamPanelSource, /localStorage|sessionStorage/);
+});
+
+test('organization settings stay selection-bound and team.manage-gated', () => {
+  assert.match(organizationProfilePanelSource, /organizationId === null/);
+  assert.match(organizationProfilePanelSource, /requestWorkspaceOrganizationProfile/);
+  assert.match(organizationProfilePanelSource, /requestWorkspaceBootstrap/);
+  assert.match(
+    organizationProfilePanelSource,
+    /permissions\.includes\('team\.manage'\)/,
+  );
+  assert.match(organizationProfilePanelSource, /updateWorkspaceOrganizationProfile/);
+  assert.match(
+    organizationProfilePanelSource,
+    /activeOrganizationId\.current !== requestOrganizationId/,
+  );
+  assert.doesNotMatch(
+    organizationProfilePanelSource,
+    /localStorage|sessionStorage/,
+  );
 });
 
 test('workspace shell exposes baseline keyboard and semantic accessibility affordances', () => {

@@ -4,6 +4,39 @@ import type { PostgresRuntimeConfig } from '../config/postgres-runtime-config.js
 import { loadOptionalPostgresRuntimeConfig } from '../config/postgres-runtime-config.js';
 import type { AuthenticatedPrincipal } from '../identity/authenticated-principal.js';
 import { PostgresWorkspaceTeamRepository } from '../workspace/postgres-workspace-team-repository.js';
+import { PostgresWorkspaceTeamMemberStatusRepository } from '../workspace/postgres-workspace-team-member-status-repository.js';
+import { PostgresWorkspaceProfileRepository } from '../workspace/postgres-workspace-profile-repository.js';
+import { PostgresWorkspaceOrganizationProfileRepository } from '../workspace/postgres-workspace-organization-profile-repository.js';
+import { PostgresWorkspaceNotificationPreferencesRepository } from '../workspace/postgres-workspace-notification-preferences-repository.js';
+import {
+  RejectingWorkspaceNotificationPreferencesRepository,
+  type WorkspaceNotificationPreferenceValues,
+  WorkspaceNotificationPreferencesDataIntegrityError,
+  WorkspaceNotificationPreferencesPersistenceUnavailableError,
+  type WorkspaceNotificationPreferencesRepository,
+} from '../workspace/workspace-notification-preferences-repository.js';
+import {
+  RejectingWorkspaceOrganizationProfileRepository,
+  type WorkspaceOrganizationProfileRepository,
+  type WorkspaceOrganizationProfileValues,
+  WorkspaceOrganizationProfileDataIntegrityError,
+  WorkspaceOrganizationProfilePersistenceUnavailableError,
+} from '../workspace/workspace-organization-profile-repository.js';
+import {
+  RejectingWorkspaceProfileRepository,
+  type WorkspaceProfileRepository,
+  type WorkspaceProfileValues,
+  WorkspaceProfileDataIntegrityError,
+  WorkspaceProfilePersistenceUnavailableError,
+} from '../workspace/workspace-profile-repository.js';
+import {
+  type ManagedWorkspaceTeamMemberStatus,
+  RejectingWorkspaceTeamMemberStatusRepository,
+  type WorkspaceTeamMemberStatusRepository,
+  type WorkspaceTeamMemberStatusResponse,
+  WorkspaceTeamMemberStatusDataIntegrityError,
+  WorkspaceTeamMemberStatusPersistenceUnavailableError,
+} from '../workspace/workspace-team-member-status-repository.js';
 import {
   RejectingWorkspaceTeamRepository,
   type WorkspaceTeamRepository,
@@ -42,6 +75,10 @@ export class RuntimeOrganizationMembershipResolver
     OrganizationMembershipResolver,
     OrganizationMembershipDirectory,
     WorkspaceTeamRepository,
+    WorkspaceNotificationPreferencesRepository,
+    WorkspaceProfileRepository,
+    WorkspaceOrganizationProfileRepository,
+    WorkspaceTeamMemberStatusRepository,
     OnApplicationShutdown
 {
   private closePromise: Promise<void> | null = null;
@@ -50,6 +87,10 @@ export class RuntimeOrganizationMembershipResolver
     private readonly resolverDelegate: OrganizationMembershipResolver,
     private readonly directoryDelegate: OrganizationMembershipDirectory,
     private readonly teamDelegate: WorkspaceTeamRepository,
+    private readonly notificationPreferencesDelegate: WorkspaceNotificationPreferencesRepository,
+    private readonly profileDelegate: WorkspaceProfileRepository,
+    private readonly organizationProfileDelegate: WorkspaceOrganizationProfileRepository,
+    private readonly teamMemberStatusDelegate: WorkspaceTeamMemberStatusRepository,
     private readonly closeClient: (() => Promise<void>) | null,
   ) {}
 
@@ -70,6 +111,159 @@ export class RuntimeOrganizationMembershipResolver
     organizationId: string,
   ): Promise<WorkspaceTeamSnapshot> {
     return this.teamDelegate.listByOrganization(organizationId);
+  }
+
+  public async get(
+    subjectId: string,
+    organizationId: string,
+  ): Promise<WorkspaceNotificationPreferenceValues | null> {
+    try {
+      return await this.notificationPreferencesDelegate.get(
+        subjectId,
+        organizationId,
+      );
+    } catch (error: unknown) {
+      if (error instanceof WorkspaceNotificationPreferencesDataIntegrityError) {
+        throw error;
+      }
+      if (
+        error instanceof WorkspaceNotificationPreferencesPersistenceUnavailableError
+      ) {
+        throw error;
+      }
+      throw new WorkspaceNotificationPreferencesPersistenceUnavailableError();
+    }
+  }
+
+  public async put(
+    subjectId: string,
+    organizationId: string,
+    preferences: WorkspaceNotificationPreferenceValues,
+  ): Promise<WorkspaceNotificationPreferenceValues> {
+    try {
+      return await this.notificationPreferencesDelegate.put(
+        subjectId,
+        organizationId,
+        preferences,
+      );
+    } catch (error: unknown) {
+      if (error instanceof WorkspaceNotificationPreferencesDataIntegrityError) {
+        throw error;
+      }
+      if (
+        error instanceof WorkspaceNotificationPreferencesPersistenceUnavailableError
+      ) {
+        throw error;
+      }
+      throw new WorkspaceNotificationPreferencesPersistenceUnavailableError();
+    }
+  }
+
+  public async getProfile(
+    subjectId: string,
+    organizationId: string,
+  ): Promise<WorkspaceProfileValues | null> {
+    try {
+      return await this.profileDelegate.getProfile(subjectId, organizationId);
+    } catch (error: unknown) {
+      if (error instanceof WorkspaceProfileDataIntegrityError) {
+        throw error;
+      }
+      if (error instanceof WorkspaceProfilePersistenceUnavailableError) {
+        throw error;
+      }
+      throw new WorkspaceProfilePersistenceUnavailableError();
+    }
+  }
+
+  public async putProfile(
+    subjectId: string,
+    organizationId: string,
+    profile: WorkspaceProfileValues,
+  ): Promise<WorkspaceProfileValues> {
+    try {
+      return await this.profileDelegate.putProfile(
+        subjectId,
+        organizationId,
+        profile,
+      );
+    } catch (error: unknown) {
+      if (error instanceof WorkspaceProfileDataIntegrityError) {
+        throw error;
+      }
+      if (error instanceof WorkspaceProfilePersistenceUnavailableError) {
+        throw error;
+      }
+      throw new WorkspaceProfilePersistenceUnavailableError();
+    }
+  }
+
+  public async getOrganizationProfile(
+    organizationId: string,
+  ): Promise<WorkspaceOrganizationProfileValues | null> {
+    try {
+      return await this.organizationProfileDelegate.getOrganizationProfile(
+        organizationId,
+      );
+    } catch (error: unknown) {
+      if (error instanceof WorkspaceOrganizationProfileDataIntegrityError) {
+        throw error;
+      }
+      if (
+        error instanceof WorkspaceOrganizationProfilePersistenceUnavailableError
+      ) {
+        throw error;
+      }
+      throw new WorkspaceOrganizationProfilePersistenceUnavailableError();
+    }
+  }
+
+  public async putOrganizationProfile(
+    organizationId: string,
+    profile: WorkspaceOrganizationProfileValues,
+  ): Promise<WorkspaceOrganizationProfileValues> {
+    try {
+      return await this.organizationProfileDelegate.putOrganizationProfile(
+        organizationId,
+        profile,
+      );
+    } catch (error: unknown) {
+      if (error instanceof WorkspaceOrganizationProfileDataIntegrityError) {
+        throw error;
+      }
+      if (
+        error instanceof WorkspaceOrganizationProfilePersistenceUnavailableError
+      ) {
+        throw error;
+      }
+      throw new WorkspaceOrganizationProfilePersistenceUnavailableError();
+    }
+  }
+
+  public async changeOrdinaryMemberStatus(
+    actorSubjectId: string,
+    organizationId: string,
+    membershipId: string,
+    status: ManagedWorkspaceTeamMemberStatus,
+  ): Promise<WorkspaceTeamMemberStatusResponse | null> {
+    try {
+      return await this.teamMemberStatusDelegate.changeOrdinaryMemberStatus(
+        actorSubjectId,
+        organizationId,
+        membershipId,
+        status,
+      );
+    } catch (error: unknown) {
+      if (error instanceof WorkspaceTeamMemberStatusDataIntegrityError) {
+        throw error;
+      }
+      if (
+        error instanceof WorkspaceTeamMemberStatusPersistenceUnavailableError
+      ) {
+        throw error;
+      }
+      throw new WorkspaceTeamMemberStatusPersistenceUnavailableError();
+    }
   }
 
   public onApplicationShutdown(): Promise<void> {
@@ -93,6 +287,10 @@ export function createRuntimeOrganizationMembershipResolver(
       new RejectingOrganizationMembershipResolver(),
       new RejectingOrganizationMembershipDirectory(),
       new RejectingWorkspaceTeamRepository(),
+      new RejectingWorkspaceNotificationPreferencesRepository(),
+      new RejectingWorkspaceProfileRepository(),
+      new RejectingWorkspaceOrganizationProfileRepository(),
+      new RejectingWorkspaceTeamMemberStatusRepository(),
       null,
     );
   }
@@ -103,6 +301,10 @@ export function createRuntimeOrganizationMembershipResolver(
     postgresMemberships,
     postgresMemberships,
     new PostgresWorkspaceTeamRepository(client),
+    new PostgresWorkspaceNotificationPreferencesRepository(client),
+    new PostgresWorkspaceProfileRepository(client),
+    new PostgresWorkspaceOrganizationProfileRepository(client),
+    new PostgresWorkspaceTeamMemberStatusRepository(client),
     () => client.close(),
   );
 }

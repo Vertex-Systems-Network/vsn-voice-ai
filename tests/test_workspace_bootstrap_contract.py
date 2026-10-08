@@ -41,7 +41,6 @@ class WorkspaceBootstrapContractTests(unittest.TestCase):
             "schema_version": 1,
             "authorization": {
                 "schema_version": 1,
-                "subject_id": "user_123",
                 "organization_id": "org_456",
                 "membership_id": "membership_789",
                 "roles": ["member"],
@@ -71,11 +70,15 @@ class WorkspaceBootstrapContractTests(unittest.TestCase):
         with self.assertRaises(ValidationError):
             self.validator.validate(payload)
 
-    def test_workspace_authorization_summary_rejects_session_ids(self) -> None:
-        payload = self.valid_payload()
-        payload["authorization"]["session_id"] = "must-stay-behind-trusted-boundary"
-        with self.assertRaises(ValidationError):
-            self.validator.validate(payload)
+    def test_workspace_authorization_summary_rejects_trusted_identity_fields(self) -> None:
+        for field, value in [
+            ("subject_id", "user_internal"),
+            ("session_id", "must-stay-behind-trusted-boundary"),
+        ]:
+            payload = self.valid_payload()
+            payload["authorization"][field] = value
+            with self.assertRaises(ValidationError):
+                self.validator.validate(payload)
 
     def test_internal_authorization_context_keeps_session_correlation_but_rejects_secrets(
         self,

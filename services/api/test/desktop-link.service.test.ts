@@ -167,3 +167,169 @@ test('issuing requires device.link permission and bounded ttl', async () => {
   await expectDenied(() => service.issue(authorization, 'device_abc', 29_999));
   await expectDenied(() => service.issue(authorization, 'device_abc', 600_001));
 });
+
+test('status inspection is tenant and subject bound and derives expiry safely', async () => {
+  const { clock, service } = setup();
+  const issued = await service.issue(authorization, 'device_abc', 30_000);
+
+  const active = await service.inspect(principal, 'org_456', issued.recordId);
+  assert.deepEqual(active, {
+    recordId: issued.recordId,
+    organizationId: 'org_456',
+    deviceId: 'device_abc',
+    status: 'issued',
+    expiresAt: issued.expiresAt,
+    consumedAt: null,
+  });
+
+  await expectDenied(() =>
+    service.inspect({ subjectId: 'user_other' }, 'org_456', issued.recordId),
+  );
+  await expectDenied(() =>
+    service.inspect(principal, 'org_other', issued.recordId),
+  );
+  await expectDenied(() =>
+    service.inspect(principal, 'org_456', 'missing-record'),
+  );
+
+  clock.advance(30_000);
+  const expired = await service.inspect(principal, 'org_456', issued.recordId);
+  assert.equal(expired.status, 'expired');
+  assert.equal(expired.consumedAt, null);
+});
+
+test('status inspection reports consumed exchange without exposing token or subject', async () => {
+  const { service } = setup();
+  const issued = await service.issue(authorization, 'device_abc');
+
+  const binding = await service.consume(
+    principal,
+    'org_456',
+    'device_abc',
+    issued.recordId,
+    issued.exchangeToken,
+  );
+  const status = await service.inspect(principal, 'org_456', issued.recordId);
+
+  assert.equal(status.status, 'consumed');
+  assert.equal(status.consumedAt, binding.consumedAt);
+  assert.equal(JSON.stringify(status).includes(issued.exchangeToken), false);
+  assert.equal(JSON.stringify(status).includes('user_123'), false);
+});
+
+test('pending exchange can be revoked once and then cannot be consumed', async () => {
+  const { store, service } = setup();
+  const issued = await service.issue(authorization, 'device_abc');
+
+  const revoked = await service.revoke(principal, 'org_456', issued.recordId);
+  assert.equal(revoked.status, 'revoked');
+  assert.equal(revoked.organizationId, 'org_456');
+  assert.equal(revoked.deviceId, 'device_abc');
+  assert.equal(revoked.consumedAt, null);
+  assert.equal((await store.get(issued.recordId))?.status, 'revoked');
+
+  const repeated = await service.revoke(principal, 'org_456', issued.recordId);
+  assert.equal(repeated.status, 'revoked');
+
+  await expectDenied(() =>
+    service.consume(
+      principal,
+      'org_456',
+      'device_abc',
+      issued.recordId,
+      issued.exchangeToken,
+    ),
+  );
+});
+
+test('revoke is subject and tenant bound and rejects terminal non-revoked states', async () => {
+  const { clock, service } = setup();
+  const wrongSubject = await service.issue(authorization, 'device_subject');
+  await expectDenied(() =>
+    service.revoke({ subjectId: 'user_other' }, 'org_456', wrongSubject.recordId),
+  );
+
+  const wrongTenant = await service.issue(authorization, 'device_tenant');
+  await expectDenied(() =>
+    service.revoke(principal, 'org_other', wrongTenant.recordId),
+  );
+
+  const consumed = await service.issue(authorization, 'device_consumed');
+  await service.consume(
+    principal,
+    'org_456',
+    'device_consumed',
+    consumed.recordId,
+    consumed.exchangeToken,
+  );
+  await expectDenied(() =>
+    service.revoke(principal, 'org_456', consumed.recordId),
+  );
+
+  const expired = await service.issue(authorization, 'device_expired', 30_000);
+  clock.advance(30_000);
+  await expectDenied(() =>
+    service.revoke(principal, 'org_456', expired.recordId),
+  );
+});
+
+test('linked desktop inventory keeps latest consumed record per device and hides secrets', async () => {
+  const { clock, service } = setup();
+
+  const first = await service.issue(authorization, 'desktop_001');
+  await service.consume(
+    principal,
+    'org_456',
+    'desktop_001',
+    first.recordId,
+    first.exchangeToken,
+  );
+
+  clock.advance(1_000);
+  const second = await service.issue(authorization, 'desktop_001');
+  await service.consume(
+    principal,
+    'org_456',
+    'desktop_001',
+    second.recordId,
+    second.exchangeToken,
+  );
+
+  clock.advance(1_000);
+  const third = await service.issue(authorization, 'desktop_002');
+  await service.consume(
+    principal,
+    'org_456',
+    'desktop_002',
+    third.recordId,
+    third.exchangeToken,
+  );
+
+  const inventory = await service.listLinked(principal, 'org_456');
+
+  assert.equal(inventory.hasMore, false);
+  assert.deepEqual(
+    inventory.devices.map((device) => device.deviceId),
+    ['desktop_002', 'desktop_001'],
+  );
+  assert.equal(inventory.devices[1]?.recordId, second.recordId);
+  assert.equal(JSON.stringify(inventory).includes(first.exchangeToken), false);
+  assert.equal(JSON.stringify(inventory).includes(second.exchangeToken), false);
+  assert.equal(JSON.stringify(inventory).includes('user_123'), false);
+  assert.equal(JSON.stringify(inventory).includes('browser_session_never_exported'), false);
+});
+
+test('linked desktop inventory is subject and tenant scoped', async () => {
+  const { service } = setup();
+  const issued = await service.issue(authorization, 'desktop_001');
+  await service.consume(
+    principal,
+    'org_456',
+    'desktop_001',
+    issued.recordId,
+    issued.exchangeToken,
+  );
+
+  assert.equal((await service.listLinked({ subjectId: 'user_other' }, 'org_456')).devices.length, 0);
+  assert.equal((await service.listLinked(principal, 'org_other')).devices.length, 0);
+});

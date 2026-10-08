@@ -10,6 +10,7 @@ function workspace(index = 1, overrides = {}) {
     schema_version: 1,
     membership_id: `membership_${index}`,
     organization_id: `org_${index}`,
+    display_name: index % 2 === 0 ? null : `Organization ${index}`,
     status: 'active',
     roles: ['member'],
     ...overrides,
@@ -72,7 +73,6 @@ test('browser boundary rejects internal identity, session, permission and profil
     ['subject_id', 'subject_internal'],
     ['session_id', 'session_internal'],
     ['permissions', ['team.read']],
-    ['display_name', 'Workspace name'],
   ];
 
   for (const [field, value] of forbiddenFields) {
@@ -112,6 +112,9 @@ test('malformed statuses, identifiers and roles fail closed', async () => {
   const cases = [
     workspace(1, { status: 'deleted' }),
     workspace(1, { organization_id: '   ' }),
+    workspace(1, { display_name: ' bad' }),
+    workspace(1, { display_name: 'bad\nname' }),
+    workspace(1, { display_name: 'x'.repeat(101) }),
     workspace(1, { roles: [] }),
     workspace(1, { roles: ['member', 'member'] }),
     workspace(1, { roles: ['Member'] }),

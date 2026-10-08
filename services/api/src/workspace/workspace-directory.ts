@@ -8,6 +8,7 @@ export interface WorkspaceDirectoryEntry {
   readonly schema_version: 1;
   readonly membership_id: string;
   readonly organization_id: string;
+  readonly display_name: string | null;
   readonly status: MembershipStatus;
   readonly roles: readonly string[];
 }
@@ -35,6 +36,7 @@ export function buildWorkspaceDirectoryResponse(
       schema_version: 1 as const,
       membership_id: membership.membershipId,
       organization_id: membership.organizationId,
+      display_name: membership.organizationDisplayName,
       status: membership.status,
       roles: Object.freeze([...membership.roles]),
     }),

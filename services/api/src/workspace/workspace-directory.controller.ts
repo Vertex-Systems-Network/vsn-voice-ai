@@ -10,6 +10,7 @@ import {
 import type { FastifyRequest } from 'fastify';
 
 import {
+  resolveTrustedPrincipal,
   TRUSTED_PRINCIPAL_RESOLVER,
   type TrustedPrincipalResolver,
 } from '../identity/trusted-principal-resolver.js';
@@ -39,10 +40,14 @@ export class WorkspaceDirectoryController {
   public async listWorkspaces(
     @Req() request: FastifyRequest,
   ): Promise<WorkspaceDirectoryResponse> {
-    const principal = await this.principalResolver.resolve(request);
-    if (principal === null) {
+    const identity = await resolveTrustedPrincipal(this.principalResolver, request);
+    if (identity.status === 'unauthenticated') {
       throw new UnauthorizedException('authenticated principal is required');
     }
+    if (identity.status === 'unavailable') {
+      throw new ServiceUnavailableException('authentication unavailable');
+    }
+    const { principal } = identity;
 
     try {
       const snapshot = await this.membershipDirectory.listForPrincipal(principal);

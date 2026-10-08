@@ -3,14 +3,17 @@ import {
   Controller,
   ForbiddenException,
   Get,
+  Header,
   Inject,
   Param,
   Req,
+  ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 
 import {
+  resolveTrustedPrincipal,
   TRUSTED_PRINCIPAL_RESOLVER,
   type TrustedPrincipalResolver,
 } from '../identity/trusted-principal-resolver.js';
@@ -34,6 +37,8 @@ export class WorkspaceController {
   ) {}
 
   @Get(':organizationId/bootstrap')
+  @Header('Cache-Control', 'no-store')
+  @Header('Pragma', 'no-cache')
   public async getBootstrap(
     @Param('organizationId') organizationId: string,
     @Req() request: FastifyRequest,
@@ -42,10 +47,14 @@ export class WorkspaceController {
       throw new BadRequestException('organization id is required');
     }
 
-    const principal = await this.principalResolver.resolve(request);
-    if (principal === null) {
+    const identity = await resolveTrustedPrincipal(this.principalResolver, request);
+    if (identity.status === 'unauthenticated') {
       throw new UnauthorizedException('authenticated principal is required');
     }
+    if (identity.status === 'unavailable') {
+      throw new ServiceUnavailableException('authentication unavailable');
+    }
+    const { principal } = identity;
 
     const membership = await this.membershipResolver.resolve(
       principal,

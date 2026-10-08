@@ -20,8 +20,11 @@
     "config/ai/runtime/EXECUTION-JOURNAL.md": 32768
   },
   "milestone_policy": {
-    "one_user_continue_or_resume_turn_one_logical_milestone": true,
-    "no_unrelated_milestone_chaining": true,
+    "one_user_continue_or_resume_turn_one_logical_milestone": false,
+    "atomic_milestone_transactions": true,
+    "continue_eligible_milestones_in_same_invocation": true,
+    "stop_only_at_real_authority_or_runtime_boundary": true,
+    "no_unrelated_milestone_chaining": false,
     "security_incident_tightly_coupled_exception_only_when_safer": true
   },
   "remote_call_budget": {
