@@ -5,10 +5,10 @@ observed_main_sha: 621244eaffc745629a7acf5cbd902c7b64f86df4
 active_issue: 179
 active_pr: 131
 active_branch: ai/supervisor-resume-protocol
-current_milestone: continuation-lease-refresh-and-retry-boundaries
+current_milestone: durable-milestone-receipt-replay-guard
 milestone_status: VERIFYING
 last_completed_milestone: "AI-Native next-valid work reconciliation passed exact-head AI Native Quality Gates run 35641796156 on c250180b8c37b586faabf93b0b002a1796113489. WU-014 product PRs #134, #135 and #136 have current exact-head technical gates green and remain unmerged/review-pending."
-exact_next_safe_action: "Inspect exact-head CI on PR #131 for refreshed lease/fencing/source validation and bounded-repair regressions; fix test failures, then obtain eligible independent protected review. Continue WU-014/WU-016 while Issue #179 needs a genuinely deployed host."
+exact_next_safe_action: "Validate PR #131 exact-head regression/quality gates for durable milestone receipt replay safety. Seek a genuinely independent protected reviewer for main merge. Until an authenticated persistent host is deployed and verified, continue independent WU-014/WU-016 authorized work and do not claim live background execution."
 next_product_work_unit: WU-014
 pending_runner_ids:
   - RUN-PR-131-README-PROGRESS-SYNC-CI

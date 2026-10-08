@@ -55,7 +55,9 @@ The owner-approved product direction is:
 
 ## Safe AI-Native Continuation Engine
 
-The code candidate on PR #131 adds a host-neutral, bounded continuation loop in `scripts/continuity_supervisor.py`, with tests in `tests/test_continuity_supervisor.py` and `tests/test_continuity_policy.py`. These tests exercise multi-milestone continuation, bounded automatic repair of explicitly retryable errors with authority/source revalidation **before repair**, per-lane blocker isolation, checkpoint resume, and fail-closed validation of identity, expiry, fencing epoch, exact source revision, evidence and CAS checkpoint errors. This is **not a deployed persistent AI host**, cannot self-approve protected changes, and does not count as a completed product work unit. Real worker identity, lease, host execution, independent review and hosted acceptance remain outstanding in Issues #179/#132/#133.
+The code candidate on PR #131 adds a host-neutral, bounded continuation loop in `scripts/continuity_supervisor.py`, with tests in `tests/test_continuity_supervisor.py` and `tests/test_continuity_policy.py`. These tests exercise multi-milestone continuation, bounded automatic repair of explicitly retryable errors with authority/source revalidation **before repair**, per-lane blocker isolation, checkpoint resume, and fail-closed validation of identity, expiry, fencing epoch, exact source revision, evidence and CAS checkpoint errors.
+
+**Replay-safety refinement:** the host snapshot must contain a durable `milestone_receipts` ledger separate from parent work-unit completion. An exact milestone is skipped on restart only when its receipt was checkpointed; a changed revision without the exact matching source SHA and evidence reference is rejected. Stable milestone IDs must identify atomic slices, not be reused for distinct slices of an in-progress work unit. This is **not a deployed persistent AI host**, cannot self-approve protected changes, and does not count as a completed product work unit. Real worker identity, lease, host execution, independent review and hosted acceptance remain outstanding in Issues #179/#132/#133.
 
 ## AI-Native Progress Snapshot
 

@@ -23,6 +23,7 @@ class FakeHost:
     def __init__(self):
         self.rev = 1
         self.finished = set()
+        self.milestone_receipts = {}
         self.calls = []
         self.repairs = []
         self.verified = True
@@ -33,6 +34,8 @@ class FakeHost:
         self.expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
         self.scopes = ["ordinary_development"]
         self.checkpoint_ok = True
+        self.persist_receipt = True
+        self.corrupt_persisted_receipt = False
         self.receipt_verified = True
         self.receipt_sha = MAIN
         self.transient = {}
@@ -61,7 +64,8 @@ class FakeHost:
 
     def snapshot(self):
         return {"revision": str(self.rev), "main_sha": MAIN,
-                "items": self.items, "completed": list(self.finished)}
+                "items": self.items, "completed": list(self.finished),
+                "milestone_receipts": dict(self.milestone_receipts)}
 
     def execute(self, item, revision, fence):
         self.calls.append(item["id"])
@@ -84,7 +88,15 @@ class FakeHost:
         if not self.checkpoint_ok or revision != str(self.rev) or fence != "test-fence":
             return False
         self.rev += 1
-        self.finished.add(receipt["item_id"])
+        # Receipt state is NOT work-unit completion state.
+        if self.persist_receipt:
+            evidence = receipt["evidence_ref"]
+            if self.corrupt_persisted_receipt:
+                evidence = "fixture:wrong-evidence"
+            self.milestone_receipts[receipt["item_id"]] = {
+                "source_sha": receipt["source_sha"],
+                "evidence_ref": evidence,
+            }
         return True
 
 
@@ -140,6 +152,35 @@ class ContinuityTests(unittest.TestCase):
         self.assertEqual(host.calls.count("WU-014"), 3)
         self.assertEqual(host.repairs.count("WU-014"), 2)
 
+    def test_resume_deduplicates_receipts_without_completing_work_units(self):
+        host = FakeHost()
+        self.assertEqual(continuity.run_continuation(host, 1), ["WU-014"])
+        self.assertEqual(host.finished, set())
+        self.assertEqual(continuity.run_continuation(host, 8), ["WU-016"])
+        self.assertEqual(host.calls.count("WU-014"), 1)
+        self.assertEqual(set(host.milestone_receipts), {"WU-014", "WU-016"})
+
+    def test_checkpoint_revision_without_persisted_receipt_is_rejected(self):
+        host = FakeHost()
+        host.persist_receipt = False
+        with self.assertRaises(continuity.ContinuationSafetyError):
+            continuity.run_continuation(host)
+        self.assertEqual(host.calls, ["WU-014"])
+
+    def test_mismatched_durable_receipt_is_rejected(self):
+        host = FakeHost()
+        host.corrupt_persisted_receipt = True
+        with self.assertRaises(continuity.ContinuationSafetyError):
+            continuity.run_continuation(host)
+        self.assertEqual(host.calls, ["WU-014"])
+
+    def test_malformed_durable_receipt_is_rejected_before_work(self):
+        host = FakeHost()
+        host.milestone_receipts["old-milestone"] = {"source_sha": "bad", "evidence_ref": ""}
+        with self.assertRaises(continuity.ContinuationSafetyError):
+            continuity.run_continuation(host)
+        self.assertEqual(host.calls, [])
+
     def test_invalid_identity_fails_closed(self):
         host = FakeHost()
         host.identity_verified = False
@@ -191,7 +232,7 @@ class ContinuityTests(unittest.TestCase):
             continuity.run_continuation(host)
         host = FakeHost()
         host.snapshot = lambda: {"revision": "1", "main_sha": "not-verified",
-                                 "items": host.items, "completed": []}
+                                 "items": host.items, "completed": [], "milestone_receipts": {}}
         with self.assertRaises(continuity.ContinuationSafetyError):
             continuity.run_continuation(host)
 

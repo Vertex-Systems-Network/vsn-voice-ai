@@ -83,6 +83,23 @@ def _snapshot(host):
         raise ContinuationSafetyError("Canonical work item identifier missing")
     if len(ids) != len(set(ids)):
         raise ContinuationSafetyError("Duplicate canonical work identifiers")
+    # Durable evidence ledger is distinct from completed work units. An item
+    # identifier is an atomic milestone key; reusing a work-unit ID for two
+    # separate implementation slices is forbidden. A restart may not replay
+    # a previously checkpointed milestone while its parent WU is in progress.
+    ledger = snapshot.get("milestone_receipts")
+    if not isinstance(ledger, dict):
+        raise ContinuationSafetyError("Missing durable milestone receipt ledger")
+    for milestone_id, stored in ledger.items():
+        if (
+            not isinstance(milestone_id, str)
+            or not milestone_id.strip()
+            or not isinstance(stored, dict)
+            or not _valid_sha(stored.get("source_sha"))
+            or not isinstance(stored.get("evidence_ref"), str)
+            or not stored["evidence_ref"].strip()
+        ):
+            raise ContinuationSafetyError("Malformed durable milestone receipt")
     return snapshot
 
 
@@ -130,7 +147,10 @@ def run_continuation(host, max_milestones=8, max_retries_per_item=2):
     Required host methods: authority(), snapshot(), execute(item, revision, fence),
     checkpoint(receipt, revision, fence). For classified RetryableWorkError,
     host.repair(item, revision, fence) is optional; without it a failed lane
-    is skipped. A retry/repair never bypasses fresh identity and snapshot checks.
+    is skipped. Host snapshots MUST expose a durable milestone_receipts ledger,
+    committed with the CAS revision and matching exact receipt evidence. A
+    restart skips those receipts even when the parent work unit is incomplete.
+    A retry/repair never bypasses fresh identity and snapshot checks.
     Unknown exceptions and all safety failures stop the invocation rather than
     being disguised as ordinary repairable failures.
     """
@@ -148,7 +168,7 @@ def run_continuation(host, max_milestones=8, max_retries_per_item=2):
             snapshot["items"],
             set(snapshot["completed"]),
             set(authority["scopes"]),
-            visited,
+            visited | set(snapshot["milestone_receipts"]),
         )
         if item is None:
             return verified
@@ -206,6 +226,12 @@ def run_continuation(host, max_milestones=8, max_retries_per_item=2):
         after = _snapshot(host)
         if after["revision"] == revision:
             raise ContinuationSafetyError("Checkpoint not durably reflected in canonical revision")
+        stored = after["milestone_receipts"].get(item["id"])
+        if not isinstance(stored, dict) or (
+            stored.get("source_sha") != receipt["source_sha"]
+            or stored.get("evidence_ref") != receipt["evidence_ref"]
+        ):
+            raise ContinuationSafetyError("Checkpoint receipt not durably committed or mismatched")
         # A verified milestone is NOT automatically a completed work unit.
         verified.append(item["id"])
     return verified

@@ -24,3 +24,11 @@
 ## Repair mutation preflight
 
 Before even invoking a retryable error repair adapter, the continuation loop revalidates current authenticated identity, lease expiry, fencing epoch, approved work scope and exact canonical source revision. Two additional tests prove a revoked epoch or changed source forbids the repair operation. This is still not live host certification or authority to merge protected paths.
+
+## 2026-10-08 — Durable milestone receipt replay guard
+
+- Each host canonical snapshot must expose a durable `milestone_receipts` record keyed by unique atomic milestone ID, separate from work-unit `complete` state.
+- After a successful CAS checkpoint the engine re-reads the canonical revision AND exact receipt source SHA/evidence reference; a mere revision change cannot certify a milestone.
+- On restart, checkpointed atomic milestones are skipped even when the parent WU is still in progress; malformed ledger entries fail closed.
+- Four new regression cases cover resume with parent WU incomplete, revision-only forged checkpoint, mismatched evidence, and malformed receipt ledger.
+- No live persistent host or independent reviewer is implied; work unit progress remains 3/25 complete.

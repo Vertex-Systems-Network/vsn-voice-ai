@@ -51,3 +51,7 @@ Owner feedback exposed a real control-plane gap: README contained a reconciliati
 ## 2026-10-08 — Continuation failure recovery and TOCTOU guards
 
 Hardened host-neutral continuation to check fresh verified identity/lease expiration, epoch/fence, source SHA and CAS revision before each work attempt and protected checkpoint; ordinary retryable failures are bounded and scoped to the lane. Added regression tests. Hosted agent identity, durable trigger-boundary operation, signed evidence and independent protected review remain pending; product progress unchanged.
+
+## 2026-10-08 — Exact milestone dedupe and durable receipt integrity
+
+Added `milestone_receipts` CAS ledger check and source/evidence verification after each checkpoint. A snapshot revision bump alone no longer proves a work milestone. Resume consults the durable per-slice ledger rather than assuming an in-progress parent WU completed. Tests cover replay, forged revision-only acknowledgment, evidence mismatch and corrupt ledger. External host/reviewer gates remain open.
