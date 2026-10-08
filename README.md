@@ -20,7 +20,7 @@ The owner-approved product direction is:
 
 ## WU-014 — Browser Tenant Scope Revalidation (implementation candidate)
 
-- Tenant-bound web components now receive a selected organization only while the workspace directory session is explicitly authenticated. During initial checks, refreshes, authentication loss or directory failures, data panels receive no organization ID.
+- Tenant-bound web components now receive a selected organization only while the workspace directory session is explicitly authenticated. During initial checks, refreshes, authentication loss or directory failures, data panels receive no organization ID. Explicit directory refresh, not selecting a verified workspace, triggers membership revalidation; an in-flight refresh checks the latest selected ID via a ref to avoid stale decisions and extra tenant requests.
 - Each tenant-bound panel is keyed by its authorized organization so an authentication change or organization switch remounts it and clears previously rendered tenant details, transient desktop tokens and in-flight component state; the browser never treats a stored selection alone as current authorization.
 - Session-state regression tests cover checking, signed-out, unavailable and authenticated selection cases. Successful web CI / E2E evidence and merge to `main` must be verified before this slice is considered delivered. No real identity provider or live tenant is claimed.
 - The source change is an incremental `WU-014` slice, **not** completion of the work unit or a change to the overall `3/25` progress.
