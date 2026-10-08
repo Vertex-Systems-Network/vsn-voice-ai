@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"math"
 	"reflect"
 	"testing"
 )
@@ -59,6 +60,37 @@ func TestProviderRoutingMetricsObserverTracksNoEligibleWithoutProviderData(t *te
 	}
 	if len(snapshot.ByProvider) != 0 {
 		t.Fatalf("no-eligible route must not attribute provider data: %#v", snapshot.ByProvider)
+	}
+}
+
+func TestProviderRoutingMetricsObserverSaturatesCounters(t *testing.T) {
+	registry := NewRegistry()
+	mustRegister(t, registry, manifest("primary", 42, 95, 90, 125))
+	observer := NewProviderRoutingMetricsObserver(registry)
+	observer.mu.Lock()
+	observer.totalSelections = math.MaxUint64 - 1
+	observer.noEligibleCount = math.MaxUint64 - 1
+	observer.byProvider["primary"] = ProviderRoutingMetrics{
+		ProviderID: "primary", SelectionCount: math.MaxUint64 - 1,
+	}
+	observer.mu.Unlock()
+
+	for i := 0; i < 2; i++ {
+		observer.ObserveRouting(RoutingEvent{Outcome: RoutingOutcomeNoEligible})
+		observer.ObserveRouting(RoutingEvent{
+			Outcome: RoutingOutcomeSelected, SelectedProvider: "primary",
+		})
+	}
+	snapshot := observer.Snapshot()
+	if snapshot.NoEligibleCount != math.MaxUint64 ||
+		snapshot.TotalSelections != math.MaxUint64 ||
+		snapshot.ByProvider["primary"].SelectionCount != math.MaxUint64 {
+		t.Fatalf("routing counters must saturate rather than wrap: %#v", snapshot)
+	}
+	for _, point := range BuildRoutingMetricPoints(snapshot) {
+		if point.Kind == RoutingMetricCounter && point.Value != math.MaxInt64 {
+			t.Fatalf("counter export must remain bounded: %#v", point)
+		}
 	}
 }
 

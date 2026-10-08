@@ -28,6 +28,7 @@ The owner-approved product direction is:
 - `WU-017` PHASE-000 privacy/security/data-governance baseline: **complete**; broader `MOD-017` work remains cross-cutting/in progress.
 - `WU-002` desktop audio core and virtual devices: **in progress** since **2026-09-10 03:43 PKT**; completion is externally blocked by Issue #110 controlled Windows acceptance.
 - `WU-014` SaaS web app, accounts, teams and workspace: **in progress**; current bounded delivery is tenant-safe desktop/web identity linking and workspace UX.
+- `WU-016` telemetry counters: **in progress**; uint64 rollover prevention and regression test added. No production verification claimed.
 - Rust native workspace contains `vsn-audio-core` and `vsn-windows-audio`.
 - Windows-native capture, recovery and virtual-mic transport contracts are CI verified through the current **secure shared-memory control path + guarded protocol-v2 ring consumer + PortCls/WaveRT descriptors + fail-closed PortCls lifecycle/stream contract + secure raw WDM IRP control runtime + PortCls-primary live DriverEntry** boundary.
 - `native/windows-virtual-mic/driver/vsn_virtual_mic_control.vcxproj` is an x64 KMDF Desktop-driver project built with pinned Microsoft WDK/SDK NuGet `10.0.28000.2526`.

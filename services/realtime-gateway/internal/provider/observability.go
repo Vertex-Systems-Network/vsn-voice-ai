@@ -41,6 +41,13 @@ func NewProviderRoutingMetricsObserver(registry *Registry) *ProviderRoutingMetri
 	}
 }
 
+func saturatingRoutingIncrement(n uint64) uint64 {
+	if n == ^uint64(0) {
+		return n
+	}
+	return n + 1
+}
+
 func (o *ProviderRoutingMetricsObserver) ObserveRouting(event RoutingEvent) {
 	if o == nil {
 		return
@@ -49,7 +56,7 @@ func (o *ProviderRoutingMetricsObserver) ObserveRouting(event RoutingEvent) {
 	switch event.Outcome {
 	case RoutingOutcomeNoEligible:
 		o.mu.Lock()
-		o.noEligibleCount++
+		o.noEligibleCount = saturatingRoutingIncrement(o.noEligibleCount)
 		o.mu.Unlock()
 		return
 	case RoutingOutcomeSelected:
@@ -69,13 +76,13 @@ func (o *ProviderRoutingMetricsObserver) ObserveRouting(event RoutingEvent) {
 	o.mu.Lock()
 	metrics := o.byProvider[manifest.ID]
 	metrics.ProviderID = manifest.ID
-	metrics.SelectionCount++
+	metrics.SelectionCount = saturatingRoutingIncrement(metrics.SelectionCount)
 	metrics.LatencyP95Milliseconds = manifest.LatencyP95Milliseconds
 	metrics.CostMicrounitsPerMinute = manifest.CostMicrounitsPerMinute
 	metrics.Health = manifest.Health
 	metrics.RateLimit = manifest.RateLimit
 	o.byProvider[manifest.ID] = metrics
-	o.totalSelections++
+	o.totalSelections = saturatingRoutingIncrement(o.totalSelections)
 	o.mu.Unlock()
 }
 
