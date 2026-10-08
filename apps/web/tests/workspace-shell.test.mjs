@@ -47,22 +47,22 @@ test('root team flow requires explicit authenticated organization selection', ()
     workspaceFlowSource,
     /state === 'signed_out' \|\| state === 'unavailable'/,
   );
-  assert.doesNotMatch(workspaceFlowSource, /state !== 'authenticated'/);
-  assert.match(workspaceFlowSource, /organizationId === null/);
-  assert.match(workspaceFlowSource, /<WorkspaceDesktopLinkPanel organizationId=\{organizationId\}/);
-  assert.match(workspaceFlowSource, /<WorkspaceTeamPanel organizationId=\{organizationId\}/);
-  assert.match(
-    workspaceFlowSource,
-    /<WorkspaceNotificationPreferencesPanel organizationId=\{organizationId\}/,
-  );
-  assert.match(
-    workspaceFlowSource,
-    /<WorkspaceOrganizationProfilePanel organizationId=\{organizationId\}/,
-  );
-  assert.match(
-    workspaceFlowSource,
-    /<WorkspaceProfilePanel organizationId=\{organizationId\}/,
-  );
+  assert.match(workspaceFlowSource, /workspaceAuthorizedOrganizationId\(/);
+  assert.match(workspaceFlowSource, /directorySessionState,/);
+  assert.match(workspaceFlowSource, /authorizedOrganizationId === null/);
+  for (const panel of [
+    'WorkspaceOverviewPanel',
+    'WorkspaceDesktopLinkPanel',
+    'WorkspaceTeamPanel',
+    'WorkspaceNotificationPreferencesPanel',
+    'WorkspaceOrganizationProfilePanel',
+    'WorkspaceProfilePanel',
+  ]) {
+    assert.match(
+      workspaceFlowSource,
+      new RegExp(`<${panel}\\s+[\\s\\S]*?organizationId=\\{authorizedOrganizationId\\}`),
+    );
+  }
 });
 
 test('team status controls stay bootstrap-gated and server-authorized', () => {
@@ -109,7 +109,9 @@ test('workspace shell has explicit responsive breakpoints', () => {
 });
 
 test('web framework dependencies are exact pinned versions', () => {
-  assert.equal(packageJson.dependencies.next, '16.3.4');
+  assert.equal(packageJson.dependencies.next, '16.4.0');
+  assert.equal(packageJson.overrides.sharp, '0.35.5');
+  assert.equal(packageJson.overrides['source-map-js'], '1.2.2');
   assert.equal(packageJson.dependencies.react, '19.3.0');
   assert.equal(packageJson.dependencies['react-dom'], '19.3.0');
   for (const version of Object.values(packageJson.dependencies)) {
