@@ -11,6 +11,10 @@ import (
 
 var errRoutingAlertWebhookUnsafeNetwork = errors.New("routing alert webhook network target is not public")
 
+// A malicious or misconfigured resolver must not fan out a single signed
+// webhook dispatch into an unbounded list of attempted external connections.
+const maxRoutingAlertWebhookResolvedAddresses = 64
+
 var routingAlertNonPublicPrefixes = []netip.Prefix{
 	// Go's IsGlobalUnicast includes some protocol-reserved addresses.
 	// 0/8 is current-network address space, not an Internet egress target.
@@ -92,7 +96,7 @@ func newRoutingAlertPublicOnlyDialContext(
 		}
 
 		resolved, err := resolver.LookupNetIP(ctx, "ip", expectedHostname)
-		if err != nil || len(resolved) == 0 {
+		if err != nil || len(resolved) == 0 || len(resolved) > maxRoutingAlertWebhookResolvedAddresses {
 			return nil, errRoutingAlertWebhookUnsafeNetwork
 		}
 

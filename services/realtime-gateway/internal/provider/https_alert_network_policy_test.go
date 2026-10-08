@@ -136,6 +136,34 @@ func TestRoutingAlertDialRejectsMixedPublicTranslatedPrivateIPv4(t *testing.T) {
 	}
 }
 
+func TestRoutingAlertDialRejectsExcessiveDNSAnswersWithoutDial(t *testing.T) {
+	answers := make([]netip.Addr, maxRoutingAlertWebhookResolvedAddresses+1)
+	for index := range answers {
+		answers[index] = netip.MustParseAddr("8.8.8.8")
+	}
+	resolver := routingAlertResolverFunc(func(
+		context.Context,
+		string,
+		string,
+	) ([]netip.Addr, error) {
+		return answers, nil
+	})
+	dialCalled := false
+	dial := func(context.Context, string, string) (net.Conn, error) {
+		dialCalled = true
+		return nil, errors.New("unexpected dial")
+	}
+
+	guardedDial := newRoutingAlertPublicOnlyDialContext("alerts.example.com", resolver, dial)
+	_, err := guardedDial(context.Background(), "tcp", "alerts.example.com:443")
+	if !errors.Is(err, errRoutingAlertWebhookUnsafeNetwork) {
+		t.Fatalf("excessive DNS answer list must fail closed, got %v", err)
+	}
+	if dialCalled {
+		t.Fatal("excessive DNS answers must be rejected before any dial")
+	}
+}
+
 func TestRoutingAlertDialPinsConnectionToValidatedResolvedAddress(t *testing.T) {
 	resolver := routingAlertResolverFunc(func(
 		context.Context,
