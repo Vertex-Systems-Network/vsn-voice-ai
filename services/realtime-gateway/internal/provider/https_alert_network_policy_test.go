@@ -40,6 +40,7 @@ func TestRoutingAlertHostnameNormalizationClosesLocalhostTrailingDotBypass(t *te
 
 func TestPublicRoutingAlertAddressPolicyRejectsNonPublicRanges(t *testing.T) {
 	rejected := []string{
+		"0.1.2.3",
 		"127.0.0.1",
 		"10.0.0.1",
 		"172.16.0.1",
@@ -48,6 +49,7 @@ func TestPublicRoutingAlertAddressPolicyRejectsNonPublicRanges(t *testing.T) {
 		"100.64.0.1",
 		"198.18.0.1",
 		"192.0.2.1",
+		"192.88.99.1",
 		"224.0.0.1",
 		"240.0.0.1",
 		"::1",

@@ -12,9 +12,14 @@ import (
 var errRoutingAlertWebhookUnsafeNetwork = errors.New("routing alert webhook network target is not public")
 
 var routingAlertNonPublicPrefixes = []netip.Prefix{
+	// Go's IsGlobalUnicast includes some protocol-reserved addresses.
+	// 0/8 is current-network address space, not an Internet egress target.
+	netip.MustParsePrefix("0.0.0.0/8"),
 	netip.MustParsePrefix("100.64.0.0/10"),
 	netip.MustParsePrefix("192.0.0.0/24"),
 	netip.MustParsePrefix("192.0.2.0/24"),
+	// Deprecated 6to4 anycast relay range; not an approved public webhook.
+	netip.MustParsePrefix("192.88.99.0/24"),
 	netip.MustParsePrefix("198.18.0.0/15"),
 	netip.MustParsePrefix("198.51.100.0/24"),
 	netip.MustParsePrefix("203.0.113.0/24"),

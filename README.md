@@ -18,6 +18,12 @@ The owner-approved product direction is:
 3. Add **VSN-owned AI models/runtime as first-class providers** behind the same internal contracts.
 4. Build a directly usable realtime calls/meetings product covering audio enhancement, accent conversion, voice preservation, translation, transcription, meeting intelligence, coaching, search, authorized actions, multi-platform capture, integrations, telephony/contact-center, SaaS subscriptions, enterprise controls and later public APIs/SDKs.
 
+## WU-016 — Alert Webhook Reserved-Network Guard (implementation candidate)
+
+- The outbound HTTPS alert sink now explicitly excludes `0.0.0.0/8` (current-network space) and deprecated `192.88.99.0/24` (6to4 anycast relay); Go's generic `IsGlobalUnicast` can classify addresses in these ranges as globally unicast despite unsuitable public egress status.
+- Regression tests verify these addresses fail the existing fail-closed public-only network policy. No live outbound endpoint, credential, signature verification by a remote receiver or production routing is asserted.
+- This is an incremental `WU-016` source/security slice. CI and merge evidence are required for delivery; overall work-unit completion remains **3/25 (12%)**.
+
 ## Current Repository State
 
 - Child project: `active_project`; bootstrap complete.
