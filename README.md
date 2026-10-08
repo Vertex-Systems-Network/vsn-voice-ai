@@ -18,6 +18,13 @@ The owner-approved product direction is:
 3. Add **VSN-owned AI models/runtime as first-class providers** behind the same internal contracts.
 4. Build a directly usable realtime calls/meetings product covering audio enhancement, accent conversion, voice preservation, translation, transcription, meeting intelligence, coaching, search, authorized actions, multi-platform capture, integrations, telephony/contact-center, SaaS subscriptions, enterprise controls and later public APIs/SDKs.
 
+## WU-014 — Browser Tenant Scope Revalidation (implementation candidate)
+
+- Tenant-bound web components now receive a selected organization only while the workspace directory session is explicitly authenticated. During initial checks, refreshes, authentication loss or directory failures, data panels receive no organization ID.
+- Each tenant-bound panel is keyed by its authorized organization so an authentication change or organization switch remounts it and clears previously rendered tenant details, transient desktop tokens and in-flight component state; the browser never treats a stored selection alone as current authorization.
+- Session-state regression tests cover checking, signed-out, unavailable and authenticated selection cases. Successful web CI / E2E evidence and merge to `main` must be verified before this slice is considered delivered. No real identity provider or live tenant is claimed.
+- The source change is an incremental `WU-014` slice, **not** completion of the work unit or a change to the overall `3/25` progress.
+
 ## Current Repository State
 
 - Child project: `active_project`; bootstrap complete.

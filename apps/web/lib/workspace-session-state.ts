@@ -53,3 +53,11 @@ export function workspaceSessionView(
       });
   }
 }
+
+/** Only an authenticated directory can authorize tenant-bound browser panels. */
+export function workspaceAuthorizedOrganizationId(
+  state: WorkspaceSessionState,
+  selectedOrganizationId: string | null,
+): string | null {
+  return state === 'authenticated' ? selectedOrganizationId : null;
+}

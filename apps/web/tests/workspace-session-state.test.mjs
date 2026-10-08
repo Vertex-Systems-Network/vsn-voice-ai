@@ -47,3 +47,11 @@ test('session views never invent provider or user identity', () => {
     assert.equal(/user|subject|membership|provider/i.test(view.label), false);
   }
 });
+
+test('tenant scope is unavailable during pending, failed and signed-out directory checks', () => {
+  for (const state of ['checking', 'signed_out', 'unavailable']) {
+    assert.equal(session.workspaceAuthorizedOrganizationId(state, 'org_1'), null);
+  }
+  assert.equal(session.workspaceAuthorizedOrganizationId('authenticated', null), null);
+  assert.equal(session.workspaceAuthorizedOrganizationId('authenticated', 'org_1'), 'org_1');
+});
