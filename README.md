@@ -21,7 +21,7 @@ The owner-approved product direction is:
 ## WU-016 — Alert Webhook Reserved-Network Guard (implementation candidate)
 
 - The outbound HTTPS alert sink now explicitly excludes `0.0.0.0/8` (current-network space) and deprecated `192.88.99.0/24` (6to4 anycast relay); Go's generic `IsGlobalUnicast` can classify addresses in these ranges as globally unicast despite unsuitable public egress status.
-- Regression tests verify these addresses fail the existing fail-closed public-only network policy. No live outbound endpoint, credential, signature verification by a remote receiver or production routing is asserted.
+- Regression tests verify these addresses fail the existing fail-closed public-only network policy. IPv4-embedded IPv6 transition targets (well-known and local-use NAT64, Teredo and 6to4) are also explicitly excluded, with a no-dial regression for a DNS answer mixing a public IPv6 address with a translated private IPv4 address. No live outbound endpoint, credential, signature verification by a remote receiver or production routing is asserted.
 - This is an incremental `WU-016` source/security slice. CI and merge evidence are required for delivery; overall work-unit completion remains **3/25 (12%)**.
 
 ## Current Repository State

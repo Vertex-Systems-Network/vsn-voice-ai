@@ -24,6 +24,12 @@ var routingAlertNonPublicPrefixes = []netip.Prefix{
 	netip.MustParsePrefix("198.51.100.0/24"),
 	netip.MustParsePrefix("203.0.113.0/24"),
 	netip.MustParsePrefix("240.0.0.0/4"),
+	// IPv4-embedded transition ranges could tunnel or translate a seemingly
+	// global IPv6 address into a prohibited internal IPv4 endpoint.
+	netip.MustParsePrefix("64:ff9b::/96"), // Well-known NAT64 translation.
+	netip.MustParsePrefix("64:ff9b:1::/48"), // Local-use NAT64 translation.
+	netip.MustParsePrefix("2001::/32"), // Teredo IPv4 tunnel.
+	netip.MustParsePrefix("2002::/16"), // 6to4 IPv4 tunnel.
 	netip.MustParsePrefix("2001:db8::/32"),
 	netip.MustParsePrefix("fec0::/10"),
 }

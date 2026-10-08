@@ -57,6 +57,11 @@ func TestPublicRoutingAlertAddressPolicyRejectsNonPublicRanges(t *testing.T) {
 		"fc00::1",
 		"fec0::1",
 		"2001:db8::1",
+		"64:ff9b::a9fe:a9fe",
+		"64:ff9b:1::a9fe:a9fe",
+		"2001::1",
+		"2002:7f00:1::1",
+		"::ffff:169.254.169.254",
 	}
 	for _, value := range rejected {
 		t.Run(value, func(t *testing.T) {
@@ -99,6 +104,35 @@ func TestRoutingAlertDialRejectsMixedPublicPrivateDNSAnswers(t *testing.T) {
 	}
 	if dialCalled {
 		t.Fatal("unsafe DNS answer must be rejected before any network dial")
+	}
+}
+
+// An unsafe IPv4 destination must not be reachable through a translated AAAA
+// record, even when the same hostname also resolves to an ordinary public IP.
+func TestRoutingAlertDialRejectsMixedPublicTranslatedPrivateIPv4(t *testing.T) {
+	resolver := routingAlertResolverFunc(func(
+		context.Context,
+		string,
+		string,
+	) ([]netip.Addr, error) {
+		return []netip.Addr{
+			netip.MustParseAddr("2606:4700:4700::1111"),
+			netip.MustParseAddr("64:ff9b::a9fe:a9fe"),
+		}, nil
+	})
+	dialCalled := false
+	dial := func(context.Context, string, string) (net.Conn, error) {
+		dialCalled = true
+		return nil, errors.New("unexpected dial")
+	}
+
+	guardedDial := newRoutingAlertPublicOnlyDialContext("alerts.example.com", resolver, dial)
+	_, err := guardedDial(context.Background(), "tcp", "alerts.example.com:443")
+	if !errors.Is(err, errRoutingAlertWebhookUnsafeNetwork) {
+		t.Fatalf("translated-private AAAA answer must fail closed, got %v", err)
+	}
+	if dialCalled {
+		t.Fatal("mixed translated-private DNS answers must be rejected before dialing")
 	}
 }
 
