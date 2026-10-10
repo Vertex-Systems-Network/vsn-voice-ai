@@ -18,12 +18,18 @@ The owner-approved product direction is:
 3. Add **VSN-owned AI models/runtime as first-class providers** behind the same internal contracts.
 4. Build a directly usable realtime calls/meetings product covering audio enhancement, accent conversion, voice preservation, translation, transcription, meeting intelligence, coaching, search, authorized actions, multi-platform capture, integrations, telephony/contact-center, SaaS subscriptions, enterprise controls and later public APIs/SDKs.
 
-## WU-014 — Browser Tenant Scope Revalidation (implementation candidate)
+## WU-014 — Browser Tenant Scope Revalidation (merged)
 
 - Tenant-bound web components now receive a selected organization only while the workspace directory session is explicitly authenticated. During initial checks, refreshes, authentication loss or directory failures, data panels receive no organization ID. Explicit directory refresh, not selecting a verified workspace, triggers membership revalidation; an in-flight refresh checks the latest selected ID via a ref to avoid stale decisions and extra tenant requests.
 - Each tenant-bound panel is keyed by its authorized organization so an authentication change or organization switch remounts it and clears previously rendered tenant details, transient desktop tokens and in-flight component state; the browser never treats a stored selection alone as current authorization.
-- Session-state regression tests cover checking, signed-out, unavailable and authenticated selection cases. Successful web CI / E2E evidence and merge to `main` must be verified before this slice is considered delivered. No real identity provider or live tenant is claimed.
+- Session-state regression tests cover checking, signed-out, unavailable and authenticated selection cases. Merged as PR #180 (`bf572f5`); post-merge Web Validation run 38011380312 and AI Native Quality Gates run 38011380341 passed on `main`. The same PR pins `next` 16.4.0 with `sharp` 0.35.5 / `source-map-js` 1.2.2 overrides, clearing the critical/high npm audit findings tracked in Issue #181. No real identity provider or live tenant is claimed.
 - The source change is an incremental `WU-014` slice, **not** completion of the work unit or a change to the overall `3/25` progress.
+
+## WU-016 — Alert Webhook Reserved-Network Guard (implementation candidate)
+
+- The outbound HTTPS alert sink now caps DNS answers at 64 and fails closed before dialing on an oversized answer list (regression-tested). The outbound HTTPS alert sink now explicitly excludes `0.0.0.0/8` (current-network space) and deprecated `192.88.99.0/24` (6to4 anycast relay); Go's generic `IsGlobalUnicast` can classify addresses in these ranges as globally unicast despite unsuitable public egress status.
+- Regression tests verify these addresses fail the existing fail-closed public-only network policy. IPv4-embedded IPv6 transition targets (well-known and local-use NAT64, Teredo and 6to4) are also explicitly excluded, with a no-dial regression for a DNS answer mixing a public IPv6 address with a translated private IPv4 address. No live outbound endpoint, credential, signature verification by a remote receiver or production routing is asserted.
+- This is an incremental `WU-016` source/security slice. CI and merge evidence are required for delivery; overall work-unit completion remains **3/25 (12%)**.
 
 ## Current Repository State
 
