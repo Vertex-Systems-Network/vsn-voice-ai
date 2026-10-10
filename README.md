@@ -18,6 +18,12 @@ The owner-approved product direction is:
 3. Add **VSN-owned AI models/runtime as first-class providers** behind the same internal contracts.
 4. Build a directly usable realtime calls/meetings product covering audio enhancement, accent conversion, voice preservation, translation, transcription, meeting intelligence, coaching, search, authorized actions, multi-platform capture, integrations, telephony/contact-center, SaaS subscriptions, enterprise controls and later public APIs/SDKs.
 
+## WU-014 — Provider-Neutral OIDC Bearer Identity (implementation candidate)
+
+- The control API can now authenticate requests with a standard OIDC/JWT bearer token instead of rejecting every caller. Tokens are verified locally against a configured public JWKS (`RS256` or `ES256` only), with exact issuer, audience, `exp`/`nbf`/`iat` (bounded clock skew) and canonical `sub` checks; `sid` becomes the session ID. `alg=none`, HMAC, unknown `kid`, critical headers, private/symmetric/weak/encryption JWKS keys and oversized headers are rejected.
+- Configuration is provider-neutral: `VSN_OIDC_ISSUER`, `VSN_OIDC_AUDIENCE`, `VSN_OIDC_JWKS_JSON` and optional `VSN_OIDC_CLOCK_SKEW_SECONDS` (default 60, max 300). With none set the API still fails closed; a partial or unsafe configuration (non-HTTPS issuer outside local development, bad JWKS) fails at startup.
+- No identity provider account, tenant, credential or remote JWKS fetching is configured or claimed. Choosing and provisioning the production identity provider, remote JWKS rotation and verified desktop/web identity linking remain pending for WU-014 completion. Overall progress is unchanged at **3/25 (12%)**.
+
 ## WU-014 — Browser Tenant Scope Revalidation (merged)
 
 - Tenant-bound web components now receive a selected organization only while the workspace directory session is explicitly authenticated. During initial checks, refreshes, authentication loss or directory failures, data panels receive no organization ID. Explicit directory refresh, not selecting a verified workspace, triggers membership revalidation; an in-flight refresh checks the latest selected ID via a ref to avoid stale decisions and extra tenant requests.
