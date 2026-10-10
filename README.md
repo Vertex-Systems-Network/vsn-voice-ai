@@ -18,6 +18,12 @@ The owner-approved product direction is:
 3. Add **VSN-owned AI models/runtime as first-class providers** behind the same internal contracts.
 4. Build a directly usable realtime calls/meetings product covering audio enhancement, accent conversion, voice preservation, translation, transcription, meeting intelligence, coaching, search, authorized actions, multi-platform capture, integrations, telephony/contact-center, SaaS subscriptions, enterprise controls and later public APIs/SDKs.
 
+## WU-014 — Web Backend-for-Frontend API Proxy (implementation candidate)
+
+- The Next.js app now serves same-origin `/v1/*` through a server-side proxy (`apps/web/app/v1/[...path]/route.ts`, `apps/web/lib/api-proxy.ts`) to the control API at `VSN_API_ORIGIN` (HTTPS, or loopback HTTP for local development; optional `VSN_API_PROXY_TIMEOUT_MS`, default 10 s, max 30 s). Browser code keeps cookie-based same-origin calls, so access tokens never need to live in browser JavaScript.
+- The proxy allows only `GET`/`POST`/`PUT`, re-encodes allowlisted path segments, bounds query (2 KiB), request JSON bodies (64 KiB) and responses (1 MiB), forwards only `accept`/`content-type`, never forwards browser cookies or `Authorization`, rejects upstream redirects, strips upstream headers except `content-type`, forces `no-store`, and maps timeouts/connection failures to a content-safe `503`. Unset or invalid configuration answers `503` without calling upstream.
+- A bearer token is attached only from a server-side access-token provider; none is configured yet, so the API keeps answering `401` until the server-side login session slice lands. 94/94 web unit tests and 54/54 Playwright E2E tests passed locally.
+
 ## WU-014 — Provider-Neutral OIDC Bearer Identity (implementation candidate)
 
 - The control API can now authenticate requests with a standard OIDC/JWT bearer token instead of rejecting every caller. Tokens are verified locally against a configured public JWKS (`RS256` or `ES256` only), with exact issuer, audience, `exp`/`nbf`/`iat` (bounded clock skew) and canonical `sub` checks; `sid` becomes the session ID. `alg=none`, HMAC, unknown `kid`, critical headers, private/symmetric/weak/encryption JWKS keys and oversized headers are rejected.
