@@ -2025,3 +2025,31 @@ test('tenant panels are unmounted while directory refresh has not revalidated me
   await expect(page.getByRole('heading', { name: '1 team member' })).toBeVisible();
   await expect(page.getByText('Ada Lovelace', { exact: true })).toBeVisible();
 });
+
+test('session controls offer sign-in when signed out and sign-out when authenticated', async ({ page }) => {
+  let authenticated = false;
+  await page.route('**/v1/workspaces', async (route) => {
+    if (!authenticated) {
+      await route.fulfill({ status: 401 });
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ schema_version: 1, workspaces: [], has_more: false }),
+    });
+  });
+
+  await page.goto('/');
+  await expect(page.locator('.session-state')).toHaveText('Signed out');
+  await expect(page.getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', '/auth/login');
+  await expect(page.getByRole('button', { name: 'Sign out' })).toHaveCount(0);
+
+  authenticated = true;
+  await page.reload();
+  await expect(page.locator('.session-state')).toHaveText('Authenticated workspace session');
+  await expect(page.getByRole('link', { name: 'Sign in' })).toHaveCount(0);
+  const signOut = page.locator('form.session-action-form');
+  await expect(signOut).toHaveAttribute('action', '/auth/logout');
+  await expect(signOut).toHaveAttribute('method', 'post');
+});

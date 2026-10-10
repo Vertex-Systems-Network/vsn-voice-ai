@@ -18,6 +18,8 @@ export type ServerAccessTokenProvider = (request: Request) => Promise<string | n
 export interface ApiProxyDependencies {
   readonly fetchImpl: typeof fetch;
   readonly accessToken: ServerAccessTokenProvider;
+  /** CSRF guard: must confirm a state-changing request came from this site. */
+  readonly allowMutation: (request: Request) => boolean;
 }
 
 export const API_PROXY_METHODS = ['GET', 'POST', 'PUT'] as const;
@@ -151,6 +153,9 @@ export async function proxyApiRequest(
   const method = request.method.toUpperCase();
   if (!(API_PROXY_METHODS as readonly string[]).includes(method)) {
     return jsonError(405, 'method_not_allowed');
+  }
+  if (method !== 'GET' && !dependencies.allowMutation(request)) {
+    return jsonError(403, 'forbidden');
   }
 
   const path = buildUpstreamPath(segments);

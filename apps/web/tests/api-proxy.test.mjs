@@ -17,7 +17,7 @@ function recordingFetch(response = () => new Response('{"ok":true}', { status: 2
 }
 
 function deps(fetchImpl, token = null) {
-  return { fetchImpl, accessToken: async () => token };
+  return { fetchImpl, accessToken: async () => token, allowMutation: () => true };
 }
 
 function browserRequest(path, init = {}) {
@@ -93,7 +93,7 @@ test('server access token is attached as bearer and malformed tokens fail closed
     const response = await proxy.proxyApiRequest(browserRequest('/v1/workspaces'), ['workspaces'], configured, deps(fetchImpl, token));
     assert.equal(response.status, 503);
   }
-  const throwing = { fetchImpl, accessToken: async () => { throw new Error('session store down'); } };
+  const throwing = { fetchImpl, accessToken: async () => { throw new Error('session store down'); }, allowMutation: () => true };
   assert.equal((await proxy.proxyApiRequest(browserRequest('/v1/workspaces'), ['workspaces'], configured, throwing)).status, 503);
   assert.equal(calls.length, 1);
 });
@@ -141,7 +141,7 @@ test('upstream redirects, oversize bodies and failures map to safe gateway error
   const big = recordingFetch(new Response('a'.repeat(proxy.MAX_PROXY_RESPONSE_BODY_BYTES + 1), { status: 200 }));
   assert.equal((await proxy.proxyApiRequest(browserRequest('/v1/x'), ['x'], configured, deps(big.fetchImpl))).status, 502);
 
-  const failing = { fetchImpl: async () => { throw new Error('connect ECONNREFUSED 10.0.0.1'); }, accessToken: async () => null };
+  const failing = { fetchImpl: async () => { throw new Error('connect ECONNREFUSED 10.0.0.1'); }, accessToken: async () => null, allowMutation: () => true };
   const down = await proxy.proxyApiRequest(browserRequest('/v1/x'), ['x'], configured, failing);
   assert.equal(down.status, 503);
   assert.deepEqual(await down.json(), { error: 'api_unavailable' });
@@ -170,7 +170,21 @@ test('upstream timeouts abort and fail closed', async () => {
       init.signal.addEventListener('abort', () => reject(new Error('aborted')));
     }),
     accessToken: async () => null,
+    allowMutation: () => true,
   };
   const quick = { status: 'configured', config: { apiOrigin: 'https://api.example.test', timeoutMs: 20 } };
   assert.equal((await proxy.proxyApiRequest(browserRequest('/v1/x'), ['x'], quick, slow)).status, 503);
+});
+
+test('state-changing requests that fail the CSRF guard never reach upstream', async () => {
+  const { calls, fetchImpl } = recordingFetch();
+  const guarded = { fetchImpl, accessToken: async () => 'a.b.c', allowMutation: () => false };
+  const put = await proxy.proxyApiRequest(
+    browserRequest('/v1/x', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: '{}' }),
+    ['x'], configured, guarded,
+  );
+  assert.equal(put.status, 403);
+  assert.equal((await proxy.proxyApiRequest(browserRequest('/v1/x'), ['x'], configured, guarded)).status, 200);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].init.method, 'GET');
 });
