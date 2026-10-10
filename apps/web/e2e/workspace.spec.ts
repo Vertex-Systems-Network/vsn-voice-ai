@@ -1959,3 +1959,69 @@ test('late organization profile save cannot overwrite a newly selected tenant', 
   );
   await expect(page.getByText('Organization name saved')).toHaveCount(0);
 });
+
+
+test('tenant panels are unmounted while directory refresh has not revalidated membership', async ({ page }) => {
+  let pauseRefresh = false;
+  let releaseRefresh = () => {};
+  const refreshGate = new Promise<void>((resolve) => {
+    releaseRefresh = resolve;
+  });
+  const directoryPayload = {
+    schema_version: 1,
+    workspaces: [{
+      schema_version: 1,
+      membership_id: 'membership_1',
+      organization_id: 'org_1',
+      display_name: null,
+      status: 'active',
+      roles: ['member'],
+    }],
+    has_more: false,
+  };
+
+  await page.route('**/v1/workspaces', async (route) => {
+    if (pauseRefresh) {
+      await refreshGate;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(directoryPayload),
+    });
+  });
+  await page.route('**/v1/workspaces/org_1/team', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_version: 1,
+        organization_id: 'org_1',
+        members: [{
+          schema_version: 1,
+          membership_id: 'membership_member',
+          display_name: 'Ada Lovelace',
+          status: 'active',
+          roles: ['member'],
+        }],
+        has_more: false,
+      }),
+    });
+  });
+
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Select workspace org_1' }).click();
+  await expect(page.getByRole('heading', { name: '1 team member' })).toBeVisible();
+  await expect(page.getByText('Ada Lovelace', { exact: true })).toBeVisible();
+
+  pauseRefresh = true;
+  await page.getByRole('button', { name: 'Refresh workspaces' }).click();
+  await expect(page.locator('.session-state')).toHaveText('Checking authentication');
+  await expect(page.getByRole('heading', { name: 'Select a workspace first' })).toBeVisible();
+  await expect(page.getByText('Ada Lovelace', { exact: true })).toHaveCount(0);
+
+  releaseRefresh();
+  await expect(page.locator('.session-state')).toHaveText('Authenticated workspace session');
+  await expect(page.getByRole('heading', { name: '1 team member' })).toBeVisible();
+  await expect(page.getByText('Ada Lovelace', { exact: true })).toBeVisible();
+});

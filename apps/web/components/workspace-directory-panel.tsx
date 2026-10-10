@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { requestWorkspaceDirectory } from '../lib/workspace-directory-client';
 import {
@@ -34,6 +34,10 @@ export function WorkspaceDirectoryPanel({
     loadingWorkspaceDirectoryPanelView(),
   );
   const [refreshRevision, setRefreshRevision] = useState(0);
+  // A newly selected tenant should not cause an extra directory request.
+  // A pending explicit refresh still checks the latest selection at settle.
+  const selectedOrganizationIdRef = useRef(selectedOrganizationId);
+  selectedOrganizationIdRef.current = selectedOrganizationId;
 
   useEffect(() => {
     let cancelled = false;
@@ -49,7 +53,7 @@ export function WorkspaceDirectoryPanel({
             result.status === 'ready' &&
             !workspaceSelectionRemainsAuthorized(
               result.data.workspaces,
-              selectedOrganizationId,
+              selectedOrganizationIdRef.current,
             )
           ) {
             onInvalidateWorkspaceSelection();
@@ -72,7 +76,6 @@ export function WorkspaceDirectoryPanel({
     onInvalidateWorkspaceSelection,
     onSessionStateChange,
     refreshRevision,
-    selectedOrganizationId,
   ]);
 
   return (

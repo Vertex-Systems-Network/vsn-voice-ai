@@ -2,7 +2,10 @@
 
 import { useCallback, useState } from 'react';
 
-import type { WorkspaceSessionState } from '../lib/workspace-session-state';
+import {
+  workspaceAuthorizedOrganizationId,
+  type WorkspaceSessionState,
+} from '../lib/workspace-session-state';
 
 import { WorkspaceDesktopLinkPanel } from './workspace-desktop-link-panel';
 import { WorkspaceDirectoryPanel } from './workspace-directory-panel';
@@ -20,6 +23,12 @@ export function WorkspaceTeamWorkspace({
   onSessionStateChange,
 }: WorkspaceTeamWorkspaceProps) {
   const [organizationId, setOrganizationId] = useState<string | null>(null);
+  const [directorySessionState, setDirectorySessionState] =
+    useState<WorkspaceSessionState>('checking');
+  const authorizedOrganizationId = workspaceAuthorizedOrganizationId(
+    directorySessionState,
+    organizationId,
+  );
 
   const handleWorkspaceSelectionInvalidated = useCallback(() => {
     setOrganizationId(null);
@@ -27,6 +36,7 @@ export function WorkspaceTeamWorkspace({
 
   const handleSessionStateChange = useCallback(
     (state: WorkspaceSessionState) => {
+      setDirectorySessionState(state);
       if (state === 'signed_out' || state === 'unavailable') {
         setOrganizationId(null);
       }
@@ -43,9 +53,15 @@ export function WorkspaceTeamWorkspace({
         onInvalidateWorkspaceSelection={handleWorkspaceSelectionInvalidated}
         onSessionStateChange={handleSessionStateChange}
       />
-      <WorkspaceOverviewPanel organizationId={organizationId} />
-      <WorkspaceDesktopLinkPanel organizationId={organizationId} />
-      {organizationId === null ? (
+      <WorkspaceOverviewPanel
+        key={`overview-${authorizedOrganizationId ?? 'unselected'}`}
+        organizationId={authorizedOrganizationId}
+      />
+      <WorkspaceDesktopLinkPanel
+        key={`desktop-${authorizedOrganizationId ?? 'unselected'}`}
+        organizationId={authorizedOrganizationId}
+      />
+      {authorizedOrganizationId === null ? (
         <section
           className="area-card workspace-team-panel"
           id="team"
@@ -62,11 +78,23 @@ export function WorkspaceTeamWorkspace({
           </span>
         </section>
       ) : (
-        <WorkspaceTeamPanel organizationId={organizationId} />
+        <WorkspaceTeamPanel
+          key={authorizedOrganizationId}
+          organizationId={authorizedOrganizationId}
+        />
       )}
-      <WorkspaceOrganizationProfilePanel organizationId={organizationId} />
-      <WorkspaceProfilePanel organizationId={organizationId} />
-      <WorkspaceNotificationPreferencesPanel organizationId={organizationId} />
+      <WorkspaceOrganizationProfilePanel
+        key={`organization-${authorizedOrganizationId ?? 'unselected'}`}
+        organizationId={authorizedOrganizationId}
+      />
+      <WorkspaceProfilePanel
+        key={`profile-${authorizedOrganizationId ?? 'unselected'}`}
+        organizationId={authorizedOrganizationId}
+      />
+      <WorkspaceNotificationPreferencesPanel
+        key={`preferences-${authorizedOrganizationId ?? 'unselected'}`}
+        organizationId={authorizedOrganizationId}
+      />
     </>
   );
 }
