@@ -40,6 +40,7 @@ func TestRoutingAlertHostnameNormalizationClosesLocalhostTrailingDotBypass(t *te
 
 func TestPublicRoutingAlertAddressPolicyRejectsNonPublicRanges(t *testing.T) {
 	rejected := []string{
+		"0.1.2.3",
 		"127.0.0.1",
 		"10.0.0.1",
 		"172.16.0.1",
@@ -48,6 +49,7 @@ func TestPublicRoutingAlertAddressPolicyRejectsNonPublicRanges(t *testing.T) {
 		"100.64.0.1",
 		"198.18.0.1",
 		"192.0.2.1",
+		"192.88.99.1",
 		"224.0.0.1",
 		"240.0.0.1",
 		"::1",
@@ -55,6 +57,11 @@ func TestPublicRoutingAlertAddressPolicyRejectsNonPublicRanges(t *testing.T) {
 		"fc00::1",
 		"fec0::1",
 		"2001:db8::1",
+		"64:ff9b::a9fe:a9fe",
+		"64:ff9b:1::a9fe:a9fe",
+		"2001::1",
+		"2002:7f00:1::1",
+		"::ffff:169.254.169.254",
 	}
 	for _, value := range rejected {
 		t.Run(value, func(t *testing.T) {
@@ -97,6 +104,63 @@ func TestRoutingAlertDialRejectsMixedPublicPrivateDNSAnswers(t *testing.T) {
 	}
 	if dialCalled {
 		t.Fatal("unsafe DNS answer must be rejected before any network dial")
+	}
+}
+
+// An unsafe IPv4 destination must not be reachable through a translated AAAA
+// record, even when the same hostname also resolves to an ordinary public IP.
+func TestRoutingAlertDialRejectsMixedPublicTranslatedPrivateIPv4(t *testing.T) {
+	resolver := routingAlertResolverFunc(func(
+		context.Context,
+		string,
+		string,
+	) ([]netip.Addr, error) {
+		return []netip.Addr{
+			netip.MustParseAddr("2606:4700:4700::1111"),
+			netip.MustParseAddr("64:ff9b::a9fe:a9fe"),
+		}, nil
+	})
+	dialCalled := false
+	dial := func(context.Context, string, string) (net.Conn, error) {
+		dialCalled = true
+		return nil, errors.New("unexpected dial")
+	}
+
+	guardedDial := newRoutingAlertPublicOnlyDialContext("alerts.example.com", resolver, dial)
+	_, err := guardedDial(context.Background(), "tcp", "alerts.example.com:443")
+	if !errors.Is(err, errRoutingAlertWebhookUnsafeNetwork) {
+		t.Fatalf("translated-private AAAA answer must fail closed, got %v", err)
+	}
+	if dialCalled {
+		t.Fatal("mixed translated-private DNS answers must be rejected before dialing")
+	}
+}
+
+func TestRoutingAlertDialRejectsExcessiveDNSAnswersWithoutDial(t *testing.T) {
+	answers := make([]netip.Addr, maxRoutingAlertWebhookResolvedAddresses+1)
+	for index := range answers {
+		answers[index] = netip.MustParseAddr("8.8.8.8")
+	}
+	resolver := routingAlertResolverFunc(func(
+		context.Context,
+		string,
+		string,
+	) ([]netip.Addr, error) {
+		return answers, nil
+	})
+	dialCalled := false
+	dial := func(context.Context, string, string) (net.Conn, error) {
+		dialCalled = true
+		return nil, errors.New("unexpected dial")
+	}
+
+	guardedDial := newRoutingAlertPublicOnlyDialContext("alerts.example.com", resolver, dial)
+	_, err := guardedDial(context.Background(), "tcp", "alerts.example.com:443")
+	if !errors.Is(err, errRoutingAlertWebhookUnsafeNetwork) {
+		t.Fatalf("excessive DNS answer list must fail closed, got %v", err)
+	}
+	if dialCalled {
+		t.Fatal("excessive DNS answers must be rejected before any dial")
 	}
 }
 

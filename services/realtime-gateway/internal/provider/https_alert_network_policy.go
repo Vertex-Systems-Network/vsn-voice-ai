@@ -11,14 +11,29 @@ import (
 
 var errRoutingAlertWebhookUnsafeNetwork = errors.New("routing alert webhook network target is not public")
 
+// A malicious or misconfigured resolver must not fan out a single signed
+// webhook dispatch into an unbounded list of attempted external connections.
+const maxRoutingAlertWebhookResolvedAddresses = 64
+
 var routingAlertNonPublicPrefixes = []netip.Prefix{
+	// Go's IsGlobalUnicast includes some protocol-reserved addresses.
+	// 0/8 is current-network address space, not an Internet egress target.
+	netip.MustParsePrefix("0.0.0.0/8"),
 	netip.MustParsePrefix("100.64.0.0/10"),
 	netip.MustParsePrefix("192.0.0.0/24"),
 	netip.MustParsePrefix("192.0.2.0/24"),
+	// Deprecated 6to4 anycast relay range; not an approved public webhook.
+	netip.MustParsePrefix("192.88.99.0/24"),
 	netip.MustParsePrefix("198.18.0.0/15"),
 	netip.MustParsePrefix("198.51.100.0/24"),
 	netip.MustParsePrefix("203.0.113.0/24"),
 	netip.MustParsePrefix("240.0.0.0/4"),
+	// IPv4-embedded transition ranges could tunnel or translate a seemingly
+	// global IPv6 address into a prohibited internal IPv4 endpoint.
+	netip.MustParsePrefix("64:ff9b::/96"),
+	netip.MustParsePrefix("64:ff9b:1::/48"),
+	netip.MustParsePrefix("2001::/32"),
+	netip.MustParsePrefix("2002::/16"),
 	netip.MustParsePrefix("2001:db8::/32"),
 	netip.MustParsePrefix("fec0::/10"),
 }
@@ -81,7 +96,7 @@ func newRoutingAlertPublicOnlyDialContext(
 		}
 
 		resolved, err := resolver.LookupNetIP(ctx, "ip", expectedHostname)
-		if err != nil || len(resolved) == 0 {
+		if err != nil || len(resolved) == 0 || len(resolved) > maxRoutingAlertWebhookResolvedAddresses {
 			return nil, errRoutingAlertWebhookUnsafeNetwork
 		}
 
