@@ -9,10 +9,8 @@ import { DesktopLinkController } from './device-link/desktop-link.controller.js'
 import { DesktopLinkService } from './device-link/desktop-link.service.js';
 import { createRuntimeDesktopLinkRecordStore } from './device-link/runtime-desktop-link-record-store.js';
 import { HealthController } from './health/health.controller.js';
-import {
-  RejectingTrustedPrincipalResolver,
-  TRUSTED_PRINCIPAL_RESOLVER,
-} from './identity/trusted-principal-resolver.js';
+import { createRuntimeTrustedPrincipalResolver } from './identity/runtime-trusted-principal-resolver.js';
+import { TRUSTED_PRINCIPAL_RESOLVER } from './identity/trusted-principal-resolver.js';
 import { ORGANIZATION_MEMBERSHIP_DIRECTORY } from './organizations/organization-membership-directory.js';
 import { ORGANIZATION_MEMBERSHIP_RESOLVER } from './organizations/organization-membership-resolver.js';
 import { createRuntimeOrganizationMembershipResolver } from './organizations/runtime-organization-membership-resolver.js';
@@ -48,7 +46,7 @@ import { WorkspaceController } from './workspace/workspace.controller.js';
     },
     {
       provide: TRUSTED_PRINCIPAL_RESOLVER,
-      useClass: RejectingTrustedPrincipalResolver,
+      useFactory: () => createRuntimeTrustedPrincipalResolver(process.env),
     },
     {
       provide: ORGANIZATION_MEMBERSHIP_RESOLVER,
