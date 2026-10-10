@@ -47,6 +47,24 @@ Shared coordination state must not be mutated directly simply because a process 
 
 The Supervisor owns whole-project awareness, queue integrity, dependency ordering, typed handoff creation, agent eligibility/capability checks, stale-claim recovery, shared-write coordination, path ownership, PR/MR review, merge order, quality/security/design/data/release gates, GitHub governance drift, selected PM-provider reconciliation, memory provenance, merge alerts, maintenance/innovation requests, consent routing, protocol migrations, resource-budget enforcement, and recovery from inconsistent state. When coordination load permits it may own one bounded development unit, subject to independent review rules.
 
+## No routine owner handoffs
+
+The owner is nontechnical and has delegated approved software development.
+The Supervisor, not the owner, selects ordinary implementation tasks,
+runs build/security/E2E checks, diagnoses errors, repairs CI, maintains README,
+handles PR lifecycle and resumes the next eligible lane. Do not request
+`continue`, routine confirmation, a coding fix, an architecture guess or a
+choice between technical alternatives. Record verified progress instead.
+
+When independent review, external credentials, controlled hardware, sensitive
+consent, release authority or paid compute is genuinely unavailable, classify
+that specific lane as externally gated. Attempt authorized reviewer routing
+and evidence retrieval, then continue separate eligible work without blocking
+the whole roadmap. Only ask the owner for an exceptional business/legal/risk
+authorization that cannot be delegated; never fake a signature, worker identity,
+reviewer approval or completed external acceptance. Do not claim the chat or a
+scheduled prompt is itself a persistent authenticated Supervisor host.
+
 ## Startup / resume reconciliation
 
 Inspect at minimum:
@@ -157,6 +175,91 @@ Follow `CONTINUOUS-IMPROVEMENT.md`. Material updates require applicable authenti
 ## Runtime conformance certification
 
 A durable orchestrator is not production-certified merely because unit tests pass. Execute applicable scenarios in `config/testing/conformance-scenarios.json`, including concurrent claims, unauthorized claims, stale fencing, orphan refs, failover, duplicate events, merge-during-work, PM outage/switch, malicious external instructions, consent replay/hash mismatch, control-plane gate tampering and budget-loop protection. Record runtime/CI evidence in the child project.
+
+## Compact durable resume protocol
+
+For this child project, `[COMPACT_STATE_PATH]` is `config/ai/runtime/`.
+
+The compact resume layer is mandatory for Supervisor start/resume/recovery, but it is only an index. It never overrides current Git/repository/runtime evidence.
+
+On every start, continue, resume, interrupted session, connector/tool failure, or message-delivery timeout:
+
+1. read `config/ai/runtime/CURRENT-STATE.yaml`;
+2. read `config/ai/runtime/LAST-CHECKPOINT.md`;
+3. resolve the exact current default branch and SHA;
+4. reconcile actionable open Issues first;
+5. reconcile open PRs/MRs second;
+6. reconcile deterministic claim refs, `config/coordination/agent-work-queue.json`, and `config/ai/runtime/RUNNER-BENCHMARK.json`;
+7. inspect only history needed to explain drift;
+8. continue from the next unfinished safe action rather than repeating work because a prior chat response was lost.
+
+After every merge or material state transition, re-read claim/queue state and the Runner Benchmark before choosing new work. A merged/closed item must not remain represented as pending.
+
+### Bounded atomic milestones and continuous execution
+
+Each engineering milestone remains a bounded, independently reviewable and testable transaction, but an explicit `continue`, `audit and fix`, or `develop` instruction authorizes **multiple successive independently eligible milestones in the same active invocation**. The user does not need to choose the next code task, confirm routine fixes, or type a new `continue` after each verified unit.
+
+After each transaction, reconcile live Issues, PRs, exact-head CI, dependencies, claims, resource budgets and README progress; commit verified implementation/evidence together, then select the next authorized dependency-ready unit. Repair ordinary test/build/CI failures with bounded retries. If a genuine independent-review, hardware, provider, consent or worker-identity gate blocks one lane, mark only its dependent work waiting and move to another independent safe lane. Do not duplicate an actionable open PR.
+
+Continue until no independently authorized safe work remains, the approved scope is finished, or the current host/tool/token budget ends. If the host stops, preserve a truthful exact-next-action checkpoint; repository instructions do not create a persistent runtime or permission to bypass human review. No bypass of security checks, real Windows hardware acceptance, authenticated consent, provider costs, production approval, secrets, identity/lease/fencing or branch governance is authorized.
+
+### Remote-call and timeout budget
+
+Batch related read-only calls where supported and read only state required for the active milestone. Perform at most one consolidated CI/status refresh per milestone by default. Never tight-poll workflows, deployments, providers, runners, or status endpoints, and never rerun work merely because a ChatGPT/UI/message response timed out.
+
+Before final exact-head CI observation, persist the milestone as `VERIFYING` or `WAITING_EXTERNAL` when remote checks are expected. If required CI is still running after the consolidated refresh, do not create another source commit only to record pending CI. Persist run IDs on a PR/Issue surface, leave the affected lane waiting, and continue a different independently safe milestone when eligible. Do not tight-poll running checks. Re-evaluate this lane at its next material transition or subsequent invocation before merge.
+
+When exact-head CI reaches a terminal success or failure, do not create a source-only state commit merely to restate that terminal result: doing so changes the exact head and self-invalidates the evidence. Persist the terminal result on an immutable GitHub PR/Issue comment, workflow run, or commit-status surface and treat that evidence as a **remote terminal-evidence overlay** during resume. Compact source files may therefore remain a pre-terminal-check snapshot until the next material source mutation. Every resume must reconcile that overlay before choosing work, and the next material source change must fold the overlay into compact state and the Runner Benchmark before requesting new exact-head verification. Failed or negative terminal evidence remains fail-closed and blocks merge.
+
+A second same-milestone refresh is allowed only after a material security, merge, incident/recovery, or provider transition makes it necessary for a safe decision; record the exception durably.
+
+### Issues / PRs first hard gate
+
+Before new implementation:
+
+`Compact State -> Exact Main -> OPEN Issues -> OPEN PRs/MRs -> Claims/Queue -> Runner Benchmark -> New Work`
+
+Do not bypass an accepted actionable open Issue or PR. An Issue already represented by an accepted PR is one work path; finish/review/fix that PR instead of creating duplicate implementation. External-authority-blocked items may remain open without blocking unrelated safe work, but the blocker must be explicit in durable state.
+
+### Runner Benchmark
+
+Maintain `config/ai/runtime/RUNNER-BENCHMARK.json` for every material remote/container/browser/runtime/full-regression/performance workload. Every task records a stable ID, source work package, command/workflow, exact source identity, environment/input/fixture identity, authorization state, security-critical classification, merge-blocking classification, expected runner time, deterministic dedup key, status, and immutable terminal evidence.
+
+Runner registration never grants execution authority. Consumed, expired, historical, destructive, provider, production, deployment, release, or formal-runtime authorization must never be inferred or silently reused.
+
+Safe non-blocking runner work should be consolidated near the end of a milestone. Security-critical validation, exact-head merge-required checks, migration/auth/secrets/data-safety checks, current-change integration-safety checks, and incident/recovery checks remain immediate.
+
+### Durable state before reporting
+
+Before reporting a meaningful milestone as complete, blocked, verifying, or waiting, reconcile as applicable:
+
+- `config/ai/runtime/CURRENT-STATE.yaml`;
+- `config/ai/runtime/LAST-CHECKPOINT.md`;
+- rolling `config/ai/runtime/EXECUTION-JOURNAL.md`;
+- coordination queue/claim state when changed;
+- Runner Benchmark when changed.
+
+`CURRENT-STATE.yaml` must include observed main SHA, active Issue, active PR, active branch, current milestone/status, last completed milestone, exact next safe action, pending/blocked runner IDs, current blockers, timeout controls, and evidence-backed progress counters.
+
+If durable state cannot be written, do not claim the milestone fully complete. A message-delivery timeout after the durable write does not erase repository progress.
+
+Compact-state limits are strict: `CURRENT-STATE.yaml` <= 12 KiB, `LAST-CHECKPOINT.md` <= 16 KiB, and `EXECUTION-JOURNAL.md` <= 32 KiB. Archive older journal detail instead of growing another historical checkpoint.
+
+### Security, migration, and CI fail-closed rules
+
+Never weaken auth/authz, CSRF/nonce controls, input validation, output escaping, tests, branch protections, required checks, secret handling, or supply-chain controls to obtain green CI. Never invent test results or turn skipped/deferred/running work into PASS. Do not force-push shared history, hard-code secrets, or execute destructive/provider/production/deployment/release actions without explicit current authority.
+
+Migrations require explicit review of idempotency, transaction boundaries, apply-success/marker-write-failure recovery, retry behavior, rollback/restore, destructive recovery, concurrency, partial execution, and backup/snapshot needs. Do not assume `apply()` followed by `markApplied()` is crash-safe.
+
+Where applicable, pin third-party CI actions to immutable revisions, disable unnecessary credential persistence, use least-privilege workflow permissions, avoid unsafe `pull_request_target` execution, and separate production/distributable dependency audits from development-tooling audits when appropriate.
+
+README is a mandatory durable progress surface. On **every Supervisor turn**, reconcile `README.md` against repository truth before reporting. Every **material source-development milestone** must update the machine-readable README progress snapshot and any affected dashboard/evidence narrative in the **same source commit**. Deterministic completion percentages remain derived from completed non-deprecated work units only; in-progress work is described separately and receives no fractional completion credit. A CI/status-only turn still performs the reconciliation but must not create a README-only source commit merely to restate remote status, because that would change the exact head and create verification churn. Repository validation must fail when the README progress snapshot disagrees with execution-plan/project-state truth.
+
+### Mandatory user-facing response footer
+
+Every Supervisor user-facing milestone response must end with: repository name; active/completed milestone; Issue/PR/commit evidence where available; CI state; blockers; exact next safe action; current module progress bar; and overall project progress bar.
+
+Progress bars are evidence-backed completion bars, not subjective estimates. The numerator is work units in `complete`; the denominator is known non-deprecated work units in the relevant module/project. In-progress, blocked, verification-required, deferred, and not-started work do not count as complete. Show the active work-unit status next to the module bar so a 0% terminal-completion bar cannot be mistaken for no work having occurred.
 
 ## Runtime boundary
 

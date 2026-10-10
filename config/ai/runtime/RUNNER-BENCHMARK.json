@@ -1,0 +1,421 @@
+{
+  "schema_version": 1,
+  "repository": "Vertex-Systems-Network/vsn-voice-ai",
+  "last_reconciled_main_sha": "c7ed9caf06bd44460a7717e4f419b51cf49792d4",
+  "tasks": [
+    {
+      "task_id": "RUN-WU-002-CONTROLLED-WINDOWS-AUDIO",
+      "source": {
+        "issue": 110,
+        "module_id": "MOD-002",
+        "work_unit_id": "WU-002",
+        "work_package": "controlled physical Windows acceptance evidence"
+      },
+      "command_workflow": ".github/workflows/windows-audio-controlled.yml",
+      "exact_source_identity": {
+        "repository": "Vertex-Systems-Network/vsn-voice-ai",
+        "branch": "main",
+        "sha": "c7ed9caf06bd44460a7717e4f419b51cf49792d4",
+        "must_reconcile_sha_before_execution": true
+      },
+      "environment_matrix_input_fixture_identity": {
+        "runner_group": "vsn-controlled-audio-restricted",
+        "runner_labels": [
+          "self-hosted",
+          "windows",
+          "x64",
+          "vsn-controlled-audio"
+        ],
+        "machine": "physical Windows x64 controlled machine",
+        "inputs": [
+          "controlled checks JSON leaf filename",
+          "controlled performance samples JSON leaf filename"
+        ],
+        "evidence_directory": "VSN_CONTROLLED_EVIDENCE_DIR outside repository checkout"
+      },
+      "authorization_state": "not_granted_in_current_runtime",
+      "security_critical": true,
+      "merge_blocking": false,
+      "completion_blocking_for": [
+        "WU-002",
+        "MOD-002"
+      ],
+      "expected_runner_time": "operator_estimate_required_before_authorized_execution",
+      "deterministic_dedup_key": "WU-002|windows-audio-controlled|physical-windows-x64|acceptance-evidence-v1",
+      "status": "blocked_authorization_and_external_machine",
+      "immutable_evidence": []
+    },
+    {
+      "task_id": "RUN-PR-131-EXACT-HEAD-CI",
+      "source": {
+        "pr": 131,
+        "work_package": "compact supervisor resume protocol protected-path verification"
+      },
+      "command_workflow": "AI Native Quality Gates",
+      "exact_source_identity": {
+        "repository": "Vertex-Systems-Network/vsn-voice-ai",
+        "pr": 131,
+        "branch": "ai/supervisor-resume-protocol",
+        "certified_head_sha": "64d045993c84dbeac4455ef4448352b6c9d4d442"
+      },
+      "environment_matrix_input_fixture_identity": {
+        "provider": "GitHub Actions",
+        "trigger": "pull_request",
+        "base_branch": "main",
+        "affected_scope": "protected AI control-plane and repository validator"
+      },
+      "authorization_state": "repository_ci_only_no_deployment_or_production_authority",
+      "security_critical": true,
+      "merge_blocking": true,
+      "expected_runner_time": "provider_managed_duration_unknown_no_polling",
+      "deterministic_dedup_key": "PR-131|exact-head-ci|protected-ai-control-plane-v1",
+      "status": "success",
+      "immutable_evidence": [
+        {
+          "workflow_run_id": 35625174513,
+          "workflow_name": "AI Native Quality Gates",
+          "exact_head_sha": "64d045993c84dbeac4455ef4448352b6c9d4d442",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "task_id": "RUN-PR-131-STATE-RECONCILIATION-CI",
+      "source": {
+        "pr": 131,
+        "issue": 132,
+        "work_package": "compact state reconciliation after independent-review blocker creation"
+      },
+      "command_workflow": "AI Native Quality Gates",
+      "exact_source_identity": {
+        "repository": "Vertex-Systems-Network/vsn-voice-ai",
+        "pr": 131,
+        "branch": "ai/supervisor-resume-protocol",
+        "certified_head_sha": "cd9562c2ba2d0f5a5a4099e76d20d288bb8d2cfc"
+      },
+      "environment_matrix_input_fixture_identity": {
+        "provider": "GitHub Actions",
+        "trigger": "pull_request",
+        "base_branch": "main",
+        "affected_scope": "compact runtime state and Runner Benchmark only"
+      },
+      "authorization_state": "repository_ci_only_no_deployment_or_production_authority",
+      "security_critical": true,
+      "merge_blocking": true,
+      "expected_runner_time": "provider_managed_duration_unknown_no_polling",
+      "deterministic_dedup_key": "PR-131|state-reconciliation-ci|issue-132-v1",
+      "status": "success",
+      "immutable_evidence": [
+        {
+          "workflow_run_id": 35627515382,
+          "workflow_name": "AI Native Quality Gates",
+          "exact_head_sha": "cd9562c2ba2d0f5a5a4099e76d20d288bb8d2cfc",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "task_id": "RUN-PR-131-RULESET-DRIFT-STATE-CI",
+      "source": {
+        "pr": 131,
+        "issue": 133,
+        "work_package": "compact state reconciliation after main ruleset enforcement drift discovery"
+      },
+      "command_workflow": "AI Native Quality Gates",
+      "exact_source_identity": {
+        "repository": "Vertex-Systems-Network/vsn-voice-ai",
+        "pr": 131,
+        "branch": "ai/supervisor-resume-protocol",
+        "certified_head_sha": "1e81536a2332ce41cf26328740906698b16624dd"
+      },
+      "environment_matrix_input_fixture_identity": {
+        "provider": "GitHub Actions",
+        "trigger": "pull_request",
+        "base_branch": "main",
+        "affected_scope": "compact runtime state and Runner Benchmark only"
+      },
+      "authorization_state": "repository_ci_only_no_deployment_or_production_authority",
+      "security_critical": true,
+      "merge_blocking": true,
+      "expected_runner_time": "provider_managed_duration_unknown_no_polling",
+      "deterministic_dedup_key": "PR-131|ruleset-drift-state-ci|issue-133-v1",
+      "status": "success",
+      "immutable_evidence": [
+        {
+          "workflow_run_id": 35628990019,
+          "workflow_name": "AI Native Quality Gates",
+          "exact_head_sha": "1e81536a2332ce41cf26328740906698b16624dd",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "task_id": "RUN-PR-131-OWNER-APPROVAL-STATE-CI",
+      "source": {
+        "pr": 131,
+        "issue": 133,
+        "work_package": "compact state reconciliation after explicit owner approval to apply recommended GitHub rules"
+      },
+      "command_workflow": "AI Native Quality Gates",
+      "exact_source_identity": {
+        "repository": "Vertex-Systems-Network/vsn-voice-ai",
+        "pr": 131,
+        "branch": "ai/supervisor-resume-protocol",
+        "certified_head_sha": "632a603d3917cf044a0637cb6c45680ff36572d9"
+      },
+      "environment_matrix_input_fixture_identity": {
+        "provider": "GitHub Actions",
+        "trigger": "pull_request",
+        "base_branch": "main",
+        "affected_scope": "compact runtime state and Runner Benchmark only"
+      },
+      "authorization_state": "repository_ci_only_no_deployment_or_production_authority",
+      "security_critical": true,
+      "merge_blocking": true,
+      "expected_runner_time": "provider_managed_duration_unknown_no_polling",
+      "deterministic_dedup_key": "PR-131|owner-approval-state-ci|issue-133-v1",
+      "status": "success",
+      "immutable_evidence": [
+        {
+          "workflow_run_id": 35630766749,
+          "workflow_name": "AI Native Quality Gates",
+          "exact_head_sha": "632a603d3917cf044a0637cb6c45680ff36572d9",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "task_id": "RUN-PR-131-AI-NATIVE-PLAN-FLOW-CI",
+      "source": {
+        "pr": 131,
+        "issues": [
+          132,
+          133
+        ],
+        "work_package": "AI-Native plan/flow memory-drift and terminal-evidence-overlay reconciliation"
+      },
+      "command_workflow": "AI Native Quality Gates",
+      "exact_source_identity": {
+        "repository": "Vertex-Systems-Network/vsn-voice-ai",
+        "pr": 131,
+        "branch": "ai/supervisor-resume-protocol",
+        "certified_head_sha": "cff0c21976530cedc6fa1ff266b9fc3723a099fa"
+      },
+      "environment_matrix_input_fixture_identity": {
+        "provider": "GitHub Actions",
+        "trigger": "pull_request",
+        "base_branch": "main",
+        "affected_scope": "protected AI control-plane, runtime policy, governance memory and repository validator"
+      },
+      "authorization_state": "repository_ci_only_no_deployment_or_production_authority",
+      "security_critical": true,
+      "merge_blocking": true,
+      "expected_runner_time": "provider_managed_duration_unknown_no_polling",
+      "deterministic_dedup_key": "PR-131|ai-native-plan-flow-drift-ci|terminal-overlay-v1",
+      "status": "success",
+      "immutable_evidence": [
+        {
+          "workflow_run_id": 35640781642,
+          "workflow_name": "AI Native Quality Gates",
+          "exact_head_sha": "cff0c21976530cedc6fa1ff266b9fc3723a099fa",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "task_id": "RUN-PR-131-NEXT-WORK-SELECTION-CI",
+      "source": {
+        "pr": 131,
+        "issues": [
+          110,
+          132,
+          133
+        ],
+        "work_package": "AI-Native next-valid work selection and WU-002 blocker reconciliation"
+      },
+      "command_workflow": "AI Native Quality Gates",
+      "exact_source_identity": {
+        "repository": "Vertex-Systems-Network/vsn-voice-ai",
+        "pr": 131,
+        "branch": "ai/supervisor-resume-protocol",
+        "certified_head_sha": "c250180b8c37b586faabf93b0b002a1796113489"
+      },
+      "environment_matrix_input_fixture_identity": {
+        "provider": "GitHub Actions",
+        "trigger": "pull_request",
+        "base_branch": "main",
+        "affected_scope": "execution-plan, project-state, AI-Native next-work policy, runtime policy, validator and compact state"
+      },
+      "authorization_state": "repository_ci_only_no_deployment_or_production_authority",
+      "security_critical": true,
+      "merge_blocking": true,
+      "expected_runner_time": "provider_managed_duration_unknown_no_polling",
+      "deterministic_dedup_key": "PR-131|next-valid-work-selection|wu002-blocker-v1",
+      "status": "success",
+      "immutable_evidence": [
+        {
+          "workflow_run_id": 35641796156,
+          "workflow_name": "AI Native Quality Gates",
+          "exact_head_sha": "c250180b8c37b586faabf93b0b002a1796113489",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "task_id": "RUN-PR-134-WU-014-API-CACHE-REGRESSION",
+      "source": {
+        "pr": 134,
+        "work_unit_id": "WU-014",
+        "module_id": "MOD-014",
+        "work_package": "workspace bootstrap cache policy and deterministic API test discovery"
+      },
+      "command_workflow": "API Validation + AI Native Quality Gates",
+      "exact_source_identity": {
+        "repository": "Vertex-Systems-Network/vsn-voice-ai",
+        "pr": 134,
+        "branch": "ai/wu-014-api-regression-cache-hardening",
+        "certified_head_sha": "7a7848d73c555f0f5a655927abb831f5823883f7"
+      },
+      "environment_matrix_input_fixture_identity": {
+        "provider": "GitHub Actions",
+        "base_branch": "main",
+        "affected_scope": "services/api workspace bootstrap and API test runner"
+      },
+      "authorization_state": "repository_ci_only_no_merge_or_deployment_authority",
+      "security_critical": true,
+      "merge_blocking": true,
+      "expected_runner_time": "provider_managed_duration_unknown_no_polling",
+      "deterministic_dedup_key": "PR-134|WU-014|api-cache-regression-v1",
+      "status": "success",
+      "immutable_evidence": [
+        {
+          "workflow_run_id": 35647881877,
+          "workflow_name": "API Validation",
+          "exact_head_sha": "7a7848d73c555f0f5a655927abb831f5823883f7",
+          "conclusion": "success"
+        },
+        {
+          "workflow_run_id": 35647881968,
+          "workflow_name": "AI Native Quality Gates",
+          "exact_head_sha": "7a7848d73c555f0f5a655927abb831f5823883f7",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "task_id": "RUN-PR-135-WU-014-DESKTOP-LINK-STATUS",
+      "source": {
+        "pr": 135,
+        "work_unit_id": "WU-014",
+        "module_id": "MOD-014",
+        "work_package": "desktop-link persistence fail-closed behavior and tenant-safe lifecycle status API"
+      },
+      "command_workflow": "API Validation + AI Native Quality Gates",
+      "exact_source_identity": {
+        "repository": "Vertex-Systems-Network/vsn-voice-ai",
+        "pr": 135,
+        "branch": "ai/wu-014-desktop-link-persistence-failclosed",
+        "certified_head_sha": "cea25b371d666ae73ada531a4ef897e335c29172"
+      },
+      "environment_matrix_input_fixture_identity": {
+        "provider": "GitHub Actions",
+        "base_branch": "main",
+        "affected_scope": "services/api desktop-link persistence and status boundary"
+      },
+      "authorization_state": "repository_ci_only_no_merge_or_deployment_authority",
+      "security_critical": true,
+      "merge_blocking": true,
+      "expected_runner_time": "provider_managed_duration_unknown_no_polling",
+      "deterministic_dedup_key": "PR-135|WU-014|desktop-link-status-v1",
+      "status": "success",
+      "immutable_evidence": [
+        {
+          "workflow_run_id": 35652937526,
+          "workflow_name": "API Validation",
+          "exact_head_sha": "cea25b371d666ae73ada531a4ef897e335c29172",
+          "conclusion": "success"
+        },
+        {
+          "workflow_run_id": 35652939711,
+          "workflow_name": "AI Native Quality Gates",
+          "exact_head_sha": "cea25b371d666ae73ada531a4ef897e335c29172",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "task_id": "RUN-PR-136-WU-014-BROWSER-DESKTOP-LINK",
+      "source": {
+        "pr": 136,
+        "work_unit_id": "WU-014",
+        "module_id": "MOD-014",
+        "work_package": "browser tenant-bound desktop-link issue, expiry and completion observation"
+      },
+      "command_workflow": "Web Validation + AI Native Quality Gates",
+      "exact_source_identity": {
+        "repository": "Vertex-Systems-Network/vsn-voice-ai",
+        "pr": 136,
+        "branch": "ai/wu-014-browser-desktop-link-issue",
+        "certified_head_sha": "4008907d403e0015a4411890dc4767a918b6b524"
+      },
+      "environment_matrix_input_fixture_identity": {
+        "provider": "GitHub Actions",
+        "base_branch": "main",
+        "affected_scope": "apps/web desktop-link issue/expiry/status UX and E2E"
+      },
+      "authorization_state": "repository_ci_only_no_merge_or_deployment_authority",
+      "security_critical": true,
+      "merge_blocking": true,
+      "expected_runner_time": "provider_managed_duration_unknown_no_polling",
+      "deterministic_dedup_key": "PR-136|WU-014|browser-desktop-link-v1",
+      "status": "success",
+      "immutable_evidence": [
+        {
+          "workflow_run_id": 35653050905,
+          "workflow_name": "Web Validation",
+          "exact_head_sha": "4008907d403e0015a4411890dc4767a918b6b524",
+          "conclusion": "success"
+        },
+        {
+          "workflow_run_id": 35653051105,
+          "workflow_name": "AI Native Quality Gates",
+          "exact_head_sha": "4008907d403e0015a4411890dc4767a918b6b524",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "task_id": "RUN-PR-131-README-PROGRESS-SYNC-CI",
+      "source": {
+        "pr": 131,
+        "issues": [
+          110,
+          132,
+          133
+        ],
+        "work_package": "mandatory README progress synchronization and validator enforcement"
+      },
+      "command_workflow": "AI Native Quality Gates",
+      "exact_source_identity": {
+        "repository": "Vertex-Systems-Network/vsn-voice-ai",
+        "pr": 131,
+        "branch": "ai/supervisor-resume-protocol",
+        "parent_head_sha": "c250180b8c37b586faabf93b0b002a1796113489",
+        "execution_rule": "resolve immutable current PR head after README/protocol reconciliation commit, then perform one consolidated CI/status refresh; terminal outcome remains on remote evidence overlay"
+      },
+      "environment_matrix_input_fixture_identity": {
+        "provider": "GitHub Actions",
+        "trigger": "pull_request",
+        "base_branch": "main",
+        "affected_scope": "README, Supervisor/AI-Native policy, runtime policy, validator and compact state"
+      },
+      "authorization_state": "repository_ci_only_no_merge_or_deployment_authority",
+      "security_critical": true,
+      "merge_blocking": true,
+      "expected_runner_time": "provider_managed_duration_unknown_no_polling",
+      "deterministic_dedup_key": "PR-131|README-progress-sync|validator-v1",
+      "status": "registered_verify_exact_head",
+      "immutable_evidence": []
+    }
+  ]
+}

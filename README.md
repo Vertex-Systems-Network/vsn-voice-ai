@@ -85,6 +85,22 @@ The owner-approved product direction is:
 
 **Latest verified green implementation CI:** AI Native Quality Gates run `34713869004` and Windows Audio Validation run `34713869035` both passed on implementation head `228a3edef05ef1598dec8f13af282950d2479764`. The Windows run passed Rust compile/Clippy/tests, restored the pinned WDK packages, built and WDK-validated `vsn_virtual_mic_control.sys` with the PortCls-primary live entry and secure raw WDM runtime linked in, and passed the native C++ virtual-mic contract suite. PR #25 merged this implementation to `main` as `14fd4c55ae6ad44d1e43af3ea574e66427f7551e`. The first Windows run for this slice (`34713657493`) correctly failed because `WdfDriverMiniportUnload` was undeclared; adding `<wdfminiport.h>` fixed the build before merge. The preceding secure raw WDM runtime merged as `6c395ef7cbd7afc5caa3daac506dee16073335fe`; raw WDM scaffold as `e31e40c0a78dcdf99396ea8a0bf3648691416b35`; architecture correction as `2665954315b52d01b3e59b6fb283f0da2a053eed`; PortCls lifecycle/WaveRT stream contracts as `78ef04bf86bf02b25b9da25ef401dc84f73f0f2b`; descriptor scaffold as `da1b0543bcbfe63ff6a342690cab3b250057bbe2`; guarded ring consumer as `9c57207482bdc20ca5dc70a06cbb43c0cfa86741`.
 
+## Safe AI-Native Continuation Engine
+
+The code candidate on PR #131 adds a host-neutral, bounded continuation loop in `scripts/continuity_supervisor.py`, with tests in `tests/test_continuity_supervisor.py` and `tests/test_continuity_policy.py`. These tests exercise multi-milestone continuation, bounded automatic repair of explicitly retryable errors with authority/source revalidation **before repair**, per-lane blocker isolation, checkpoint resume, and fail-closed validation of identity, expiry, fencing epoch, exact source revision, evidence and CAS checkpoint errors.
+
+**Non-developer owner execution contract (candidate, not yet merged):** AI owns
+next-task selection, coding, tests, normal CI repair, PR preparation and eligible
+merges without repeated `continue` prompts. The continuation selector filters
+explicitly tagged human-consent, external-acceptance, paid-resource and production-
+release gates until independently verified evidence references exist; blocked
+lanes cannot stop ordinary permitted WU-014/WU-016 work. The host must validate
+evidence and identity, and genuinely independent review is still mandatory
+where policy requires it. This is a **tested orchestration candidate**, not proof
+that a live, permanently running Supervisor or independent reviewer exists.
+
+**Replay-safety refinement:** the host snapshot must contain a durable `milestone_receipts` ledger separate from parent work-unit completion. An exact milestone is skipped on restart only when its receipt was checkpointed; a changed revision without the exact matching source SHA and evidence reference is rejected. Stable milestone IDs must identify atomic slices, not be reused for distinct slices of an in-progress work unit. This is **not a deployed persistent AI host**, cannot self-approve protected changes, and does not count as a completed product work unit. Real worker identity, lease, host execution, independent review and hosted acceptance remain outstanding in Issues #179/#132/#133.
+
 ## AI-Native Progress Snapshot
 
 <!-- AI-NATIVE-PROGRESS:START -->
@@ -95,7 +111,9 @@ The owner-approved product direction is:
 - Current module completion: `0 / 1 complete (0%)`
 - Next valid product work: `MOD-014 / WU-014` — `in_progress`
 - Current WU-002 blocker: Issue #110 controlled Windows runner/acceptance evidence.
-- Active WU-014 delivery: PRs #134/#135/#136/#138/#140/#142/#144/#146/#148/#150/#152/#154/#156/#158/#160 are merged on `main`; browser organization-settings PR #160 exact head `1952d9770a1385d9023733d3a20fefbee187dae9` passed Web Validation run `35785225244` and AI Native Quality Gates run `35785225211` before squash merge `db9c13ee7d56055663daa8f55b2048bbdba75161`. Issue #161 is the active workspace-directory display-name projection slice.
+- Deterministic next-work state repaired: `config/ai/project-state.json` now selects `WU-014` while `WU-002` remains in progress with a **completion-only** Issue #110 evidence blocker in the execution plan. Unrelated authorized product development must not wait for restricted runner setup.
+- Active WU-014 delivery: PRs #134/#135/#136/#138/#140/#142/#144/#146/#148/#150/#152/#154/#156/#158/#160 and **#162** are merged on `main`. Issue #161 (workspace-directory display-name projection) is **closed** after PR #162 merged as `87b0ea6ee4f0ff637adea529459fa4e9a770df5b`; WU-014 remains in progress, not completed.
+- Continuity/governance audit (2026-10-08): PR #131 was **merge-conflicted on its previous head**; the current continuity reconciliation includes an updated branch with exact-head CI and independent review still required. Issues #132 (reviewer), #133 (ruleset policy drift), #110 (physical Windows acceptance) and #171 (optional upstream ANPOS update) remain open. Active `main` ruleset #23374505 requires **0** approvals and does **not** require CODEOWNER review despite stricter desired policy; applying admin policy still requires an authorized administrative surface. AI catalog has no verified attachable agents and Supervisor state is unassigned: do not claim a persistent autonomous runtime. Continue eligible WU-014/WU-016 work without waiting for the blocked WU-002 completion or the protected PR, subject to their own gates.
 <!-- AI-NATIVE-PROGRESS:END -->
 
 ## README Reconciliation Rule — Mandatory
@@ -110,6 +128,7 @@ After **every owner query/update** related to this project, the acting AI must r
 6. Module/dependency changes go to the canonical module bank first.
 7. Execution changes must stay synchronized with `config/ai/execution-plan.json` and `config/ai/project-state.json`.
 8. In-progress Level-1 modules remain at `0%` until a verified module-completion boundary exists; evidence is listed separately rather than converted into invented fractional percentages.
+9. Fail repository validation when the machine-readable README progress snapshot disagrees with the execution plan or project state; reflect material in-progress delivery evidence without awarding fake completion credit.
 
 # Total Modules Dashboard — 25 Modules
 

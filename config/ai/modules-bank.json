@@ -1,34 +1,894 @@
 {
   "schema_version": 1,
   "modules": [
-    {"id":"MOD-001","name":"Project Governance, Bootstrap & Consent","objective":"Maintain project identity, governance, consent gates and evidence-backed state.","scope":["child bootstrap","project identity","consent gates","README reconciliation","requirements traceability"],"boundaries":["Development and technology stack are approved; new material scope/technology/risk changes still require applicable consent","No fabricated progress or timestamps"],"dependencies":[],"option_ids":[],"status":"complete","completion_evidence":["active_project/bootstrap completed","CONSENT-000001 approved","CONSENT-000002 approved","PHASE-000 governance gate completed"],"update_notes":["Initial governance/bootstrap/consent milestone is complete; governance remains a cross-cutting repository responsibility."],"removal_or_deprecation_notes":[]},
-    {"id":"MOD-002","name":"Desktop Audio Core & Virtual Devices","objective":"Provide low-latency microphone/speaker capture and virtual audio routing for calling applications.","scope":["microphone capture","speaker capture","virtual microphone","virtual routing","device lifecycle","safe bypass"],"boundaries":["Native virtual-device distribution requires platform-specific signing, compatibility and release verification","Do not claim physical hotplug/default-device recovery, virtual microphone routing, calling-app compatibility or hardware latency/jitter until those platform-specific paths have direct verification evidence"],"dependencies":["MOD-001"],"option_ids":["OPT-006"],"status":"in_progress","completion_evidence":["Rust native workspace and vsn-audio-core initialized","Validated AudioFrame/AudioFormat contracts, bounded frame queue and safe-bypass pipeline implemented","Platform-neutral device catalog implements preferred/default/active fallback and lifecycle state handling","DeviceSelectionController implements deterministic preferred/default/hotplug selection transitions","StreamController implements bounded invalidation recovery, exponential retry backoff and processing safe-bypass transitions","GitHub Actions run 34415564226 passed initial Rust audio-core quality gates","GitHub Actions run 34416070554 passed device-catalog Rustfmt, Clippy, unit tests plus Go/schema/ANPOS gates","GitHub Actions run 34416846345 passed device-selection recovery-controller Rustfmt, Clippy, unit tests plus repository gates","GitHub Actions run 34417205364 passed bounded stream-recovery Rustfmt, Clippy, unit tests plus repository gates","native/windows-audio is a workspace crate with EndpointSnapshot-to-DeviceCatalog mapping and an explicit unsupported-platform boundary off Windows","GitHub Actions run 34420328611 passed ANPOS, Go, Rustfmt, Clippy, workspace unit tests, schemas, YAML and whitespace checks for the Windows-backend workspace slice","EnginePeriodRange and frames_for_duration validate fundamental/min/max/default period grids and select the nearest supported period for IAudioClient3 shared-mode planning","GitHub Actions run 34420942799 passed Rustfmt, Clippy, workspace tests and repository gates for the engine-period selector","SharedCapturePlan separates WASAPI engine callback frames from pipeline sample framing and marks accumulator-required cadence explicitly","GitHub Actions run 34421431894 passed repository gates for SharedCapturePlan","Dedicated .github/workflows/windows-audio.yml validates the Windows-native crate on a Windows runner","GitHub Actions Windows run 34423457612 passed Windows compile, Clippy and unit tests for vsn-windows-audio","GitHub Actions Windows run 34423605516 passed the MMDevice runtime snapshot smoke test on Windows Server 2025","Default-capture IAudioClient3 probe activates the communications endpoint when available, reads its mix format and validates shared-mode engine-period constraints","GitHub Actions run 34424232264 passed the full Ubuntu repository-integrity gate and Windows run 34424232265 passed Windows compile, Clippy and 14/14 Windows audio tests on the same commit","Event-driven WASAPI capture session, native sample decoding and packet-to-AudioFrame assembly are implemented; assembler boundary passed Ubuntu run 34500603127 and Windows run 34500603073","CapturePump waits for WASAPI packet events, drains available packets with a bounded packet budget and feeds the frame assembler; Ubuntu run 34503117516 and Windows run 34503117617 passed","Documented WASAPI device/resource/audio-service lifecycle HRESULTs are structured as recoverable capture failures; Ubuntu run 34503799448 and Windows run 34503799282 passed","StreamController distinguishes retryable runtime stream failures from optional processing bypass; Ubuntu run 34504361389 and Windows run 34504361377 passed","CaptureRuntime implements externally scheduled bounded reopen recovery with sequence continuity and no internal unbounded retry/sleep loop; Ubuntu run 34504968258 and Windows run 34504968283 passed","IMMNotificationClient registration uses a dedicated Windows MTA thread and a bounded non-blocking notification queue with dropped-event accounting; Ubuntu run 34508512647 and Windows run 34508512649 passed, including Windows registration/unregistration smoke","Owner-thread capture notification bridge filters active capture route changes, deduplicates a notification batch into at most one recovery transition and preserves sequence on invalidation; Ubuntu run 34509104650 and Windows run 34509104681 passed","VirtualMicStagingBuffer provides fixed-format bounded user-mode output staging with oldest-frame overflow drop, fresh-silence underrun behavior and explicit accepted/drop/underrun counters; Ubuntu run 34522446261 and Windows run 34522445865 passed","VirtualMicOutputBridge routes both processed AudioPipeline frames and safe-bypassed original frames through the same bounded virtual-mic staging path; Ubuntu run 34522943083 and Windows run 34522943093 passed","VirtualMicProtocolHeader and VirtualMicCursorSnapshot define a versioned C-compatible driver-facing metadata contract with session generation, fixed audio geometry and monotonic producer/consumer sequences; plan_ring_window validates the protocol and normalizes cyclic-buffer overruns by discarding the oldest window; Ubuntu run 34525486454 and Windows run 34525486333 passed on implementation head aa0792b81746a11d99b3b3451c3086e363714ee8","native/windows-virtual-mic now contains an MSVC-verified C++ mirror of the Rust wire ABI with fixed 40-byte header/cursor layouts, explicit field offsets, protocol validation and matching cyclic-ring overrun/session/cursor semantics; Ubuntu run 34528681411 and Windows run 34528681382 passed on implementation head 93c166709e3fad6aecd924a0378316761a9e318f","Custom PortCls topology/WaveRT miniports, physical bridge registration, concrete capture stream, guarded shared-ring transport and fixed 10 ms scheduler compile and test in the real WDK target","PR #51 merged the capture-only INF/test package after WDK build, InfVerif and Inf2Cat passed","PR #53 merged the installed endpoint/control runtime smoke harness after Windows Audio Validation and AI Native Quality Gates passed","docs/architecture/WINDOWS-AUDIO-IMPLEMENTATION.md defines WASAPI/MMDevice and virtual microphone implementation boundary"],"update_notes":["WU-002 implementation started 2026-09-10 03:43 PKT.","The Windows capture, virtual-mic transport, PortCls/WaveRT stream, guarded realtime scheduler and test-package path are now code-level and CI verified. Hosted CI also compiles the installed-runtime smoke harness and confirms that an uninstalled runner reports verification_required rather than a false pass. MOD-002 remains in progress because the package has not yet been installed and exercised on a controlled elevated Windows test machine, approved calling applications have not consumed the VSN endpoint, and controlled hardware latency/jitter plus production signing/release evidence remain pending."],"removal_or_deprecation_notes":[]},
-    {"id":"MOD-003","name":"Realtime Audio Enhancement","objective":"Improve realtime speech clarity before transmission or downstream AI.","scope":["noise cancellation","background voice cancellation","echo reduction","de-reverberation","VAD","audio quality metrics"],"boundaries":["Must support provider adapters and future VSN models"],"dependencies":["MOD-002","MOD-010"],"option_ids":["OPT-001","OPT-002","OPT-004","OPT-005"],"status":"not_started","completion_evidence":[],"update_notes":[],"removal_or_deprecation_notes":[]},
-    {"id":"MOD-004","name":"Accent Conversion & Voice Preservation","objective":"Convert accents in realtime while preserving speaker identity, intent and natural delivery.","scope":["accent detection","outbound conversion","inbound conversion","voice preservation","accent strength","quality/latency evaluation"],"boundaries":["Accent conversion is not language translation","Initial commercial path may use verified external providers; proprietary VSN runtime is an optional later provider, not a hard dependency"],"dependencies":["MOD-002","MOD-003","MOD-010"],"option_ids":["OPT-001","OPT-002","OPT-003","OPT-004","OPT-005"],"status":"not_started","completion_evidence":[],"update_notes":["Dependency on MOD-011 removed so third-party/hybrid accent conversion can ship before proprietary model R&D."],"removal_or_deprecation_notes":[]},
-    {"id":"MOD-005","name":"Realtime Speech Translation","objective":"Provide bidirectional realtime speech translation with appropriate voice/tone preservation.","scope":["speech-to-speech translation","language detection","translated audio","translated captions","glossaries"],"boundaries":["Translation latency and quality are evaluated separately from accent conversion"],"dependencies":["MOD-002","MOD-003","MOD-010"],"option_ids":["OPT-001","OPT-003","OPT-005"],"status":"not_started","completion_evidence":[],"update_notes":[],"removal_or_deprecation_notes":[]},
-    {"id":"MOD-006","name":"Live Transcription, Captions & Diarization","objective":"Create accurate live/final speaker-aware transcripts for captions and downstream intelligence.","scope":["streaming STT","final STT","speaker diarization","timestamps","language detection","custom vocabulary","PII controls"],"boundaries":["Live transcript is provisional and must reconcile with final output"],"dependencies":["MOD-002","MOD-010"],"option_ids":["OPT-001","OPT-003","OPT-005","OPT-010"],"status":"not_started","completion_evidence":[],"update_notes":[],"removal_or_deprecation_notes":[]},
-    {"id":"MOD-007","name":"Meeting Capture & Platform Connectors","objective":"Capture authorized meeting media, transcripts and metadata across major platforms.","scope":["Zoom","Microsoft Teams","Google Meet","Webex","meeting bots","botless/native capture","calendar scheduling","participant/chat/events"],"boundaries":["Recording/transcription requires authorized access and applicable consent"],"dependencies":["MOD-001","MOD-010","MOD-017"],"option_ids":["OPT-007","OPT-008","OPT-010"],"status":"not_started","completion_evidence":[],"update_notes":[],"removal_or_deprecation_notes":[]},
-    {"id":"MOD-008","name":"Meeting Intelligence & Knowledge","objective":"Turn individual meetings into traceable notes and work products.","scope":["live notes","summaries","decisions","action items","owners/due dates","topics","highlights","clips","meeting Q&A","follow-up drafts","exports"],"boundaries":["Generated conclusions must remain traceable to source transcript evidence"],"dependencies":["MOD-006","MOD-007","MOD-010","MOD-017"],"option_ids":["OPT-001","OPT-003","OPT-010"],"status":"not_started","completion_evidence":[],"update_notes":["Cross-meeting/cross-app knowledge remains in MOD-023."],"removal_or_deprecation_notes":[]},
-    {"id":"MOD-009","name":"Live AI Assistant & Communication Coach","objective":"Provide opt-in realtime communication assistance without disrupting base call audio.","scope":["live suggestions","clarity coaching","pace/interruption cues","contextual Q&A","post-call coaching"],"boundaries":["Action execution belongs to MOD-024","No covert autonomous impersonation"],"dependencies":["MOD-006","MOD-008","MOD-010","MOD-017"],"option_ids":["OPT-001","OPT-003","OPT-005"],"status":"not_started","completion_evidence":[],"update_notes":[],"removal_or_deprecation_notes":[]},
-    {"id":"MOD-010","name":"Hybrid AI Provider Gateway & Orchestration","objective":"Expose provider-neutral capability contracts over external AI providers and VSN-owned models.","scope":["provider registry","capability matrix","adapter SDK","routing","fallback","circuit breakers","quality/cost/latency/privacy/region policy","provider health"],"boundaries":["A provider is active only after access and implementation are verified"],"dependencies":["MOD-001"],"option_ids":["OPT-001","OPT-002","OPT-003","OPT-009","OPT-012"],"status":"in_progress","completion_evidence":["PHASE-000 provider gateway foundation WU-010 complete","common external/VSN adapter registration contract","routing/fallback/circuit-breaker/rate-limit/content-safe telemetry tests passed in GitHub Actions run 34413262925","provider manifest/routing JSON schemas validate"],"update_notes":["Provider-neutral foundation is verified. Concrete provider adapters, broader capability execution and production routing remain ongoing module work."],"removal_or_deprecation_notes":[]},
-    {"id":"MOD-011","name":"Proprietary VSN AI Runtime & Model Registry","objective":"Train, evaluate, package and version VSN-owned speech/audio models as first-class providers.","scope":["dataset/evaluation pipeline","model registry","training","quantization","local/server inference","rollout/rollback","A/B evaluation"],"boundaries":["Model training requires approved data rights, compute budget and explicit authorization"],"dependencies":["MOD-001","MOD-010","MOD-017"],"option_ids":["OPT-002","OPT-004","OPT-005"],"status":"not_started","completion_evidence":[],"update_notes":[],"removal_or_deprecation_notes":[]},
-    {"id":"MOD-012","name":"Voice Personalization, Identity Safety & Voice Security","objective":"Support safe personalization and detect voice spoofing or identity misuse.","scope":["voice profiles","speaker verification","deepfake/synthetic speech detection","speaker-change detection","agent verification","consent/revocation","anti-impersonation"],"boundaries":["No unauthorized voice cloning or impersonation"],"dependencies":["MOD-004","MOD-005","MOD-017"],"option_ids":["OPT-001","OPT-002"],"status":"not_started","completion_evidence":[],"update_notes":[],"removal_or_deprecation_notes":[]},
-    {"id":"MOD-013","name":"Telephony & Contact Center Integrations","objective":"Extend realtime voice and intelligence capabilities to telephony/contact-center media.","scope":["SIP/PSTN","inbound/outbound calls","dialers","contact-center media","call metadata","agent-assist hooks"],"boundaries":["Integrations only where legally and contractually authorized"],"dependencies":["MOD-002","MOD-003","MOD-004","MOD-005","MOD-006","MOD-010","MOD-017"],"option_ids":["OPT-001","OPT-003","OPT-005"],"status":"not_started","completion_evidence":[],"update_notes":[],"removal_or_deprecation_notes":[]},
-    {"id":"MOD-014","name":"SaaS Web App, Accounts, Teams & Workspace","objective":"Provide user/team accounts, settings and the conversation workspace.","scope":["authentication","profiles","organizations","roles","team members","meeting library","settings","notifications","desktop linking"],"boundaries":["Tenant isolation, secure identity linking and accessibility verification are mandatory"],"dependencies":["MOD-001","MOD-017"],"option_ids":[],"status":"in_progress","completion_evidence":["Authorization-context and desktop-link persisted-record contracts enforce tenant binding and exclude secret-bearing fields","services/api contains the approved NestJS/Fastify control API foundation with identity, organization authorization and one-time desktop linking boundaries","PR #52 merged a tenant-authorized workspace bootstrap that fails closed on missing/cross-tenant membership or permission","PR #54 merged the workspace-bootstrap response schema and regression tests after API Validation and AI Native Quality Gates passed"],"update_notes":["Technology stack approved via CONSENT-000002.","MOD-014 is in progress. Current server-side identity/tenant/linking/bootstrap contracts are verified, but populated workspace repositories, trusted session-to-route binding, broader team/settings/meeting surfaces and full authenticated browser E2E remain pending."],"removal_or_deprecation_notes":[]},
-    {"id":"MOD-015","name":"Subscriptions, Entitlements & Usage Metering","objective":"Operate subscription plans, quotas and accurate variable-AI usage metering.","scope":["plans","trials","subscriptions","usage minutes","entitlements","quotas","billing webhooks","overages","cost ledger"],"boundaries":["Raw card data remains with compliant payment provider"],"dependencies":["MOD-010","MOD-014","MOD-016","MOD-017"],"option_ids":["OPT-011"],"status":"not_started","completion_evidence":[],"update_notes":[],"removal_or_deprecation_notes":[]},
-    {"id":"MOD-016","name":"Admin, Analytics, Observability & Cost Control","objective":"Measure and operate product/provider health, latency, quality, usage and cost.","scope":["internal admin","provider health","usage/cost analytics","latency/jitter","logs/metrics/traces","alerts","SLOs","feature flags"],"boundaries":["Sensitive audio/meeting content must not leak into telemetry"],"dependencies":["MOD-010","MOD-017"],"option_ids":["OPT-003","OPT-012"],"status":"in_progress","completion_evidence":["PR #27 merged provider routing metrics for selection counts, no-eligible outcomes, p95 latency, estimated cost, health and rate-limit state under a content-safe field boundary","PR #31 merged a dependency-light OpenTelemetry handoff boundary with closed provider attributes, deterministic output and content-safety tests"],"update_notes":["MOD-016 is in progress. Provider routing metrics/export boundaries are verified; broader product/admin analytics, alerts, SLO operation and cost reconciliation remain pending."],"removal_or_deprecation_notes":[]},
-    {"id":"MOD-017","name":"Privacy, Security, Compliance & Data Governance","objective":"Govern audio, voice identity, transcripts, meetings, credentials and tenant data safely.","scope":["threat model","data classification","consent","retention/deletion","encryption","secrets","residency","RBAC","audit","provider privacy policy"],"boundaries":["Compliance claims require evidence"],"dependencies":["MOD-001"],"option_ids":["OPT-001","OPT-009","OPT-012"],"status":"in_progress","completion_evidence":["PHASE-000 security/data baseline WU-017 complete","Voice AI threat model populated","data governance/classification populated","core data flows documented","requirements mapped to threat/security obligations"],"update_notes":["Architecture baseline is complete; MOD-017 stays in progress cross-cutting because implementation-level tenant isolation, consent, deletion/export and security tests must be verified with each affected feature."],"removal_or_deprecation_notes":[]},
-    {"id":"MOD-018","name":"Quality, Performance, Release & Desktop Updates","objective":"Verify quality/performance and safely package, release, update and roll back the product.","scope":["automated tests","audio regression corpus","latency/performance","E2E","installer/signing","auto-update","release channels","rollback","SBOM/provenance"],"boundaries":["No production release without verified QA/security evidence"],"dependencies":["MOD-002","MOD-003","MOD-004","MOD-005","MOD-006","MOD-010","MOD-014","MOD-017"],"option_ids":[],"status":"not_started","completion_evidence":[],"update_notes":["Repository CI includes Go gateway tests, Rust audio-core rustfmt/Clippy/tests and product JSON Schema validation; broader release work remains not started."],"removal_or_deprecation_notes":[]},
-    {"id":"MOD-019","name":"Public Developer API, SDKs & Webhooks","objective":"Expose stable, secure and metered product capabilities to external developers.","scope":["REST/realtime API","SDKs","API keys","webhooks","rate limits","documentation","sandbox"],"boundaries":["Only stable capabilities with approved security may be public"],"dependencies":["MOD-010","MOD-015","MOD-016","MOD-017","MOD-018"],"option_ids":["OPT-001","OPT-011"],"status":"not_started","completion_evidence":[],"update_notes":[],"removal_or_deprecation_notes":[]},
-    {"id":"MOD-020","name":"Multi-Platform Clients & In-Person Capture","objective":"Extend Voice AI to mobile, browser and in-person capture surfaces.","scope":["iOS","Android","browser/Chrome","in-person recorder","voice notes","uploads","cross-device continuity"],"boundaries":["Respect platform permissions/background execution and recording consent"],"dependencies":["MOD-006","MOD-007","MOD-014","MOD-017","MOD-018"],"option_ids":[],"status":"not_started","completion_evidence":[],"update_notes":[],"removal_or_deprecation_notes":[]},
-    {"id":"MOD-021","name":"Business Integrations & Workflow Automation","objective":"Connect conversation outcomes to calendars, email, chat, CRM, documents and work systems.","scope":["Google/Microsoft calendar","Gmail/Outlook","Slack/Teams","Salesforce","HubSpot","Pipedrive","Notion/Confluence","Drive/OneDrive","Jira/Linear/Asana/ClickUp","Zapier/Make/n8n","MCP"],"boundaries":["Use only authorized scopes and verified external capabilities","Integration foundation must not depend on agentic action execution"],"dependencies":["MOD-008","MOD-014","MOD-017"],"option_ids":[],"status":"not_started","completion_evidence":[],"update_notes":["Dependency direction is MOD-021 -> MOD-023 -> MOD-024."],"removal_or_deprecation_notes":[]},
-    {"id":"MOD-022","name":"Conversation Intelligence, QA & Compliance Scoring","objective":"Provide configurable B2B conversation analytics, QA and compliance workflows.","scope":["scorecards","QA queues","compliance detection","objections/topics","sentiment/trends","talk metrics","sales signals","automatic disposition"],"boundaries":["Scores must be explainable and high-stakes decisions require human oversight"],"dependencies":["MOD-006","MOD-008","MOD-013","MOD-016","MOD-017"],"option_ids":[],"status":"not_started","completion_evidence":[],"update_notes":[],"removal_or_deprecation_notes":[]},
-    {"id":"MOD-023","name":"Unified Conversation Knowledge & Cross-App Search","objective":"Create permission-aware search and Q&A across conversations and connected work systems.","scope":["semantic search","cross-meeting Q&A","email/chat/document/CRM context","timelines","source citations","saved topics","briefs","team knowledge spaces"],"boundaries":["Retrieval must inherit source permissions and answers must cite evidence"],"dependencies":["MOD-008","MOD-014","MOD-017","MOD-021"],"option_ids":[],"status":"not_started","completion_evidence":[],"update_notes":[],"removal_or_deprecation_notes":[]},
-    {"id":"MOD-024","name":"Agentic Actions, AI Skills & Voice Agents","objective":"Execute safe user-authorized follow-up work through reusable skills and specialist agents.","scope":["AI skills","specialist agents","CRM/task/email/calendar actions","voice agents","approval checkpoints","tool permissions","idempotency","action audit"],"boundaries":["No covert impersonation","Sensitive actions require scoped authorization/approval"],"dependencies":["MOD-009","MOD-017","MOD-021","MOD-023"],"option_ids":[],"status":"not_started","completion_evidence":[],"update_notes":["Dependency direction is MOD-021 -> MOD-023 -> MOD-024; no circular dependency."],"removal_or_deprecation_notes":[]},
-    {"id":"MOD-025","name":"Enterprise Administration, Device Fleet & Deployment Control","objective":"Support enterprise identity, fleet, policy and managed deployment at scale.","scope":["SSO/SAML/OIDC","SCIM","organization hierarchy","device inventory","remote policy","managed deployment","data-residency policy","staged rollouts"],"boundaries":["Enterprise policy cannot bypass legal/user consent requirements"],"dependencies":["MOD-014","MOD-016","MOD-017","MOD-018","MOD-020"],"option_ids":[],"status":"not_started","completion_evidence":[],"update_notes":[],"removal_or_deprecation_notes":[]}
+    {
+      "id": "MOD-001",
+      "name": "Project Governance, Bootstrap & Consent",
+      "objective": "Maintain project identity, governance, consent gates and evidence-backed state.",
+      "scope": [
+        "child bootstrap",
+        "project identity",
+        "consent gates",
+        "README reconciliation",
+        "requirements traceability"
+      ],
+      "boundaries": [
+        "Development and technology stack are approved; new material scope/technology/risk changes still require applicable consent",
+        "No fabricated progress or timestamps"
+      ],
+      "dependencies": [],
+      "option_ids": [],
+      "status": "complete",
+      "completion_evidence": [
+        "active_project/bootstrap completed",
+        "CONSENT-000001 approved",
+        "CONSENT-000002 approved",
+        "PHASE-000 governance gate completed"
+      ],
+      "update_notes": [
+        "Initial governance/bootstrap/consent milestone is complete; governance remains a cross-cutting repository responsibility."
+      ],
+      "removal_or_deprecation_notes": []
+    },
+    {
+      "id": "MOD-002",
+      "name": "Desktop Audio Core & Virtual Devices",
+      "objective": "Provide low-latency microphone/speaker capture and virtual audio routing for calling applications.",
+      "scope": [
+        "microphone capture",
+        "speaker capture",
+        "virtual microphone",
+        "virtual routing",
+        "device lifecycle",
+        "safe bypass"
+      ],
+      "boundaries": [
+        "Native virtual-device distribution requires platform-specific signing, compatibility and release verification",
+        "Do not claim physical hotplug/default-device recovery, virtual microphone routing, calling-app compatibility or hardware latency/jitter until those platform-specific paths have direct verification evidence"
+      ],
+      "dependencies": [
+        "MOD-001"
+      ],
+      "option_ids": [
+        "OPT-006"
+      ],
+      "status": "in_progress",
+      "completion_evidence": [
+        "Rust native workspace and vsn-audio-core initialized",
+        "Validated AudioFrame/AudioFormat contracts, bounded frame queue and safe-bypass pipeline implemented",
+        "Platform-neutral device catalog implements preferred/default/active fallback and lifecycle state handling",
+        "DeviceSelectionController implements deterministic preferred/default/hotplug selection transitions",
+        "StreamController implements bounded invalidation recovery, exponential retry backoff and processing safe-bypass transitions",
+        "GitHub Actions run 34415564226 passed initial Rust audio-core quality gates",
+        "GitHub Actions run 34416070554 passed device-catalog Rustfmt, Clippy, unit tests plus Go/schema/ANPOS gates",
+        "GitHub Actions run 34416846345 passed device-selection recovery-controller Rustfmt, Clippy, unit tests plus repository gates",
+        "GitHub Actions run 34417205364 passed bounded stream-recovery Rustfmt, Clippy, unit tests plus repository gates",
+        "native/windows-audio is a workspace crate with EndpointSnapshot-to-DeviceCatalog mapping and an explicit unsupported-platform boundary off Windows",
+        "GitHub Actions run 34420328611 passed ANPOS, Go, Rustfmt, Clippy, workspace unit tests, schemas, YAML and whitespace checks for the Windows-backend workspace slice",
+        "EnginePeriodRange and frames_for_duration validate fundamental/min/max/default period grids and select the nearest supported period for IAudioClient3 shared-mode planning",
+        "GitHub Actions run 34420942799 passed Rustfmt, Clippy, workspace tests and repository gates for the engine-period selector",
+        "SharedCapturePlan separates WASAPI engine callback frames from pipeline sample framing and marks accumulator-required cadence explicitly",
+        "GitHub Actions run 34421431894 passed repository gates for SharedCapturePlan",
+        "Dedicated .github/workflows/windows-audio.yml validates the Windows-native crate on a Windows runner",
+        "GitHub Actions Windows run 34423457612 passed Windows compile, Clippy and unit tests for vsn-windows-audio",
+        "GitHub Actions Windows run 34423605516 passed the MMDevice runtime snapshot smoke test on Windows Server 2025",
+        "Default-capture IAudioClient3 probe activates the communications endpoint when available, reads its mix format and validates shared-mode engine-period constraints",
+        "GitHub Actions run 34424232264 passed the full Ubuntu repository-integrity gate and Windows run 34424232265 passed Windows compile, Clippy and 14/14 Windows audio tests on the same commit",
+        "Event-driven WASAPI capture session, native sample decoding and packet-to-AudioFrame assembly are implemented; assembler boundary passed Ubuntu run 34500603127 and Windows run 34500603073",
+        "CapturePump waits for WASAPI packet events, drains available packets with a bounded packet budget and feeds the frame assembler; Ubuntu run 34503117516 and Windows run 34503117617 passed",
+        "Documented WASAPI device/resource/audio-service lifecycle HRESULTs are structured as recoverable capture failures; Ubuntu run 34503799448 and Windows run 34503799282 passed",
+        "StreamController distinguishes retryable runtime stream failures from optional processing bypass; Ubuntu run 34504361389 and Windows run 34504361377 passed",
+        "CaptureRuntime implements externally scheduled bounded reopen recovery with sequence continuity and no internal unbounded retry/sleep loop; Ubuntu run 34504968258 and Windows run 34504968283 passed",
+        "IMMNotificationClient registration uses a dedicated Windows MTA thread and a bounded non-blocking notification queue with dropped-event accounting; Ubuntu run 34508512647 and Windows run 34508512649 passed, including Windows registration/unregistration smoke",
+        "Owner-thread capture notification bridge filters active capture route changes, deduplicates a notification batch into at most one recovery transition and preserves sequence on invalidation; Ubuntu run 34509104650 and Windows run 34509104681 passed",
+        "VirtualMicStagingBuffer provides fixed-format bounded user-mode output staging with oldest-frame overflow drop, fresh-silence underrun behavior and explicit accepted/drop/underrun counters; Ubuntu run 34522446261 and Windows run 34522445865 passed",
+        "VirtualMicOutputBridge routes both processed AudioPipeline frames and safe-bypassed original frames through the same bounded virtual-mic staging path; Ubuntu run 34522943083 and Windows run 34522943093 passed",
+        "VirtualMicProtocolHeader and VirtualMicCursorSnapshot define a versioned C-compatible driver-facing metadata contract with session generation, fixed audio geometry and monotonic producer/consumer sequences; plan_ring_window validates the protocol and normalizes cyclic-buffer overruns by discarding the oldest window; Ubuntu run 34525486454 and Windows run 34525486333 passed on implementation head aa0792b81746a11d99b3b3451c3086e363714ee8",
+        "native/windows-virtual-mic now contains an MSVC-verified C++ mirror of the Rust wire ABI with fixed 40-byte header/cursor layouts, explicit field offsets, protocol validation and matching cyclic-ring overrun/session/cursor semantics; Ubuntu run 34528681411 and Windows run 34528681382 passed on implementation head 93c166709e3fad6aecd924a0378316761a9e318f",
+        "Custom PortCls topology/WaveRT miniports, physical bridge registration, concrete capture stream, guarded shared-ring transport and fixed 10 ms scheduler compile and test in the real WDK target",
+        "PR #51 merged the capture-only INF/test package after WDK build, InfVerif and Inf2Cat passed",
+        "PR #53 merged the installed endpoint/control runtime smoke harness after Windows Audio Validation and AI Native Quality Gates passed",
+        "docs/architecture/WINDOWS-AUDIO-IMPLEMENTATION.md defines WASAPI/MMDevice and virtual microphone implementation boundary"
+      ],
+      "update_notes": [
+        "WU-002 implementation started 2026-09-10 03:43 PKT.",
+        "The Windows capture, virtual-mic transport, PortCls/WaveRT stream, guarded realtime scheduler and test-package path are now code-level and CI verified. Hosted CI also compiles the installed-runtime smoke harness and confirms that an uninstalled runner reports verification_required rather than a false pass. MOD-002 remains in progress because the package has not yet been installed and exercised on a controlled elevated Windows test machine, approved calling applications have not consumed the VSN endpoint, and controlled hardware latency/jitter plus production signing/release evidence remain pending."
+      ],
+      "removal_or_deprecation_notes": []
+    },
+    {
+      "id": "MOD-003",
+      "name": "Realtime Audio Enhancement",
+      "objective": "Improve realtime speech clarity before transmission or downstream AI.",
+      "scope": [
+        "noise cancellation",
+        "background voice cancellation",
+        "echo reduction",
+        "de-reverberation",
+        "VAD",
+        "audio quality metrics"
+      ],
+      "boundaries": [
+        "Must support provider adapters and future VSN models"
+      ],
+      "dependencies": [
+        "MOD-002",
+        "MOD-010"
+      ],
+      "option_ids": [
+        "OPT-001",
+        "OPT-002",
+        "OPT-004",
+        "OPT-005"
+      ],
+      "status": "not_started",
+      "completion_evidence": [],
+      "update_notes": [],
+      "removal_or_deprecation_notes": []
+    },
+    {
+      "id": "MOD-004",
+      "name": "Accent Conversion & Voice Preservation",
+      "objective": "Convert accents in realtime while preserving speaker identity, intent and natural delivery.",
+      "scope": [
+        "accent detection",
+        "outbound conversion",
+        "inbound conversion",
+        "voice preservation",
+        "accent strength",
+        "quality/latency evaluation"
+      ],
+      "boundaries": [
+        "Accent conversion is not language translation",
+        "Initial commercial path may use verified external providers; proprietary VSN runtime is an optional later provider, not a hard dependency"
+      ],
+      "dependencies": [
+        "MOD-002",
+        "MOD-003",
+        "MOD-010"
+      ],
+      "option_ids": [
+        "OPT-001",
+        "OPT-002",
+        "OPT-003",
+        "OPT-004",
+        "OPT-005"
+      ],
+      "status": "not_started",
+      "completion_evidence": [],
+      "update_notes": [
+        "Dependency on MOD-011 removed so third-party/hybrid accent conversion can ship before proprietary model R&D."
+      ],
+      "removal_or_deprecation_notes": []
+    },
+    {
+      "id": "MOD-005",
+      "name": "Realtime Speech Translation",
+      "objective": "Provide bidirectional realtime speech translation with appropriate voice/tone preservation.",
+      "scope": [
+        "speech-to-speech translation",
+        "language detection",
+        "translated audio",
+        "translated captions",
+        "glossaries"
+      ],
+      "boundaries": [
+        "Translation latency and quality are evaluated separately from accent conversion"
+      ],
+      "dependencies": [
+        "MOD-002",
+        "MOD-003",
+        "MOD-010"
+      ],
+      "option_ids": [
+        "OPT-001",
+        "OPT-003",
+        "OPT-005"
+      ],
+      "status": "not_started",
+      "completion_evidence": [],
+      "update_notes": [],
+      "removal_or_deprecation_notes": []
+    },
+    {
+      "id": "MOD-006",
+      "name": "Live Transcription, Captions & Diarization",
+      "objective": "Create accurate live/final speaker-aware transcripts for captions and downstream intelligence.",
+      "scope": [
+        "streaming STT",
+        "final STT",
+        "speaker diarization",
+        "timestamps",
+        "language detection",
+        "custom vocabulary",
+        "PII controls"
+      ],
+      "boundaries": [
+        "Live transcript is provisional and must reconcile with final output"
+      ],
+      "dependencies": [
+        "MOD-002",
+        "MOD-010"
+      ],
+      "option_ids": [
+        "OPT-001",
+        "OPT-003",
+        "OPT-005",
+        "OPT-010"
+      ],
+      "status": "not_started",
+      "completion_evidence": [],
+      "update_notes": [],
+      "removal_or_deprecation_notes": []
+    },
+    {
+      "id": "MOD-007",
+      "name": "Meeting Capture & Platform Connectors",
+      "objective": "Capture authorized meeting media, transcripts and metadata across major platforms.",
+      "scope": [
+        "Zoom",
+        "Microsoft Teams",
+        "Google Meet",
+        "Webex",
+        "meeting bots",
+        "botless/native capture",
+        "calendar scheduling",
+        "participant/chat/events"
+      ],
+      "boundaries": [
+        "Recording/transcription requires authorized access and applicable consent"
+      ],
+      "dependencies": [
+        "MOD-001",
+        "MOD-010",
+        "MOD-017"
+      ],
+      "option_ids": [
+        "OPT-007",
+        "OPT-008",
+        "OPT-010"
+      ],
+      "status": "not_started",
+      "completion_evidence": [],
+      "update_notes": [],
+      "removal_or_deprecation_notes": []
+    },
+    {
+      "id": "MOD-008",
+      "name": "Meeting Intelligence & Knowledge",
+      "objective": "Turn individual meetings into traceable notes and work products.",
+      "scope": [
+        "live notes",
+        "summaries",
+        "decisions",
+        "action items",
+        "owners/due dates",
+        "topics",
+        "highlights",
+        "clips",
+        "meeting Q&A",
+        "follow-up drafts",
+        "exports"
+      ],
+      "boundaries": [
+        "Generated conclusions must remain traceable to source transcript evidence"
+      ],
+      "dependencies": [
+        "MOD-006",
+        "MOD-007",
+        "MOD-010",
+        "MOD-017"
+      ],
+      "option_ids": [
+        "OPT-001",
+        "OPT-003",
+        "OPT-010"
+      ],
+      "status": "not_started",
+      "completion_evidence": [],
+      "update_notes": [
+        "Cross-meeting/cross-app knowledge remains in MOD-023."
+      ],
+      "removal_or_deprecation_notes": []
+    },
+    {
+      "id": "MOD-009",
+      "name": "Live AI Assistant & Communication Coach",
+      "objective": "Provide opt-in realtime communication assistance without disrupting base call audio.",
+      "scope": [
+        "live suggestions",
+        "clarity coaching",
+        "pace/interruption cues",
+        "contextual Q&A",
+        "post-call coaching"
+      ],
+      "boundaries": [
+        "Action execution belongs to MOD-024",
+        "No covert autonomous impersonation"
+      ],
+      "dependencies": [
+        "MOD-006",
+        "MOD-008",
+        "MOD-010",
+        "MOD-017"
+      ],
+      "option_ids": [
+        "OPT-001",
+        "OPT-003",
+        "OPT-005"
+      ],
+      "status": "not_started",
+      "completion_evidence": [],
+      "update_notes": [],
+      "removal_or_deprecation_notes": []
+    },
+    {
+      "id": "MOD-010",
+      "name": "Hybrid AI Provider Gateway & Orchestration",
+      "objective": "Expose provider-neutral capability contracts over external AI providers and VSN-owned models.",
+      "scope": [
+        "provider registry",
+        "capability matrix",
+        "adapter SDK",
+        "routing",
+        "fallback",
+        "circuit breakers",
+        "quality/cost/latency/privacy/region policy",
+        "provider health"
+      ],
+      "boundaries": [
+        "A provider is active only after access and implementation are verified"
+      ],
+      "dependencies": [
+        "MOD-001"
+      ],
+      "option_ids": [
+        "OPT-001",
+        "OPT-002",
+        "OPT-003",
+        "OPT-009",
+        "OPT-012"
+      ],
+      "status": "in_progress",
+      "completion_evidence": [
+        "PHASE-000 provider gateway foundation WU-010 complete",
+        "common external/VSN adapter registration contract",
+        "routing/fallback/circuit-breaker/rate-limit/content-safe telemetry tests passed in GitHub Actions run 34413262925",
+        "provider manifest/routing JSON schemas validate"
+      ],
+      "update_notes": [
+        "Provider-neutral foundation is verified. Concrete provider adapters, broader capability execution and production routing remain ongoing module work."
+      ],
+      "removal_or_deprecation_notes": []
+    },
+    {
+      "id": "MOD-011",
+      "name": "Proprietary VSN AI Runtime & Model Registry",
+      "objective": "Train, evaluate, package and version VSN-owned speech/audio models as first-class providers.",
+      "scope": [
+        "dataset/evaluation pipeline",
+        "model registry",
+        "training",
+        "quantization",
+        "local/server inference",
+        "rollout/rollback",
+        "A/B evaluation"
+      ],
+      "boundaries": [
+        "Model training requires approved data rights, compute budget and explicit authorization"
+      ],
+      "dependencies": [
+        "MOD-001",
+        "MOD-010",
+        "MOD-017"
+      ],
+      "option_ids": [
+        "OPT-002",
+        "OPT-004",
+        "OPT-005"
+      ],
+      "status": "in_progress",
+      "completion_evidence": [
+        "PR #118 reconciled WU-011 to in_progress",
+        "PR #119 merged immutable metadata-only dataset provenance registry and fail-closed customer-content provenance boundaries",
+        "PR #120 required verified manifest-referenced dataset provenance before disabled provider-candidate projection",
+        "PR #121 merged a non-activating provider activation-review contract",
+        "PR #122 merged an append-only immutable activation-review audit registry disconnected from provider routing"
+      ],
+      "update_notes": [
+        "MOD-011 has repository-backed registry/provenance/review-contract implementation through PR #122, but remains in progress. No authorized/executed model training, material paid GPU use, trained VSN model, reviewed production benchmark/security/rollback records, runtime artifact signature/release-provenance verification, production provider activation or deployment is claimed."
+      ],
+      "removal_or_deprecation_notes": []
+    },
+    {
+      "id": "MOD-012",
+      "name": "Voice Personalization, Identity Safety & Voice Security",
+      "objective": "Support safe personalization and detect voice spoofing or identity misuse.",
+      "scope": [
+        "voice profiles",
+        "speaker verification",
+        "deepfake/synthetic speech detection",
+        "speaker-change detection",
+        "agent verification",
+        "consent/revocation",
+        "anti-impersonation"
+      ],
+      "boundaries": [
+        "No unauthorized voice cloning or impersonation"
+      ],
+      "dependencies": [
+        "MOD-004",
+        "MOD-005",
+        "MOD-017"
+      ],
+      "option_ids": [
+        "OPT-001",
+        "OPT-002"
+      ],
+      "status": "not_started",
+      "completion_evidence": [],
+      "update_notes": [],
+      "removal_or_deprecation_notes": []
+    },
+    {
+      "id": "MOD-013",
+      "name": "Telephony & Contact Center Integrations",
+      "objective": "Extend realtime voice and intelligence capabilities to telephony/contact-center media.",
+      "scope": [
+        "SIP/PSTN",
+        "inbound/outbound calls",
+        "dialers",
+        "contact-center media",
+        "call metadata",
+        "agent-assist hooks"
+      ],
+      "boundaries": [
+        "Integrations only where legally and contractually authorized"
+      ],
+      "dependencies": [
+        "MOD-002",
+        "MOD-003",
+        "MOD-004",
+        "MOD-005",
+        "MOD-006",
+        "MOD-010",
+        "MOD-017"
+      ],
+      "option_ids": [
+        "OPT-001",
+        "OPT-003",
+        "OPT-005"
+      ],
+      "status": "not_started",
+      "completion_evidence": [],
+      "update_notes": [],
+      "removal_or_deprecation_notes": []
+    },
+    {
+      "id": "MOD-014",
+      "name": "SaaS Web App, Accounts, Teams & Workspace",
+      "objective": "Provide user/team accounts, settings and the conversation workspace.",
+      "scope": [
+        "authentication",
+        "profiles",
+        "organizations",
+        "roles",
+        "team members",
+        "meeting library",
+        "settings",
+        "notifications",
+        "desktop linking"
+      ],
+      "boundaries": [
+        "Tenant isolation, secure identity linking and accessibility verification are mandatory"
+      ],
+      "dependencies": [
+        "MOD-001",
+        "MOD-017"
+      ],
+      "option_ids": [],
+      "status": "in_progress",
+      "completion_evidence": [
+        "Authorization-context and desktop-link persisted-record contracts enforce tenant binding and exclude secret-bearing fields",
+        "services/api contains the approved NestJS/Fastify control API foundation with identity, organization authorization and one-time desktop linking boundaries",
+        "PR #52 merged a tenant-authorized workspace bootstrap that fails closed on missing/cross-tenant membership or permission",
+        "PR #54 merged the workspace-bootstrap response schema and regression tests after API Validation and AI Native Quality Gates passed"
+      ],
+      "update_notes": [
+        "Technology stack approved via CONSENT-000002.",
+        "MOD-014 is in progress. Current server-side identity/tenant/linking/bootstrap contracts are verified, but populated workspace repositories, trusted session-to-route binding, broader team/settings/meeting surfaces and full authenticated browser E2E remain pending."
+      ],
+      "removal_or_deprecation_notes": []
+    },
+    {
+      "id": "MOD-015",
+      "name": "Subscriptions, Entitlements & Usage Metering",
+      "objective": "Operate subscription plans, quotas and accurate variable-AI usage metering.",
+      "scope": [
+        "plans",
+        "trials",
+        "subscriptions",
+        "usage minutes",
+        "entitlements",
+        "quotas",
+        "billing webhooks",
+        "overages",
+        "cost ledger"
+      ],
+      "boundaries": [
+        "Raw card data remains with compliant payment provider"
+      ],
+      "dependencies": [
+        "MOD-010",
+        "MOD-014",
+        "MOD-016",
+        "MOD-017"
+      ],
+      "option_ids": [
+        "OPT-011"
+      ],
+      "status": "not_started",
+      "completion_evidence": [],
+      "update_notes": [],
+      "removal_or_deprecation_notes": []
+    },
+    {
+      "id": "MOD-016",
+      "name": "Admin, Analytics, Observability & Cost Control",
+      "objective": "Measure and operate product/provider health, latency, quality, usage and cost.",
+      "scope": [
+        "internal admin",
+        "provider health",
+        "usage/cost analytics",
+        "latency/jitter",
+        "logs/metrics/traces",
+        "alerts",
+        "SLOs",
+        "feature flags"
+      ],
+      "boundaries": [
+        "Sensitive audio/meeting content must not leak into telemetry"
+      ],
+      "dependencies": [
+        "MOD-010",
+        "MOD-017"
+      ],
+      "option_ids": [
+        "OPT-003",
+        "OPT-012"
+      ],
+      "status": "in_progress",
+      "completion_evidence": [
+        "PR #27 merged provider routing metrics for selection counts, no-eligible outcomes, p95 latency, estimated cost, health and rate-limit state under a content-safe field boundary",
+        "PR #31 merged a dependency-light OpenTelemetry handoff boundary with closed provider attributes, deterministic output and content-safety tests"
+      ],
+      "update_notes": [
+        "MOD-016 is in progress. Provider routing metrics/export boundaries are verified; broader product/admin analytics, alerts, SLO operation and cost reconciliation remain pending."
+      ],
+      "removal_or_deprecation_notes": []
+    },
+    {
+      "id": "MOD-017",
+      "name": "Privacy, Security, Compliance & Data Governance",
+      "objective": "Govern audio, voice identity, transcripts, meetings, credentials and tenant data safely.",
+      "scope": [
+        "threat model",
+        "data classification",
+        "consent",
+        "retention/deletion",
+        "encryption",
+        "secrets",
+        "residency",
+        "RBAC",
+        "audit",
+        "provider privacy policy"
+      ],
+      "boundaries": [
+        "Compliance claims require evidence"
+      ],
+      "dependencies": [
+        "MOD-001"
+      ],
+      "option_ids": [
+        "OPT-001",
+        "OPT-009",
+        "OPT-012"
+      ],
+      "status": "in_progress",
+      "completion_evidence": [
+        "PHASE-000 security/data baseline WU-017 complete",
+        "Voice AI threat model populated",
+        "data governance/classification populated",
+        "core data flows documented",
+        "requirements mapped to threat/security obligations"
+      ],
+      "update_notes": [
+        "Architecture baseline is complete; MOD-017 stays in progress cross-cutting because implementation-level tenant isolation, consent, deletion/export and security tests must be verified with each affected feature."
+      ],
+      "removal_or_deprecation_notes": []
+    },
+    {
+      "id": "MOD-018",
+      "name": "Quality, Performance, Release & Desktop Updates",
+      "objective": "Verify quality/performance and safely package, release, update and roll back the product.",
+      "scope": [
+        "automated tests",
+        "audio regression corpus",
+        "latency/performance",
+        "E2E",
+        "installer/signing",
+        "auto-update",
+        "release channels",
+        "rollback",
+        "SBOM/provenance"
+      ],
+      "boundaries": [
+        "No production release without verified QA/security evidence"
+      ],
+      "dependencies": [
+        "MOD-002",
+        "MOD-003",
+        "MOD-004",
+        "MOD-005",
+        "MOD-006",
+        "MOD-010",
+        "MOD-014",
+        "MOD-017"
+      ],
+      "option_ids": [],
+      "status": "not_started",
+      "completion_evidence": [],
+      "update_notes": [
+        "Repository CI includes Go gateway tests, Rust audio-core rustfmt/Clippy/tests and product JSON Schema validation; broader release work remains not started."
+      ],
+      "removal_or_deprecation_notes": []
+    },
+    {
+      "id": "MOD-019",
+      "name": "Public Developer API, SDKs & Webhooks",
+      "objective": "Expose stable, secure and metered product capabilities to external developers.",
+      "scope": [
+        "REST/realtime API",
+        "SDKs",
+        "API keys",
+        "webhooks",
+        "rate limits",
+        "documentation",
+        "sandbox"
+      ],
+      "boundaries": [
+        "Only stable capabilities with approved security may be public"
+      ],
+      "dependencies": [
+        "MOD-010",
+        "MOD-015",
+        "MOD-016",
+        "MOD-017",
+        "MOD-018"
+      ],
+      "option_ids": [
+        "OPT-001",
+        "OPT-011"
+      ],
+      "status": "not_started",
+      "completion_evidence": [],
+      "update_notes": [],
+      "removal_or_deprecation_notes": []
+    },
+    {
+      "id": "MOD-020",
+      "name": "Multi-Platform Clients & In-Person Capture",
+      "objective": "Extend Voice AI to mobile, browser and in-person capture surfaces.",
+      "scope": [
+        "iOS",
+        "Android",
+        "browser/Chrome",
+        "in-person recorder",
+        "voice notes",
+        "uploads",
+        "cross-device continuity"
+      ],
+      "boundaries": [
+        "Respect platform permissions/background execution and recording consent"
+      ],
+      "dependencies": [
+        "MOD-006",
+        "MOD-007",
+        "MOD-014",
+        "MOD-017",
+        "MOD-018"
+      ],
+      "option_ids": [],
+      "status": "not_started",
+      "completion_evidence": [],
+      "update_notes": [],
+      "removal_or_deprecation_notes": []
+    },
+    {
+      "id": "MOD-021",
+      "name": "Business Integrations & Workflow Automation",
+      "objective": "Connect conversation outcomes to calendars, email, chat, CRM, documents and work systems.",
+      "scope": [
+        "Google/Microsoft calendar",
+        "Gmail/Outlook",
+        "Slack/Teams",
+        "Salesforce",
+        "HubSpot",
+        "Pipedrive",
+        "Notion/Confluence",
+        "Drive/OneDrive",
+        "Jira/Linear/Asana/ClickUp",
+        "Zapier/Make/n8n",
+        "MCP"
+      ],
+      "boundaries": [
+        "Use only authorized scopes and verified external capabilities",
+        "Integration foundation must not depend on agentic action execution"
+      ],
+      "dependencies": [
+        "MOD-008",
+        "MOD-014",
+        "MOD-017"
+      ],
+      "option_ids": [],
+      "status": "not_started",
+      "completion_evidence": [],
+      "update_notes": [
+        "Dependency direction is MOD-021 -> MOD-023 -> MOD-024."
+      ],
+      "removal_or_deprecation_notes": []
+    },
+    {
+      "id": "MOD-022",
+      "name": "Conversation Intelligence, QA & Compliance Scoring",
+      "objective": "Provide configurable B2B conversation analytics, QA and compliance workflows.",
+      "scope": [
+        "scorecards",
+        "QA queues",
+        "compliance detection",
+        "objections/topics",
+        "sentiment/trends",
+        "talk metrics",
+        "sales signals",
+        "automatic disposition"
+      ],
+      "boundaries": [
+        "Scores must be explainable and high-stakes decisions require human oversight"
+      ],
+      "dependencies": [
+        "MOD-006",
+        "MOD-008",
+        "MOD-013",
+        "MOD-016",
+        "MOD-017"
+      ],
+      "option_ids": [],
+      "status": "not_started",
+      "completion_evidence": [],
+      "update_notes": [],
+      "removal_or_deprecation_notes": []
+    },
+    {
+      "id": "MOD-023",
+      "name": "Unified Conversation Knowledge & Cross-App Search",
+      "objective": "Create permission-aware search and Q&A across conversations and connected work systems.",
+      "scope": [
+        "semantic search",
+        "cross-meeting Q&A",
+        "email/chat/document/CRM context",
+        "timelines",
+        "source citations",
+        "saved topics",
+        "briefs",
+        "team knowledge spaces"
+      ],
+      "boundaries": [
+        "Retrieval must inherit source permissions and answers must cite evidence"
+      ],
+      "dependencies": [
+        "MOD-008",
+        "MOD-014",
+        "MOD-017",
+        "MOD-021"
+      ],
+      "option_ids": [],
+      "status": "not_started",
+      "completion_evidence": [],
+      "update_notes": [],
+      "removal_or_deprecation_notes": []
+    },
+    {
+      "id": "MOD-024",
+      "name": "Agentic Actions, AI Skills & Voice Agents",
+      "objective": "Execute safe user-authorized follow-up work through reusable skills and specialist agents.",
+      "scope": [
+        "AI skills",
+        "specialist agents",
+        "CRM/task/email/calendar actions",
+        "voice agents",
+        "approval checkpoints",
+        "tool permissions",
+        "idempotency",
+        "action audit"
+      ],
+      "boundaries": [
+        "No covert impersonation",
+        "Sensitive actions require scoped authorization/approval"
+      ],
+      "dependencies": [
+        "MOD-009",
+        "MOD-017",
+        "MOD-021",
+        "MOD-023"
+      ],
+      "option_ids": [],
+      "status": "not_started",
+      "completion_evidence": [],
+      "update_notes": [
+        "Dependency direction is MOD-021 -> MOD-023 -> MOD-024; no circular dependency."
+      ],
+      "removal_or_deprecation_notes": []
+    },
+    {
+      "id": "MOD-025",
+      "name": "Enterprise Administration, Device Fleet & Deployment Control",
+      "objective": "Support enterprise identity, fleet, policy and managed deployment at scale.",
+      "scope": [
+        "SSO/SAML/OIDC",
+        "SCIM",
+        "organization hierarchy",
+        "device inventory",
+        "remote policy",
+        "managed deployment",
+        "data-residency policy",
+        "staged rollouts"
+      ],
+      "boundaries": [
+        "Enterprise policy cannot bypass legal/user consent requirements"
+      ],
+      "dependencies": [
+        "MOD-014",
+        "MOD-016",
+        "MOD-017",
+        "MOD-018",
+        "MOD-020"
+      ],
+      "option_ids": [],
+      "status": "not_started",
+      "completion_evidence": [],
+      "update_notes": [],
+      "removal_or_deprecation_notes": []
+    }
   ],
-  "status_values": ["not_started","ready","in_progress","blocked","needs_update","needs_removal","verification_required","complete","deferred","deprecated"],
+  "status_values": [
+    "not_started",
+    "ready",
+    "in_progress",
+    "blocked",
+    "needs_update",
+    "needs_removal",
+    "verification_required",
+    "complete",
+    "deferred",
+    "deprecated"
+  ],
   "module_template": {
-    "id":"MOD-EXAMPLE","name":"Example module","objective":"Coherent product or engineering responsibility.","scope":[],"boundaries":[],"dependencies":[],"option_ids":[],"data_entities":[],"contracts":[],"ui_surfaces":[],"security_responsibilities":[],"acceptance_criteria":[],"quality_gates":[],"status":"not_started","completion_evidence":[],"update_notes":[],"removal_or_deprecation_notes":[]
+    "id": "MOD-EXAMPLE",
+    "name": "Example module",
+    "objective": "Coherent product or engineering responsibility.",
+    "scope": [],
+    "boundaries": [],
+    "dependencies": [],
+    "option_ids": [],
+    "data_entities": [],
+    "contracts": [],
+    "ui_surfaces": [],
+    "security_responsibilities": [],
+    "acceptance_criteria": [],
+    "quality_gates": [],
+    "status": "not_started",
+    "completion_evidence": [],
+    "update_notes": [],
+    "removal_or_deprecation_notes": []
   }
 }

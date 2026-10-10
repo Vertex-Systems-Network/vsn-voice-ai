@@ -27,6 +27,7 @@
 /DESIGN-DATA-OPERATIONS.md @wpessential
 /config/ai/agent-catalog.json @wpessential
 /config/ai/memory-provenance.json @wpessential
+/config/ai/runtime/ @wpessential
 /config/coordination/ @wpessential
 /config/protocol/ @wpessential
 /config/security/ @wpessential

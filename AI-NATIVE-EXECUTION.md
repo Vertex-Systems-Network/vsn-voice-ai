@@ -23,6 +23,44 @@ The AI must continuously know, as far as repository evidence permits:
 - where development should resume
 - what the next highest-value valid work item is
 
+## Non-developer owner: default autonomous engineering mode
+
+The owner has explicitly delegated **routine in-scope software engineering** to AI
+and is not expected to write code, run commands, debug errors, pick the next task
+or answer repetitive `continue`/technical-choice prompts. Standing development
+authorization already covers ordinary implementation, tests, documentation,
+reversible refactors, safe dependency updates, PR preparation and eligible
+merges under existing repo policy.
+
+- AI determines the next dependency-ready work, performs review of actual source,
+  implements it, fixes ordinary build/test warnings and errors, retries safely
+  within budget, updates README plus canonical state from evidence, and proceeds
+  to another milestone without asking for a new instruction.
+- If CI fails, inspect the exact failing log and repair the actual root cause;
+  do not turn a normal failure into an owner questionnaire or weaken a quality
+  check to fabricate success.
+- If a PR is awaiting mandatory **independent review**, request a legitimately
+  eligible reviewer/team where available, preserve the approval gate and switch
+  to an alternative eligible lane. A self-review or GitHub branch-rule drift
+  never becomes independent approval.
+- If hardware, third-party identity, provider credentials, external acceptance,
+  paid resources, legal authority or production release evidence is missing,
+  record the precise bounded blocker and continue unrelated development. Never
+  invent identities, reviewers, evidence, provider accounts or approvals.
+- A human decision is exceptional: request it **only when genuinely necessary
+  to authorize an otherwise impossible sensitive action**, not to choose coding
+  tactics. Consolidate distinct nontechnical decisions instead of repeatedly
+  asking the owner to debug, configure, or select programming options.
+- The Supervisor must verify real consent, budget, external acceptance and
+  release evidence before dispatching gated work. The pure continuation core
+  filters candidates tagged with those gates and never treats a Boolean without
+  a nonempty evidence reference as sufficient. The authenticated host remains
+  responsible for validating each reference against its authority.
+- A run finishes only at an actual host/token/budget/authority boundary, a
+  genuine no-eligible-lane state, or a verified completion criterion. An
+  instruction file does **not** create an always-on runtime: hosted recurrence
+  and recovery require a real authenticated persistent agent/runner and logs.
+
 ## Repository-backed memory bank
 
 Chat history and model memory are never sufficient as the project source of truth. The repository must carry a persistent memory bank that another compatible AI can read and continue from.
@@ -262,6 +300,18 @@ It should expose at minimum:
 
 Do not fake precision. If progress percentages cannot be credibly calculated, use work-unit counts and status summaries instead.
 
+## README Progress Contract
+
+`README.md` is a mandatory AI-Native progress surface, not an optional narrative.
+
+- Reconcile README on every owner turn before the final response.
+- Every material source-development milestone must update the machine-readable README progress snapshot and affected dashboard/evidence lines in the same source commit.
+- The snapshot must agree with `config/ai/execution-plan.json`, `config/ai/project-state.json`, and the relevant module state.
+- Work-unit completion percentages count only `complete` non-deprecated work units. In-progress, blocked, verification-required, deferred and not-started work receive no partial numeric credit.
+- Material delivery evidence may be added while a work unit remains in progress, but it must not inflate deterministic completion percentage.
+- CI/status-only turns reconcile README truth but must not create a README-only source commit just to restate a workflow result; terminal remote evidence stays on the remote evidence overlay until the next material source mutation.
+- If README progress drifts from machine state, repository validation must fail closed.
+
 ## Autonomous next-work selection
 
 When the user has authorized AI-native development and no human decision blocks progress, the AI should determine the next valid work item rather than asking the user which module to work on.
@@ -277,6 +327,16 @@ Choose work using evidence such as:
 7. ability to complete and verify a small slice quickly
 
 Never choose a task solely because it is easy.
+
+### Scoped blockers and zero-routine-confirmation execution
+
+- Treat a user instruction to audit/fix/continue/develop as permission to perform **ordinary in-scope, reversible repository development** without asking the owner which task to choose. Use the current approved plan and live evidence, not a shuffled interaction menu, to decide.
+- On a waiting review or blocked PR, check mergeability, CI, exact head and available authorized reviewers. Never self-approve protected/security-critical work or circumvent GitHub rules. Continue independent product work while recording the protected PR's blocker and recovery trigger.
+- On a failed test, type/build error, dependency issue or stale planning artifact, inspect evidence, repair the narrow fault and retest. Bound retries and do not confuse a green optional watch with product CI.
+- On physical hardware, restricted runner, provider credential, legally significant, paid compute, production release or external-identity requirements, preserve the real gate, record the missing evidence and move to another independently eligible work unit.
+- If a work unit remains `in_progress` but its acceptance evidence is externally blocked, its **completion** is blocked; its status and prioritization should not hide usable sibling lanes. Do not mark it complete or silently demote it.
+- Select the next lane deterministically using live Issues, open PRs, exact-head checks, work-unit dependency graph and permissions. If multiple lanes remain, prioritize repairing actionable existing work over opening duplicated PRs. An old unresolved decision list does not itself mandate asking the user again.
+- Advance as much as is safely possible in the **current invocation**, subject to host/tool limits and the project's one-logical-milestone controls. At a host/time budget boundary, save a precise repo-backed handoff and report the boundary; no repository document can keep a chat agent running after its host stops.
 
 ## Update and delete discipline
 
@@ -306,6 +366,16 @@ After meaningful work, synchronize the relevant artifacts:
 - decisions/rationale
 
 A completed work unit with stale planning/state metadata is not fully complete.
+
+## Compact resume index and progress reporting
+
+The detailed memory bank remains canonical for planning state, but Supervisor resumes use the compact index under `config/ai/runtime/` first. `CURRENT-STATE.yaml` and `LAST-CHECKPOINT.md` locate the correct next evidence quickly; they never outrank current Git, open Issue/PR state, runtime evidence, checks, or the detailed memory bank.
+
+The Runner Benchmark at `config/ai/runtime/RUNNER-BENCHMARK.json` tracks material remote/container/browser/runtime/full-regression/performance workloads without granting execution authority.
+
+For user-facing progress reporting, calculate completion deterministically from `config/ai/execution-plan.json`: current-module completion is complete work units in the current module divided by known non-deprecated work units in that module; overall completion is complete work units divided by all known non-deprecated work units. Show the active work-unit status separately and do not award partial numeric credit merely because a work unit is `in_progress` or `verification_required`.
+
+This keeps progress bars consistent with the rule against fake precision.
 
 ## Definition of AI-native execution
 
