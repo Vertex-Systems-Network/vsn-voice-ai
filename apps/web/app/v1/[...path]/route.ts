@@ -1,8 +1,12 @@
 import {
   loadApiProxyConfig,
-  noServerAccessToken,
   proxyApiRequest,
 } from '../../../lib/api-proxy';
+import {
+  isSameOriginMutation,
+  loadWebSessionConfig,
+  sessionAccessToken,
+} from '../../../lib/web-session';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -13,11 +17,14 @@ interface ApiProxyRouteContext {
 
 async function handle(request: Request, context: ApiProxyRouteContext): Promise<Response> {
   const { path } = await context.params;
-  // No browser login session exists yet, so no bearer token is attached and
-  // the control API keeps answering 401 until a server-side session lands.
+  const session = loadWebSessionConfig(process.env);
+  const sessionConfig = session.status === 'configured' ? session.config : null;
   return proxyApiRequest(request, path, loadApiProxyConfig(process.env), {
     fetchImpl: fetch,
-    accessToken: noServerAccessToken,
+    accessToken: async (incoming) =>
+      sessionConfig === null ? null : sessionAccessToken(incoming, sessionConfig),
+    allowMutation: (incoming) =>
+      isSameOriginMutation(incoming, sessionConfig === null ? null : sessionConfig.publicOrigin),
   });
 }
 

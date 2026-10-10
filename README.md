@@ -18,6 +18,13 @@ The owner-approved product direction is:
 3. Add **VSN-owned AI models/runtime as first-class providers** behind the same internal contracts.
 4. Build a directly usable realtime calls/meetings product covering audio enhancement, accent conversion, voice preservation, translation, transcription, meeting intelligence, coaching, search, authorized actions, multi-platform capture, integrations, telephony/contact-center, SaaS subscriptions, enterprise controls and later public APIs/SDKs.
 
+## WU-014 — Web OIDC Login Session (implementation candidate)
+
+- The web app now has a provider-neutral OIDC authorization-code + PKCE (S256) login: `/auth/login`, `/auth/callback`, `/auth/logout` (`apps/web/lib/web-session.ts`). State and the PKCE verifier live in a 10-minute AES-256-GCM encrypted `__Host-` transaction cookie; after a successful token exchange only the access token and its expiry (capped at 8 h, no refresh token stored) are kept in an encrypted, `HttpOnly`, `Secure`, `SameSite=Lax` `__Host-vsn_session` cookie. The `/v1` proxy decrypts it server-side and forwards `Authorization: Bearer`, so tokens never reach browser JavaScript.
+- State-changing `/v1` requests and logout require `Sec-Fetch-Site: same-origin` or an exact `Origin` match (CSRF guard). All login failures redirect to `/?login=failed` without setting a session; upstream errors and token bodies are never echoed.
+- Configuration: `VSN_WEB_OIDC_AUTHORIZATION_ENDPOINT`, `VSN_WEB_OIDC_TOKEN_ENDPOINT`, `VSN_WEB_OIDC_CLIENT_ID`, `VSN_WEB_OIDC_REDIRECT_URI` (must end in `/auth/callback`), `VSN_WEB_SESSION_SECRET` (32 random bytes, base64url), optional `VSN_WEB_OIDC_CLIENT_SECRET` and `VSN_WEB_OIDC_SCOPE` (must include `openid`). Unset → login reports unavailable and the app stays signed out. The header shows **Sign in** / **Sign out** controls.
+- No identity-provider account or real login has been exercised yet; that requires the owner's provider choice. 104/104 web unit tests and 56/56 Playwright E2E tests passed locally.
+
 ## WU-014 — Web Backend-for-Frontend API Proxy (implementation candidate)
 
 - The Next.js app now serves same-origin `/v1/*` through a server-side proxy (`apps/web/app/v1/[...path]/route.ts`, `apps/web/lib/api-proxy.ts`) to the control API at `VSN_API_ORIGIN` (HTTPS, or loopback HTTP for local development; optional `VSN_API_PROXY_TIMEOUT_MS`, default 10 s, max 30 s). Browser code keeps cookie-based same-origin calls, so access tokens never need to live in browser JavaScript.

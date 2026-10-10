@@ -46,6 +46,18 @@ export default function WorkspacePage() {
         >
           {sessionView.label}
         </div>
+        {sessionState === 'signed_out' ? (
+          <a className="session-action" href="/auth/login">
+            Sign in
+          </a>
+        ) : null}
+        {sessionState === 'authenticated' ? (
+          <form className="session-action-form" method="post" action="/auth/logout">
+            <button className="session-action" type="submit">
+              Sign out
+            </button>
+          </form>
+        ) : null}
       </header>
 
       <div className="workspace-grid">
