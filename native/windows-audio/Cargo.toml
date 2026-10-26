@@ -8,7 +8,7 @@ publish = false
 vsn-audio-core = { path = "../audio-core" }
 
 [target.'cfg(windows)'.dependencies]
-windows-core = "0.62.2"
+windows-core = "0.100.0"
 windows = { version = "0.62.2", features = [
   "Win32_Foundation",
   "Win32_Media_Audio",
